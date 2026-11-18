@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["pass", "problems"],
+  "properties": {
+    "pass": { "type": "boolean" },
+    "problems": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,27 @@
+name: Metrics
+on:
+  pull_request:
+    types: [closed, labeled]
+permissions:
+  contents: read
+jobs:
+  record:
+    if: github.event.action == 'closed' || github.event.label.name == 'escape'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - run: node .agent/scripts/record-pr.mjs
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
