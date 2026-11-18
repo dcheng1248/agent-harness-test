@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "summary", "thread_replies"],
+  "properties": {
+    "status": { "enum": ["done", "blocked"] },
+    "summary": { "type": "string" },
+    "thread_replies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["comment_id", "body"],
+        "properties": { "comment_id": { "type": "integer" }, "body": { "type": "string" } }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "risk", "findings"],
+  "properties": {
+    "verdict": { "enum": ["pass", "changes"] },
+    "risk": { "enum": ["low", "medium", "high"] },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "axis", "file", "summary"],
+        "properties": {
+          "severity": { "enum": ["critical", "important", "minor"] },
+          "axis": { "enum": ["standards", "spec", "docs", "originality"] },
+          "file": { "type": "string" },
+          "summary": { "type": "string" }
+        }
+      }
+    }
+  }
+}

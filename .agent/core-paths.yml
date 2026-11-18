@@ -1,0 +1,7 @@
+# Keep in step with .github/CODEOWNERS.
+core_paths:
+  - docs/architecture.md
+  - packages/*/ARCHITECTURE.md
+  - packages/core/src/model/**
+  - packages/core/src/index.ts
+  - packages/content/src/schema.ts

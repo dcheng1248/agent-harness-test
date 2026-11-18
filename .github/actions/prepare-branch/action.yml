@@ -1,0 +1,52 @@
+name: Prepare agent branch
+description: Sets up tools and identity, switches to the issue branch, and checks the harness matches main.
+inputs:
+  token:
+    required: true
+  app-slug:
+    required: true
+  issue:
+    required: true
+  install:
+    description: Whether to run npm ci
+    default: 'false'
+outputs:
+  head-sha:
+    description: Branch tip before main was merged in
+    value: ${{ steps.branch.outputs.head-sha }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - id: branch
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        APP_SLUG: ${{ inputs.app-slug }}
+        ISSUE: ${{ inputs.issue }}
+      run: |
+        set -euo pipefail
+        {
+          echo "GH_TOKEN=$GH_TOKEN"
+          echo "STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "HARNESS=$RUNNER_TEMP/harness"
+        } >> "$GITHUB_ENV"
+        cp -r .agent "$RUNNER_TEMP/harness"
+        bot="${APP_SLUG}[bot]"
+        bot_id=$(gh api "users/$bot" --jq .id)
+        git config user.name "$bot"
+        git config user.email "${bot_id}+${bot}@users.noreply.github.com"
+        branch="agent/issue-$ISSUE"
+        if git rev-parse --verify --quiet "origin/$branch" >/dev/null; then
+          git switch -c "$branch" "origin/$branch"
+        else
+          git switch -c "$branch" origin/main
+        fi
+        echo "head-sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        git merge --no-edit origin/main
+        git diff --quiet origin/main -- .github .claude CLAUDE.md .agent ':(exclude).agent/plans'
+    - if: inputs.install == 'true'
+      shell: bash
+      run: npm ci

@@ -1,0 +1,102 @@
+name: Plan
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        required: true
+        type: string
+      mode:
+        description: new, answer or revise
+        required: true
+        type: string
+      pr:
+        required: false
+        type: string
+concurrency:
+  group: agent-issue-${{ inputs.issue }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+  id-token: write
+env:
+  ISSUE: ${{ inputs.issue }}
+  PR: ${{ inputs.pr }}
+  MODE: ${{ inputs.mode }}
+  AGENT_REVIEWERS: ${{ vars.AGENT_REVIEWERS }}
+  CLAUDE_AUTH: ${{ vars.CLAUDE_AUTH }}
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/prepare-branch
+        with:
+          token: ${{ steps.app.outputs.token }}
+          app-slug: ${{ steps.app.outputs.app-slug }}
+          issue: ${{ inputs.issue }}
+      - run: node "$HARNESS/scripts/gather-context.mjs"
+      - id: plan
+        uses: ./.github/actions/run-agent
+        with:
+          prompt: Use the plan-issue skill for issue ${{ inputs.issue }}. The run mode and all input are in .agent-run/context.md.
+          schema: .agent/schemas/plan.json
+          tools: Read,Write,Edit,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*)
+          token: ${{ steps.app.outputs.token }}
+          auth-mode: ${{ vars.CLAUDE_AUTH }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+      - if: always() && steps.plan.outcome != 'skipped'
+        run: node "$HARNESS/scripts/record-run.mjs"
+        env:
+          STAGE_NAME: plan
+          RESULT: ${{ steps.plan.outcome }}
+          EXECUTION_FILE: ${{ steps.plan.outputs.execution-file }}
+      - id: status
+        run: node "$HARNESS/scripts/after-plan.mjs" status
+        env:
+          PLAN_OUTPUT: ${{ steps.plan.outputs.structured-output }}
+      - if: steps.status.outputs.status == 'failed'
+        run: exit 1
+      - if: steps.status.outputs.status == 'questions'
+        run: node "$HARNESS/scripts/after-plan.mjs" questions
+        env:
+          PLAN_OUTPUT: ${{ steps.plan.outputs.structured-output }}
+      - id: audit
+        if: steps.status.outputs.status == 'ready'
+        uses: ./.github/actions/run-agent
+        with:
+          prompt: Use the audit-plan skill for issue ${{ inputs.issue }}. The original input is in .agent-run/context.md.
+          schema: .agent/schemas/audit.json
+          tools: Read,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*)
+          token: ${{ steps.app.outputs.token }}
+          auth-mode: ${{ vars.CLAUDE_AUTH }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+      - if: always() && steps.audit.outcome != 'skipped'
+        run: node "$HARNESS/scripts/record-run.mjs"
+        env:
+          STAGE_NAME: audit
+          RESULT: ${{ steps.audit.outcome }}
+          EXECUTION_FILE: ${{ steps.audit.outputs.execution-file }}
+      - if: steps.status.outputs.status == 'ready'
+        run: node "$HARNESS/scripts/after-plan.mjs" publish
+        env:
+          PLAN_OUTPUT: ${{ steps.plan.outputs.structured-output }}
+          AUDIT_OUTPUT: ${{ steps.audit.outputs.structured-output }}
+      - if: failure()
+        run: |
+          if [ -z "${HARNESS:-}" ]; then HARNESS=.agent; export GH_TOKEN="$APP_TOKEN"; fi
+          node "$HARNESS/scripts/report-failure.mjs"
+        env:
+          APP_TOKEN: ${{ steps.app.outputs.token }}
+          STAGE_NAME: plan

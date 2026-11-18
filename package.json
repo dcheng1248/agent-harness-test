@@ -1,0 +1,21 @@
+{
+  "name": "agent-harness-test",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "npm run build -w @emperor/web",
+    "dev": "npm run dev -w @emperor/web",
+    "check:ids": "node .agent/scripts/check-ids.mjs",
+    "verify": "npm run typecheck && npm test && npm run build && npm run check:ids"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}

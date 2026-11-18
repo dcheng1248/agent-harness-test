@@ -1,0 +1,34 @@
+# Architecture
+
+## Module dependencies
+```mermaid
+graph LR
+  web --> content
+  web --> core
+  content --> core
+```
+
+## Data flow
+```mermaid
+flowchart LR
+  Player -->|choice| web
+  web -->|action| core
+  content -->|text and events| web
+  core -->|new state| web
+```
+
+## Use cases
+Status is `planned` or `implemented`. An `implemented` use case must be referenced by a test.
+
+| ID | Use case | Status |
+|---|---|---|
+| UC-CORE-001 | 皇帝培養個人屬性：健康、學識、才藝 | planned |
+| UC-CORE-002 | 與皇后互動 | planned |
+| UC-CORE-003 | 舉行早朝 | planned |
+| UC-CORE-004 | 任命官員 | planned |
+| UC-CORE-005 | 處理政事 | planned |
+| UC-CORE-006 | 發生並處理戰爭 | planned |
+| UC-CORE-007 | 觸發特殊事件 | planned |
+| UC-CORE-008 | 選妃，或經由事件納妃 | planned |
+| UC-CORE-009 | 誕育子嗣 | planned |
+| UC-CORE-010 | 教導皇子女 | planned |

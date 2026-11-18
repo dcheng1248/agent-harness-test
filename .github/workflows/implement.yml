@@ -1,0 +1,77 @@
+name: Implement
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        required: true
+        type: string
+      pr:
+        required: true
+        type: string
+      mode:
+        description: plan, review, ci or human
+        required: true
+        type: string
+concurrency:
+  group: agent-issue-${{ inputs.issue }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+  id-token: write
+env:
+  ISSUE: ${{ inputs.issue }}
+  PR: ${{ inputs.pr }}
+  MODE: ${{ inputs.mode }}
+  AGENT_REVIEWERS: ${{ vars.AGENT_REVIEWERS }}
+  CLAUDE_AUTH: ${{ vars.CLAUDE_AUTH }}
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/prepare-branch
+        with:
+          token: ${{ steps.app.outputs.token }}
+          app-slug: ${{ steps.app.outputs.app-slug }}
+          issue: ${{ inputs.issue }}
+          install: 'true'
+      - run: node "$HARNESS/scripts/gather-context.mjs"
+      - id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - id: agent
+        uses: ./.github/actions/run-agent
+        with:
+          prompt: Use the implement-plan skill for issue ${{ inputs.issue }}. The run mode and all input are in .agent-run/context.md.
+          schema: .agent/schemas/implement.json
+          tools: Read,Write,Edit,Glob,Grep,Skill,Task,Agent,TodoWrite,Bash
+          token: ${{ steps.app.outputs.token }}
+          auth-mode: ${{ vars.CLAUDE_AUTH }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+      - if: always() && steps.agent.outcome != 'skipped'
+        run: node "$HARNESS/scripts/record-run.mjs"
+        env:
+          STAGE_NAME: implement
+          RESULT: ${{ steps.agent.outcome }}
+          EXECUTION_FILE: ${{ steps.agent.outputs.execution-file }}
+      - run: node "$HARNESS/scripts/after-implement.mjs"
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          IMPLEMENT_OUTPUT: ${{ steps.agent.outputs.structured-output }}
+      - if: failure()
+        run: |
+          if [ -z "${HARNESS:-}" ]; then HARNESS=.agent; export GH_TOKEN="$APP_TOKEN"; fi
+          node "$HARNESS/scripts/report-failure.mjs"
+        env:
+          APP_TOKEN: ${{ steps.app.outputs.token }}
+          STAGE_NAME: implement

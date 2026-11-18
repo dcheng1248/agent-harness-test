@@ -1,0 +1,12 @@
+# Core paths: keep in step with .agent/core-paths.yml.
+/docs/architecture.md @dcheng1248
+/packages/*/ARCHITECTURE.md @dcheng1248
+/packages/core/src/model/ @dcheng1248
+/packages/core/src/index.ts @dcheng1248
+/packages/content/src/schema.ts @dcheng1248
+
+# Harness
+/.github/ @dcheng1248
+/.claude/ @dcheng1248
+/.agent/ @dcheng1248
+/CLAUDE.md @dcheng1248

@@ -1,0 +1,74 @@
+name: Agent review
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        required: true
+        type: string
+      pr:
+        required: true
+        type: string
+concurrency:
+  group: agent-issue-${{ inputs.issue }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+  id-token: write
+env:
+  ISSUE: ${{ inputs.issue }}
+  PR: ${{ inputs.pr }}
+  MODE: agent-review
+  AGENT_REVIEWERS: ${{ vars.AGENT_REVIEWERS }}
+  CLAUDE_AUTH: ${{ vars.CLAUDE_AUTH }}
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - id: prepare
+        uses: ./.github/actions/prepare-branch
+        with:
+          token: ${{ steps.app.outputs.token }}
+          app-slug: ${{ steps.app.outputs.app-slug }}
+          issue: ${{ inputs.issue }}
+      - run: node "$HARNESS/scripts/gather-context.mjs"
+      - id: agent
+        uses: ./.github/actions/run-agent
+        with:
+          prompt: >-
+            Review issue ${{ inputs.issue }} on this branch against origin/main. Use the review-code skill and the
+            review-against-docs skill, then return one combined verdict. The issue is in .agent-run/context.md.
+          schema: .agent/schemas/review.json
+          tools: Read,Glob,Grep,Skill,Task,Agent,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git rev-parse:*),Bash(ls:*)
+          token: ${{ steps.app.outputs.token }}
+          auth-mode: ${{ vars.CLAUDE_AUTH }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+      - if: always() && steps.agent.outcome != 'skipped'
+        run: node "$HARNESS/scripts/record-run.mjs"
+        env:
+          STAGE_NAME: review
+          RESULT: ${{ steps.agent.outcome }}
+          EXECUTION_FILE: ${{ steps.agent.outputs.execution-file }}
+      - run: node "$HARNESS/scripts/after-review.mjs"
+        env:
+          REVIEWED_SHA: ${{ steps.prepare.outputs.head-sha }}
+          VERDICT: ${{ steps.agent.outputs.structured-output }}
+      - if: failure()
+        run: |
+          if [ -z "${HARNESS:-}" ]; then HARNESS=.agent; export GH_TOKEN="$APP_TOKEN"; fi
+          node "$HARNESS/scripts/report-failure.mjs"
+        env:
+          APP_TOKEN: ${{ steps.app.outputs.token }}
+          STAGE_NAME: agent review
+          REVIEWED_SHA: ${{ steps.prepare.outputs.head-sha }}

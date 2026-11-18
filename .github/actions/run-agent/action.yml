@@ -1,0 +1,46 @@
+name: Run agent
+description: Runs Claude Code with the credential selected by CLAUDE_AUTH.
+inputs:
+  prompt:
+    required: true
+  schema:
+    description: Path to a JSON schema for the result
+    required: true
+  tools:
+    description: Comma-separated allowed tools
+    required: true
+  token:
+    required: true
+  auth-mode:
+    description: oauth or api
+    default: oauth
+  oauth-token:
+    default: ''
+  api-key:
+    default: ''
+outputs:
+  structured-output:
+    value: ${{ steps.claude.outputs.structured_output }}
+  execution-file:
+    value: ${{ steps.claude.outputs.execution_file }}
+runs:
+  using: composite
+  steps:
+    - id: schema
+      shell: bash
+      env:
+        SCHEMA_FILE: ${{ inputs.schema }}
+      run: echo "json=$(jq -c . "$SCHEMA_FILE")" >> "$GITHUB_OUTPUT"
+    - id: claude
+      uses: anthropics/claude-code-action@v1
+      env:
+        GH_TOKEN: ''
+      with:
+        github_token: ${{ inputs.token }}
+        claude_code_oauth_token: ${{ inputs.auth-mode != 'api' && inputs.oauth-token || '' }}
+        anthropic_api_key: ${{ inputs.auth-mode == 'api' && inputs.api-key || '' }}
+        prompt: ${{ inputs.prompt }}
+        claude_args: |
+          --allowedTools "${{ inputs.tools }}"
+          --disallowedTools "Bash(git push:*),Bash(gh:*),Bash(curl:*),Bash(wget:*)"
+          --json-schema '${{ steps.schema.outputs.json }}'

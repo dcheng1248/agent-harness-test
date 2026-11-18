@@ -1,0 +1,12 @@
+# Minimum risk from the real diff. Explained in docs/harness/risk-rules.md.
+# Core paths in core-paths.yml are always at least medium.
+high_paths:
+  - packages/core/src/model/**
+  - packages/content/src/schema.ts
+medium_paths:
+  - package.json
+  - package-lock.json
+  - packages/*/package.json
+  - tsconfig.json
+  - vitest.config.ts
+  - packages/web/vite.config.*
