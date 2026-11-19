@@ -23,3 +23,17 @@ Read `docs/architecture.md` and the `ARCHITECTURE.md` of each module you touch b
 
 ## Pipeline
 See `docs/harness/operations.md`. Agents must not change this file, `.github/`, `.claude/`, or `.agent/` other than `.agent/plans/`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for this repo, used through the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. `ready-for-agent` also queues the issue for the pipeline. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one root `GLOSSARY.md` and `docs/adr/`. See `docs/agents/domain.md`.
