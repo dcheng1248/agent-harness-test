@@ -32,3 +32,4 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-008 | 選妃，或經由事件納妃 | planned |
 | UC-CORE-009 | 誕育子嗣 | planned |
 | UC-CORE-010 | 教導皇子女 | planned |
+| UC-WEB-001 | 顯示標題畫面 | implemented |
