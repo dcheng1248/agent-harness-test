@@ -45,12 +45,14 @@ jobs:
           app-slug: ${{ steps.app.outputs.app-slug }}
           issue: ${{ inputs.issue }}
       - run: node "$HARNESS/scripts/gather-context.mjs"
+      - name: Create the plan folder
+        run: mkdir -p ".agent/plans/issue-$ISSUE"
       - id: plan
         uses: ./.github/actions/run-agent
         with:
           prompt: Use the plan-issue skill for issue ${{ inputs.issue }}. The run mode and all input are in .agent-run/context.md.
           schema: .agent/schemas/plan.json
-          tools: Read,Write,Edit,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*)
+          tools: Read,Write,Edit,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*),Bash(mkdir:*)
           token: ${{ steps.app.outputs.token }}
           app-slug: ${{ steps.app.outputs.app-slug }}
           auth-mode: ${{ vars.CLAUDE_AUTH }}
@@ -66,7 +68,8 @@ jobs:
         run: node "$HARNESS/scripts/after-plan.mjs" status
         env:
           PLAN_OUTPUT: ${{ steps.plan.outputs.structured-output }}
-      - if: steps.status.outputs.status == 'failed'
+          EXECUTION_FILE: ${{ steps.plan.outputs.execution-file }}
+      - if: startsWith(steps.status.outputs.status, 'failed')
         run: exit 1
       - if: steps.status.outputs.status == 'questions'
         run: node "$HARNESS/scripts/after-plan.mjs" questions
