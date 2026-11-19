@@ -10,13 +10,15 @@ try {
   const messages = EXECUTION_FILE && existsSync(EXECUTION_FILE) ? JSON.parse(readFileSync(EXECUTION_FILE, 'utf8')) : [];
   const summary = summarizeExecution(messages);
   const api_login = CLAUDE_AUTH === 'api';
+  // This runs right after the agent step, so its start is now minus its duration.
+  const startedAt = summary.duration_ms === null ? STARTED_AT : new Date(Date.now() - summary.duration_ms).toISOString();
   appendLines('runs.jsonl', [
     makeRecord(RUN_FIELDS, {
       issue: Number(ISSUE),
       pr: PR ? Number(PR) : null,
       stage: STAGE_NAME,
       round: PR ? roundOf(labelNames(api(`pulls/${PR}`))) : 0,
-      started_at: STARTED_AT,
+      started_at: startedAt,
       result: RESULT,
       login_type: api_login ? 'api' : 'oauth',
       cost_kind: api_login ? 'billed' : 'estimated',
