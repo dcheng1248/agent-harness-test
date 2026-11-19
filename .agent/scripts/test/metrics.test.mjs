@@ -32,12 +32,29 @@ describe('metric records', () => {
   });
 
   it('reads only summary numbers from an agent run', () => {
+    const tool = (name) => ({ type: 'tool_use', name, input: { prompt: 'private' } });
     const summary = summarizeExecution([
       { type: 'system', subtype: 'init', model: 'm' },
       { type: 'assistant', message: 'private' },
-      { type: 'result', duration_ms: 5, total_cost_usd: 0.5, usage: { input_tokens: 1, output_tokens: 2 }, result: 'private' },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'private' }, tool('Skill'), tool('Task')] } },
+      { type: 'assistant', message: { content: [tool('Agent'), tool('Read')] } },
+      {
+        type: 'result',
+        duration_ms: 5,
+        total_cost_usd: 0.5,
+        usage: { input_tokens: 1, cache_read_input_tokens: 10, cache_creation_input_tokens: 100, output_tokens: 2 },
+        result: 'private',
+      },
     ]);
-    expect(summary).toEqual({ model: 'm', duration_ms: 5, input_tokens: 1, output_tokens: 2, cost_usd: 0.5 });
+    expect(summary).toEqual({
+      model: 'm', duration_ms: 5, input_tokens: 111, output_tokens: 2, cost_usd: 0.5,
+      tool_calls: 4, subagent_calls: 2, skill_calls: 1,
+    });
+    expect(JSON.stringify(makeRecord(RUN_FIELDS, summary))).not.toContain('private');
+  });
+
+  it('handles a run that produced no result', () => {
+    expect(summarizeExecution([])).toMatchObject({ input_tokens: null, tool_calls: 0, subagent_calls: 0 });
   });
 
   it('adds up waiting time', () => {
