@@ -10,6 +10,8 @@ Background and the code-smell list are in `upstream-code-review.md` in this fold
 ## Required method
 You must **start two helper reviewers with the Agent tool, in the same message**, so they run in parallel. A script counts them. With fewer than two, the review is rejected and the PR is marked `needs-human`, even if your verdict is correct.
 
+Run both in the foreground: never set `run_in_background`. This run ends when you return your verdict, and a helper still working is killed with it.
+
 1. Pin the fixed point: `origin/main`. Confirm `git diff origin/main...HEAD` is not empty.
 2. **Standards helper.** Give it the diff command, `git log origin/main..HEAD --oneline`, the standards sources (`CLAUDE.md` and each affected `ARCHITECTURE.md`), and the full smell baseline from `upstream-code-review.md`. Use that file's Standards brief.
 3. **Spec helper.** Give it the same diff command and commit list, plus the spec: `.agent-run/context.md`, `.agent/plans/issue-<N>/brief.md`, and the architecture docs. Use that file's Spec brief.
