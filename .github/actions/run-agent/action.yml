@@ -11,6 +11,9 @@ inputs:
     required: true
   token:
     required: true
+  app-slug:
+    description: The pipeline App, which starts these runs and must be allowed
+    required: true
   auth-mode:
     description: oauth or api
     default: oauth
@@ -37,6 +40,7 @@ runs:
         GH_TOKEN: ''
       with:
         github_token: ${{ inputs.token }}
+        allowed_bots: ${{ inputs.app-slug }},${{ inputs.app-slug }}[bot]
         claude_code_oauth_token: ${{ inputs.auth-mode != 'api' && inputs.oauth-token || '' }}
         anthropic_api_key: ${{ inputs.auth-mode == 'api' && inputs.api-key || '' }}
         prompt: ${{ inputs.prompt }}
