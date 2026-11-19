@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { askForReview, runUrl } from './lib/actions.mjs';
 import { addLabels, api, comment, getState, git, labelNames, pushBranch, removeLabel, reviewersFromEnv, setStage, updateState } from './lib/github.mjs';
+import { auditFeedback } from './lib/audit.mjs';
 import { summarizeExecution } from './lib/metrics.mjs';
 import { classifyRisk, loadLists, maxRisk } from './lib/rules.mjs';
 
@@ -80,16 +81,23 @@ switch (process.argv[2]) {
   case 'questions':
     askQuestions();
     break;
+  case 'check-audit': {
+    // First failure: hand the problems to the planner for one retry. The publish step handles a second failure.
+    const feedback = auditFeedback(parse(auditJson));
+    if (feedback) appendFileSync('.agent-run/context.md', `\n${feedback}\n`);
+    output('audit', feedback ? 'retry' : 'pass');
+    break;
+  }
   case 'publish': {
     const audit = parse(auditJson);
     if (audit?.pass !== true) {
       const problems = (audit?.problems ?? ['The audit returned no result.']).map((item) => `- ${item}`).join('\n');
-      needsHuman(`The plan failed its audit, so it was not published.\n\n${problems}`);
+      needsHuman(`The plan failed its audit twice, including one automatic retry, so it was not published. Problems from the last audit:\n\n${problems}`);
       process.exit(1);
     }
     publish();
     break;
   }
   default:
-    throw new Error('Expected status, questions or publish');
+    throw new Error('Expected status, questions, check-audit or publish');
 }

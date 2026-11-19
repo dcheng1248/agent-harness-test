@@ -32,5 +32,8 @@ Answers already given under "Questions and your answers" are binding. Ask again 
 ## Revisions
 In `revise` mode, the "Human review" section is authoritative. Change only what it affects, update `tasks.md`, and add "Changes since last review" to the brief. Commits on the branch from a person are authoritative too. Put one reply per review comment in `thread_replies`, using the comment ID.
 
+## Audit fixes
+If `.agent-run/context.md` has a "Plan audit problems" section, your earlier plan failed an independent audit and its files are still in place. Fix every listed problem in the docs, `brief.md` and `tasks.md`, and keep the rest. If a problem can only be fixed by guessing, return `questions` instead.
+
 ## Limits
 Do not change `.github/`, `.claude/`, or `.agent/` outside `.agent/plans/`. Do not commit or push; the workflow does that. Follow the originality rule in `CLAUDE.md`.
