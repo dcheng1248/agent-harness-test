@@ -3,4 +3,5 @@ export interface UiText {
   placeholderBody: string;
   gameTitle: string;
   titleImageAlt: string;
+  startButton: string;
 }

@@ -7,4 +7,5 @@ export const uiText: UiText = {
   placeholderBody: '敬請期待。',
   gameTitle: '九重天子',
   titleImageAlt: '暮色中的紫禁城大殿',
+  startButton: '登基',
 };

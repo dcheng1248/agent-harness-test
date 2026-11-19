@@ -11,4 +11,8 @@ describe('content skeleton', () => {
     expect(uiText.gameTitle).toBe('九重天子');
     expect(uiText.titleImageAlt).toBe('暮色中的紫禁城大殿');
   });
+
+  it('provides start button text', () => {
+    expect(uiText.startButton).toBe('登基');
+  });
 });
