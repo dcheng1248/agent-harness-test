@@ -41,6 +41,12 @@ Plan approval never merges. Coding commits dismiss it, so the merge always needs
 ## Blocked issues
 Add GitHub's "blocked by" link. An issue starts only when all its blockers are closed as completed. A blocker closed as not planned or duplicate keeps it waiting until you remove the link.
 
+## Screenshots
+When an agent PR changes `packages/web` or `packages/content`, agent review first photographs every screen listed in `packages/web/screenshots.json`. One PR comment shows them and is updated each round. The agent reviewer also looks at them. The images are stored on the public `agent-screenshots` branch.
+
+## Enforced method
+The implementer must use a fresh helper agent for each task, and a reviewer helper. The code reviewer must use two parallel helpers, one for standards and one for spec. A script counts helpers after each run. If there are too few, the result is not accepted, nothing is pushed, and the PR gets `needs-human`. To retry, request changes on the PR.
+
 ## Your own PRs
 Harness changes are made by you, and GitHub won't let you approve your own PR. Use the admin merge option. `agent-review` does not run on them.
 

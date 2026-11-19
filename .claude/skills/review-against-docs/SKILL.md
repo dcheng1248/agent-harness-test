@@ -15,5 +15,7 @@ Report `important` or higher if:
 5. `core` uses the DOM or unseeded randomness.
 6. Player-facing text is not Traditional Chinese.
 7. Titles, characters, text, art, music or levels look copied from an existing game, or any existing game is named.
+8. The change adds or changes a screen, but `packages/web/screenshots.json` has no scenario that shows it.
+9. A screenshot in `.agent-run/screenshots/` shows a broken screen: a failed capture in `manifest.json`, missing text or images, overlapping or cut-off content, or a layout that contradicts the docs. Look at each image with the Read tool. Use axis `docs`.
 
 Also rate risk from `docs/harness/risk-rules.md` and return it as `risk` in the combined verdict. Rate it from what the diff really does, not from the brief.

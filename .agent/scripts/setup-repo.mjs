@@ -1,6 +1,6 @@
 // Safe to re-run. Usage: GITHUB_REPOSITORY=owner/repo node .agent/scripts/setup-repo.mjs --app-id <id> --reviewers <login[,login]>
 import { api, gh, repo } from './lib/github.mjs';
-import { METRICS_BRANCH } from './lib/store.mjs';
+import { METRICS_BRANCH, ensureBranch } from './lib/store.mjs';
 
 const option = (name) => {
   const index = process.argv.indexOf(`--${name}`);
@@ -43,20 +43,7 @@ for (const [name, value] of Object.entries({ AGENT_REVIEWERS: reviewers, MAX_ACT
 
 api(`/repos/${repo()}`, { method: 'PATCH', body: { allow_auto_merge: true, allow_merge_commit: true } });
 
-let hasMetrics = true;
-try {
-  api(`git/ref/heads/${METRICS_BRANCH}`);
-} catch {
-  hasMetrics = false;
-}
-if (!hasMetrics) {
-  const tree = api('git/trees', {
-    method: 'POST',
-    body: { tree: [{ path: 'README.md', mode: '100644', type: 'blob', content: '# Agent metrics\n\nWritten by the pipeline.\n' }] },
-  });
-  const commit = api('git/commits', { method: 'POST', body: { message: 'metrics: start', tree: tree.sha, parents: [] } });
-  api('git/refs', { method: 'POST', body: { ref: `refs/heads/${METRICS_BRANCH}`, sha: commit.sha } });
-}
+ensureBranch(METRICS_BRANCH, '# Agent metrics\n\nWritten by the pipeline.\n');
 
 api('branches/main/protection', {
   method: 'PUT',

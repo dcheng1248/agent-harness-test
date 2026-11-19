@@ -41,13 +41,30 @@ jobs:
           token: ${{ steps.app.outputs.token }}
           app-slug: ${{ steps.app.outputs.app-slug }}
           issue: ${{ inputs.issue }}
+          install: 'true'
       - run: node "$HARNESS/scripts/gather-context.mjs"
+      - id: ui
+        run: node "$HARNESS/scripts/post-screenshots.mjs" check
+      - if: steps.ui.outputs.changed == 'true'
+        name: Take screenshots
+        continue-on-error: true
+        run: |
+          npm run build
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          node "$HARNESS/scripts/take-screenshots.mjs"
+      - if: steps.ui.outputs.changed == 'true'
+        name: Post screenshots
+        run: node "$HARNESS/scripts/post-screenshots.mjs"
+        env:
+          REVIEWED_SHA: ${{ steps.prepare.outputs.head-sha }}
       - id: agent
         uses: ./.github/actions/run-agent
         with:
           prompt: >-
             Review issue ${{ inputs.issue }} on this branch against origin/main. Use the review-code skill and the
             review-against-docs skill, then return one combined verdict. The issue is in .agent-run/context.md.
+            If .agent-run/screenshots/ exists, it holds screenshots of the UI at this commit, listed in its manifest.json.
           schema: .agent/schemas/review.json
           tools: Read,Glob,Grep,Skill,Task,Agent,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git rev-parse:*),Bash(ls:*)
           token: ${{ steps.app.outputs.token }}
@@ -65,6 +82,7 @@ jobs:
         env:
           REVIEWED_SHA: ${{ steps.prepare.outputs.head-sha }}
           VERDICT: ${{ steps.agent.outputs.structured-output }}
+          EXECUTION_FILE: ${{ steps.agent.outputs.execution-file }}
       - if: failure()
         run: |
           if [ -z "${HARNESS:-}" ]; then HARNESS=.agent; export GH_TOKEN="$APP_TOKEN"; fi

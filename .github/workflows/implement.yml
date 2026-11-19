@@ -69,6 +69,7 @@ jobs:
         env:
           BASE_SHA: ${{ steps.base.outputs.sha }}
           IMPLEMENT_OUTPUT: ${{ steps.agent.outputs.structured-output }}
+          EXECUTION_FILE: ${{ steps.agent.outputs.execution-file }}
       - if: failure()
         run: |
           if [ -z "${HARNESS:-}" ]; then HARNESS=.agent; export GH_TOKEN="$APP_TOKEN"; fi

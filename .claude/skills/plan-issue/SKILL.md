@@ -26,6 +26,7 @@ Answers already given under "Questions and your answers" are binding. Ask again 
    - Order tasks by dependency: `core`, then `content`, then `web`, then a final whole-repo task running `npm run verify`.
    - Each task names the `ARCHITECTURE.md` files its implementer must read, and produces one commit per module.
    - For a large non-mechanical cascade, stage it: add the new shape, migrate modules, remove the old one.
+   - If the issue adds or changes anything a player sees, the `web` task updates `packages/web/screenshots.json`, so every new or changed screen has a scenario. Steps can only `click` or `waitFor` a CSS selector, so give the elements involved stable IDs.
 6. Return `status`: `ready`, a short `pr_title`, `risk`, and empty `questions`.
 
 ## Revisions

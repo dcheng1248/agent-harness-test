@@ -1,0 +1,12 @@
+[
+  {
+    "name": "title",
+    "description": "標題畫面",
+    "steps": []
+  },
+  {
+    "name": "game",
+    "description": "按下登基後的遊戲畫面",
+    "steps": [{ "click": "#start" }]
+  }
+]

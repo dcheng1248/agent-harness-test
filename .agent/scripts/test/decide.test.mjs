@@ -124,6 +124,12 @@ describe('routeEvent: final gate', () => {
   it('lets you redirect a PR that gave up', () => {
     expect(review(['stage:agent-review', 'needs-human'], 'changes_requested')).toContainEqual({ type: 'runImplement', mode: 'human' });
   });
+
+  it('lets you restart an implementation that was stopped, but not one still running', () => {
+    expect(review(['stage:implementing', 'needs-human'], 'changes_requested')).toContainEqual({ type: 'runImplement', mode: 'human' });
+    expect(review(['stage:implementing'], 'changes_requested')).toEqual([]);
+    expect(types(review(['stage:implementing', 'needs-human'], 'approved'))).not.toContain('enableAutoMerge');
+  });
 });
 
 describe('routeEvent: CI', () => {
