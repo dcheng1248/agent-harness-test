@@ -49,8 +49,17 @@ describe('metric records', () => {
     ]);
     expect(summary).toEqual({
       model: 'm', duration_ms: 5, input_tokens: 111, output_tokens: 2, cost_usd: 0.5,
-      tool_calls: 4, subagent_calls: 2, skill_calls: 1,
+      tool_calls: 4, subagent_calls: 2, skill_calls: 1, denied_tools: null,
     });
+    expect(JSON.stringify(makeRecord(RUN_FIELDS, summary))).not.toContain('private');
+  });
+
+  it('records denied tool names but never their inputs', () => {
+    const denial = (tool_name) => ({ tool_name, tool_use_id: 'x', tool_input: { command: 'mkdir private' } });
+    const summary = summarizeExecution([
+      { type: 'result', permission_denials: [denial('Bash'), denial('Bash'), denial('Write')] },
+    ]);
+    expect(summary.denied_tools).toBe('Bash,Write');
     expect(JSON.stringify(makeRecord(RUN_FIELDS, summary))).not.toContain('private');
   });
 

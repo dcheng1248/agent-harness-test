@@ -3,6 +3,7 @@
 export const RUN_FIELDS = [
   'issue', 'pr', 'stage', 'round', 'started_at', 'duration_ms', 'result', 'login_type', 'model',
   'input_tokens', 'output_tokens', 'cost_usd', 'cost_kind', 'tool_calls', 'subagent_calls', 'skill_calls',
+  'denied_tools',
 ];
 export const PR_FIELDS = [
   'issue', 'pr', 'outcome', 'risk_plan', 'risk_after_code', 'risk_final', 'risk_corrected',
@@ -27,6 +28,13 @@ export function makeRecord(fields, values) {
   return record;
 }
 
+/** Names of tools the agent was refused, never their inputs. Null when none were refused. */
+function deniedTools(result) {
+  const names = [...new Set((result?.permission_denials ?? []).map((denial) => String(denial.tool_name)))];
+  const safe = names.map((name) => name.replace(/[^\w.-]/g, '')).filter(Boolean);
+  return safe.length ? safe.join(',').slice(0, 64) : null;
+}
+
 export function summarizeExecution(messages) {
   const list = Array.isArray(messages) ? messages : [];
   const init = list.find((m) => m.type === 'system' && m.subtype === 'init');
@@ -49,6 +57,7 @@ export function summarizeExecution(messages) {
     tool_calls: toolNames.length,
     subagent_calls: toolNames.filter((name) => name === 'Task' || name === 'Agent').length,
     skill_calls: toolNames.filter((name) => name === 'Skill').length,
+    denied_tools: deniedTools(result),
   };
 }
 

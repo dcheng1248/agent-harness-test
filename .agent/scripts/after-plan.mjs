@@ -1,9 +1,10 @@
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { askForReview, runUrl } from './lib/actions.mjs';
 import { addLabels, api, comment, getState, git, labelNames, pushBranch, removeLabel, reviewersFromEnv, setStage, updateState } from './lib/github.mjs';
+import { summarizeExecution } from './lib/metrics.mjs';
 import { classifyRisk, loadLists, maxRisk } from './lib/rules.mjs';
 
-const { ISSUE: issue, PR: existingPr, PLAN_OUTPUT: planJson, AUDIT_OUTPUT: auditJson } = process.env;
+const { ISSUE: issue, PR: existingPr, PLAN_OUTPUT: planJson, AUDIT_OUTPUT: auditJson, EXECUTION_FILE } = process.env;
 const parse = (text) => {
   try {
     return JSON.parse(text);
@@ -60,9 +61,22 @@ function publish() {
 }
 
 switch (process.argv[2]) {
-  case 'status':
+  case 'status': {
+    const missing = ['brief.md', 'tasks.md'].filter((file) => !existsSync(`${planDir}/${file}`));
+    if (plan?.status === 'ready' && missing.length > 0) {
+      const messages = EXECUTION_FILE && existsSync(EXECUTION_FILE) ? JSON.parse(readFileSync(EXECUTION_FILE, 'utf8')) : [];
+      const denied = summarizeExecution(messages).denied_tools;
+      needsHuman(
+        `The planner reported a finished plan but did not write ${missing.join(' or ')}, so nothing was audited or published.` +
+          (denied ? ` These tools were denied to it: ${denied}.` : '') +
+          '\n\nTo retry, remove `needs-human` and `agent:in-progress` from the issue, then add `ready-for-agent`.',
+      );
+      output('status', 'failed-reported');
+      break;
+    }
     output('status', ['ready', 'questions'].includes(plan?.status) ? plan.status : 'failed');
     break;
+  }
   case 'questions':
     askQuestions();
     break;
