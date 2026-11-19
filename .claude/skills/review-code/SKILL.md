@@ -1,17 +1,24 @@
 ---
 name: review-code
-description: Review an agent branch against origin/main along separate standards and spec axes, for the unattended pipeline.
+description: Review an agent branch against origin/main along separate standards and spec axes, using two helper reviewers, for the unattended pipeline.
 ---
 
 # Review code
 
-Follow `upstream-code-review.md` in this folder, with these overrides:
+Background and the code-smell list are in `upstream-code-review.md` in this folder. Where it conflicts with this file, this file wins.
 
-- The fixed point is `origin/main`. Nobody can answer questions, so never ask.
-- The spec is `.agent-run/context.md`, `.agent/plans/issue-<N>/brief.md`, and the architecture docs. Do not use an issue tracker.
-- The standards sources are `CLAUDE.md` and each affected `ARCHITECTURE.md`.
+## Required method
+You must **start two helper reviewers with the Agent tool, in the same message**, so they run in parallel. A script counts them. With fewer than two, the review is rejected and the PR is marked `needs-human`, even if your verdict is correct.
+
+1. Pin the fixed point: `origin/main`. Confirm `git diff origin/main...HEAD` is not empty.
+2. **Standards helper.** Give it the diff command, `git log origin/main..HEAD --oneline`, the standards sources (`CLAUDE.md` and each affected `ARCHITECTURE.md`), and the full smell baseline from `upstream-code-review.md`. Use that file's Standards brief.
+3. **Spec helper.** Give it the same diff command and commit list, plus the spec: `.agent-run/context.md`, `.agent/plans/issue-<N>/brief.md`, and the architecture docs. Use that file's Spec brief.
+4. Wait for both. Turn their reports into findings for the combined verdict.
+
+## Overrides
+- Nobody can answer questions, so never ask. Do not use an issue tracker.
 - Change nothing, and do not post anything.
-- Return findings for the combined verdict instead of a written report:
+- Severity:
   - `critical`: wrong behaviour, data loss, or a missing requirement.
   - `important`: a breach of a documented standard, or scope nobody asked for.
   - `minor`: a judgement call, including every code-smell finding.

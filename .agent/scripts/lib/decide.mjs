@@ -77,7 +77,10 @@ function routeReview({ pr, review, actor, reviewers }) {
   const stage = stageOf(pr.labels);
   const needsHuman = pr.labels.includes('needs-human');
   const { state, body, commitId } = review;
-  const atCodeGate = stage === 'stage:human-review' || (stage === 'stage:agent-review' && needsHuman);
+  // A stopped run also waits at the code gate, so you can send it back with Request changes.
+  const atCodeGate =
+    stage === 'stage:human-review' ||
+    (needsHuman && (stage === 'stage:agent-review' || stage === 'stage:implementing'));
 
   if (stage === 'stage:plan-review') {
     if (state === 'approved') return approvePlan();

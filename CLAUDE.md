@@ -20,6 +20,7 @@ Read `docs/architecture.md` and the `ARCHITECTURE.md` of each module you touch b
 - Architecture docs are the spec. Diagrams are Mermaid.
 - Use case IDs are `UC-<MODULE>-NNN`. A use case marked `implemented` must be referenced by a test name or comment.
 - Run `npm run verify` before calling work complete.
+- When a change adds or changes a screen, list it in `packages/web/screenshots.json`. The pipeline photographs those screens for review.
 
 ## Pipeline
 See `docs/harness/operations.md`. Agents must not change this file, `.github/`, `.claude/`, or `.agent/` other than `.agent/plans/`.

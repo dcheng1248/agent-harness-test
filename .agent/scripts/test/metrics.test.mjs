@@ -38,6 +38,7 @@ describe('metric records', () => {
       { type: 'assistant', message: 'private' },
       { type: 'assistant', message: { content: [{ type: 'text', text: 'private' }, tool('Skill'), tool('Task')] } },
       { type: 'assistant', message: { content: [tool('Agent'), tool('Read')] } },
+      { type: 'assistant', parent_tool_use_id: 'helper', message: { content: [tool('Agent'), tool('Edit')] } },
       {
         type: 'result',
         duration_ms: 5,

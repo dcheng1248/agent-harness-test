@@ -1,9 +1,12 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { applyActions, askForReview, runUrl, setCommitStatus } from './lib/actions.mjs';
 import { failedRound } from './lib/decide.mjs';
+import { REQUIRED_REVIEW_HELPERS, checkHelpers } from './lib/enforce.mjs';
+import { summarizeExecution } from './lib/metrics.mjs';
 import { addLabels, api, comment, gh, getState, labelNames, prFiles, removeLabel, repo, setStage, updateState } from './lib/github.mjs';
 import { classifyRisk, loadLists, maxRisk } from './lib/rules.mjs';
 
-const { ISSUE: issue, PR: pr, REVIEWED_SHA: sha, VERDICT: raw } = process.env;
+const { ISSUE: issue, PR: pr, REVIEWED_SHA: sha, VERDICT: raw, EXECUTION_FILE } = process.env;
 const current = api(`pulls/${pr}`);
 const labels = labelNames(current);
 
@@ -19,10 +22,13 @@ try {
   // Handled below.
 }
 
-if (!['pass', 'changes'].includes(verdict?.verdict)) {
+const messages = EXECUTION_FILE && existsSync(EXECUTION_FILE) ? JSON.parse(readFileSync(EXECUTION_FILE, 'utf8')) : [];
+const shortfall = checkHelpers(summarizeExecution(messages).subagent_calls, REQUIRED_REVIEW_HELPERS, 'review');
+const problem = !['pass', 'changes'].includes(verdict?.verdict) ? 'Agent review did not return a verdict.' : shortfall;
+if (problem) {
   setCommitStatus(sha, 'failure', 'Agent review did not finish');
   addLabels(pr, ['needs-human']);
-  comment(pr, `Agent review did not return a verdict.\n\nRun: ${runUrl()}`);
+  comment(pr, `${problem}\n\nTo retry, request changes on this PR.\n\nRun: ${runUrl()}`);
   process.exit(1);
 }
 

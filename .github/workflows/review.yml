@@ -41,13 +41,44 @@ jobs:
           token: ${{ steps.app.outputs.token }}
           app-slug: ${{ steps.app.outputs.app-slug }}
           issue: ${{ inputs.issue }}
+          install: 'true'
       - run: node "$HARNESS/scripts/gather-context.mjs"
+      - id: ui
+        run: node "$HARNESS/scripts/post-screenshots.mjs" check
+      # The harness scripts run from a copy, so they need the project's packages linked in.
+      - if: steps.ui.outputs.changed == 'true'
+        name: Screenshot the PR
+        continue-on-error: true
+        run: |
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$HARNESS/node_modules"
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          npm run build
+          node "$HARNESS/scripts/take-screenshots.mjs" --root . --out .agent-run/screenshots/after
+      - if: steps.ui.outputs.changed == 'true'
+        name: Screenshot main
+        continue-on-error: true
+        run: |
+          git worktree add "$RUNNER_TEMP/main" origin/main
+          (cd "$RUNNER_TEMP/main" && npm ci && npm run build)
+          node "$HARNESS/scripts/take-screenshots.mjs" --root "$RUNNER_TEMP/main" --out .agent-run/screenshots/before
+      - if: steps.ui.outputs.changed == 'true'
+        name: Compare screenshots
+        continue-on-error: true
+        run: node "$HARNESS/scripts/compare-screenshots.mjs"
+      - if: steps.ui.outputs.changed == 'true'
+        name: Post screenshots
+        run: node "$HARNESS/scripts/post-screenshots.mjs"
+        env:
+          REVIEWED_SHA: ${{ steps.prepare.outputs.head-sha }}
       - id: agent
         uses: ./.github/actions/run-agent
         with:
           prompt: >-
             Review issue ${{ inputs.issue }} on this branch against origin/main. Use the review-code skill and the
             review-against-docs skill, then return one combined verdict. The issue is in .agent-run/context.md.
+            If .agent-run/screenshots/result.json exists, it lists which screens changed, are new or failed compared with main.
+            Their images are in .agent-run/screenshots/after/, with main's versions in .agent-run/screenshots/before/.
           schema: .agent/schemas/review.json
           tools: Read,Glob,Grep,Skill,Task,Agent,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git rev-parse:*),Bash(ls:*)
           token: ${{ steps.app.outputs.token }}
@@ -65,6 +96,7 @@ jobs:
         env:
           REVIEWED_SHA: ${{ steps.prepare.outputs.head-sha }}
           VERDICT: ${{ steps.agent.outputs.structured-output }}
+          EXECUTION_FILE: ${{ steps.agent.outputs.execution-file }}
       - if: failure()
         run: |
           if [ -z "${HARNESS:-}" ]; then HARNESS=.agent; export GH_TOKEN="$APP_TOKEN"; fi

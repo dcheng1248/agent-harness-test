@@ -36,9 +36,9 @@ export function summarizeExecution(messages) {
   const inputTokens = usage
     ? (usage.input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0)
     : null;
-  // Only tool names are counted. Their inputs and results are never read.
+  // Only the main agent's tool names are counted. Helpers' own steps and all inputs and results are ignored.
   const toolNames = list
-    .filter((m) => m.type === 'assistant' && Array.isArray(m.message?.content))
+    .filter((m) => m.type === 'assistant' && !m.parent_tool_use_id && Array.isArray(m.message?.content))
     .flatMap((m) => m.message.content.filter((block) => block.type === 'tool_use').map((block) => block.name));
   return {
     model: init?.model ?? null,
