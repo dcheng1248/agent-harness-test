@@ -37,3 +37,6 @@ Click → `main.ts` seed → `startGame` → `core.createInitialState` → `Scre
 
 ## Open questions
 None.
+
+## Changes since last review
+- Human review: the start button now has `type="button"`. Task 2 markup and its test assertion updated; nothing else changed.

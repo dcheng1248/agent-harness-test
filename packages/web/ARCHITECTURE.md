@@ -11,7 +11,7 @@ The entry point (`main.ts`) imports the asset and passes its URL to the render f
 
 ## Use cases
 - UC-WEB-001: the title screen renders an `<h1>` with the game title above an `<img>` of the palace, scaled to the viewport width with its aspect ratio kept.
-- UC-WEB-002: the title screen has a `<button>` with the `startButton` text, centered below the image. Clicking it starts a new game: `main.ts` picks a random 32-bit seed with `crypto.getRandomValues`, calls `startGame(seed)`, and renders the game screen, which shows the placeholder heading and body. Gameplay is not defined yet.
+- UC-WEB-002: the title screen has a `<button type="button">` with the `startButton` text, centered below the image. Clicking it starts a new game: `main.ts` picks a random 32-bit seed with `crypto.getRandomValues`, calls `startGame(seed)`, and renders the game screen, which shows the placeholder heading and body. Gameplay is not defined yet.
 
 ## Screen state
 `web` tracks the current screen, not `core`. `src/screen.ts` holds the pure functions.
