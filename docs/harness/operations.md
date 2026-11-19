@@ -33,6 +33,9 @@ flowchart TD
 
 Plan approval never merges. Coding commits dismiss it, so the merge always needs your final approval.
 
+## Failed plan audits
+When the audit rejects a plan, the planner automatically gets one retry with the audit's problems, and a fresh audit checks the result. If that also fails, nothing is published and the issue gets `needs-human` with the last problems. To retry, edit the issue text to clear up the problem (plain comments don't reach the planner), remove `needs-human` and `agent:in-progress`, then add `ready-for-agent`.
+
 ## Settings
 - `MAX_ACTIVE_ISSUES`: how many issues run at once. Keep it at 1; the rest of the pipeline is designed for one at a time.
 - `AGENT_REVIEWERS`: accounts whose issues, labels, reviews and answers count.

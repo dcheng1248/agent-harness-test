@@ -21,6 +21,9 @@ inputs:
     default: ''
   api-key:
     default: ''
+  model:
+    description: Model alias or ID, such as opus. Empty uses the default model.
+    default: ''
 outputs:
   structured-output:
     value: ${{ steps.claude.outputs.structured_output }}
@@ -48,3 +51,4 @@ runs:
           --allowedTools "${{ inputs.tools }}"
           --disallowedTools "Bash(git push:*),Bash(gh:*),Bash(curl:*),Bash(wget:*)"
           --json-schema '${{ steps.schema.outputs.json }}'
+          ${{ inputs.model && format('--model {0}', inputs.model) || '' }}

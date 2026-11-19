@@ -53,6 +53,7 @@ jobs:
           prompt: Use the plan-issue skill for issue ${{ inputs.issue }}. The run mode and all input are in .agent-run/context.md.
           schema: .agent/schemas/plan.json
           tools: Read,Write,Edit,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*),Bash(mkdir:*)
+          model: opus
           token: ${{ steps.app.outputs.token }}
           app-slug: ${{ steps.app.outputs.app-slug }}
           auth-mode: ${{ vars.CLAUDE_AUTH }}
@@ -93,11 +94,66 @@ jobs:
           STAGE_NAME: audit
           RESULT: ${{ steps.audit.outcome }}
           EXECUTION_FILE: ${{ steps.audit.outputs.execution-file }}
-      - if: steps.status.outputs.status == 'ready'
+      # A failed audit gets one automatic retry: the planner fixes the audit's problems, then a fresh audit runs.
+      - id: check
+        if: steps.status.outputs.status == 'ready'
+        run: node "$HARNESS/scripts/after-plan.mjs" check-audit
+        env:
+          AUDIT_OUTPUT: ${{ steps.audit.outputs.structured-output }}
+      - id: replan
+        if: steps.check.outputs.audit == 'retry'
+        uses: ./.github/actions/run-agent
+        with:
+          prompt: Use the plan-issue skill for issue ${{ inputs.issue }}. Your plan failed its audit. The problems are under "Plan audit problems" in .agent-run/context.md.
+          schema: .agent/schemas/plan.json
+          tools: Read,Write,Edit,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*),Bash(mkdir:*)
+          model: opus
+          token: ${{ steps.app.outputs.token }}
+          app-slug: ${{ steps.app.outputs.app-slug }}
+          auth-mode: ${{ vars.CLAUDE_AUTH }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+      - if: always() && steps.replan.outcome != 'skipped'
+        run: node "$HARNESS/scripts/record-run.mjs"
+        env:
+          STAGE_NAME: plan-retry
+          RESULT: ${{ steps.replan.outcome }}
+          EXECUTION_FILE: ${{ steps.replan.outputs.execution-file }}
+      - id: status2
+        if: steps.check.outputs.audit == 'retry'
+        run: node "$HARNESS/scripts/after-plan.mjs" status
+        env:
+          PLAN_OUTPUT: ${{ steps.replan.outputs.structured-output }}
+          EXECUTION_FILE: ${{ steps.replan.outputs.execution-file }}
+      - if: startsWith(steps.status2.outputs.status, 'failed')
+        run: exit 1
+      - if: steps.status2.outputs.status == 'questions'
+        run: node "$HARNESS/scripts/after-plan.mjs" questions
+        env:
+          PLAN_OUTPUT: ${{ steps.replan.outputs.structured-output }}
+      - id: reaudit
+        if: steps.status2.outputs.status == 'ready'
+        uses: ./.github/actions/run-agent
+        with:
+          prompt: Use the audit-plan skill for issue ${{ inputs.issue }}. The original input is in .agent-run/context.md.
+          schema: .agent/schemas/audit.json
+          tools: Read,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*)
+          token: ${{ steps.app.outputs.token }}
+          app-slug: ${{ steps.app.outputs.app-slug }}
+          auth-mode: ${{ vars.CLAUDE_AUTH }}
+          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+      - if: always() && steps.reaudit.outcome != 'skipped'
+        run: node "$HARNESS/scripts/record-run.mjs"
+        env:
+          STAGE_NAME: audit-retry
+          RESULT: ${{ steps.reaudit.outcome }}
+          EXECUTION_FILE: ${{ steps.reaudit.outputs.execution-file }}
+      - if: steps.check.outputs.audit == 'pass' || steps.status2.outputs.status == 'ready'
         run: node "$HARNESS/scripts/after-plan.mjs" publish
         env:
-          PLAN_OUTPUT: ${{ steps.plan.outputs.structured-output }}
-          AUDIT_OUTPUT: ${{ steps.audit.outputs.structured-output }}
+          PLAN_OUTPUT: ${{ steps.replan.outputs.structured-output || steps.plan.outputs.structured-output }}
+          AUDIT_OUTPUT: ${{ steps.reaudit.outputs.structured-output || steps.audit.outputs.structured-output }}
       - if: failure()
         run: |
           if [ -z "${HARNESS:-}" ]; then HARNESS=.agent; export GH_TOKEN="$APP_TOKEN"; fi
