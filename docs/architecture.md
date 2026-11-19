@@ -33,3 +33,4 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-009 | 誕育子嗣 | planned |
 | UC-CORE-010 | 教導皇子女 | planned |
 | UC-WEB-001 | 顯示標題畫面 | implemented |
+| UC-WEB-002 | 開始遊戲 | implemented |
