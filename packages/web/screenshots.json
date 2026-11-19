@@ -1,8 +1,8 @@
 [
   {
     "name": "title",
-    "description": "標題畫面",
-    "steps": []
+    "description": "標題畫面：卷軸標題與登基按鈕在宮殿圖內",
+    "steps": [{ "waitFor": "#title-palace" }]
   },
   {
     "name": "game",
