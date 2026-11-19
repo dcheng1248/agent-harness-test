@@ -13,6 +13,8 @@ Every code change is made by a helper agent you start with the Agent tool, and e
 - Plan mode needs at least one implementer per task in `tasks.md`, plus at least one reviewer.
 - Fix modes need at least one implementer and one reviewer.
 
+**Run every helper in the foreground and wait for its result.** Never set `run_in_background`. This run ends the moment you return your result, and any helper still working is killed with it. Do not return until every helper you started has reported back.
+
 Detailed guidance is in `upstream/UPSTREAM-SKILL.md`, with templates and scripts under `upstream/`. Where it conflicts with this file, this file wins.
 
 ## Setup

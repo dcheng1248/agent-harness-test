@@ -41,6 +41,8 @@ runs:
       uses: anthropics/claude-code-action@v1
       env:
         GH_TOKEN: ''
+        # The run ends when the main agent returns, so helpers and commands must finish first.
+        CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1'
       with:
         github_token: ${{ inputs.token }}
         allowed_bots: ${{ inputs.app-slug }},${{ inputs.app-slug }}[bot]
