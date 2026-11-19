@@ -49,13 +49,13 @@ h1 {
 button#start {
   position: absolute;
   left: 50%;
-  bottom: 5%;
+  bottom: 1.5%;
   transform: translateX(-50%);
   margin: 0;
   min-width: 44px;
   min-height: 44px;
   padding: 0.4em 1.6em;
-  font-size: clamp(1rem, 1.6vw, 2.25rem);
+  font-size: clamp(1rem, 3.2vw, 4.5rem);
   color: #f0d78c;
   background: #7a1c1c;
   border: 2px solid #c9a227;
