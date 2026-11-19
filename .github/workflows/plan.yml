@@ -53,6 +53,7 @@ jobs:
           prompt: Use the plan-issue skill for issue ${{ inputs.issue }}. The run mode and all input are in .agent-run/context.md.
           schema: .agent/schemas/plan.json
           tools: Read,Write,Edit,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*),Bash(mkdir:*)
+          model: opus
           token: ${{ steps.app.outputs.token }}
           app-slug: ${{ steps.app.outputs.app-slug }}
           auth-mode: ${{ vars.CLAUDE_AUTH }}
@@ -106,6 +107,7 @@ jobs:
           prompt: Use the plan-issue skill for issue ${{ inputs.issue }}. Your plan failed its audit. The problems are under "Plan audit problems" in .agent-run/context.md.
           schema: .agent/schemas/plan.json
           tools: Read,Write,Edit,Glob,Grep,Skill,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(ls:*),Bash(mkdir:*)
+          model: opus
           token: ${{ steps.app.outputs.token }}
           app-slug: ${{ steps.app.outputs.app-slug }}
           auth-mode: ${{ vars.CLAUDE_AUTH }}
