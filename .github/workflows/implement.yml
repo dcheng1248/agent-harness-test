@@ -55,6 +55,7 @@ jobs:
           schema: .agent/schemas/implement.json
           tools: Read,Write,Edit,Glob,Grep,Skill,Task,Agent,TodoWrite,Bash
           token: ${{ steps.app.outputs.token }}
+          app-slug: ${{ steps.app.outputs.app-slug }}
           auth-mode: ${{ vars.CLAUDE_AUTH }}
           oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           api-key: ${{ secrets.ANTHROPIC_API_KEY }}

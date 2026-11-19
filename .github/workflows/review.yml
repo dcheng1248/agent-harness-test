@@ -51,6 +51,7 @@ jobs:
           schema: .agent/schemas/review.json
           tools: Read,Glob,Grep,Skill,Task,Agent,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(git rev-parse:*),Bash(ls:*)
           token: ${{ steps.app.outputs.token }}
+          app-slug: ${{ steps.app.outputs.app-slug }}
           auth-mode: ${{ vars.CLAUDE_AUTH }}
           oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           api-key: ${{ secrets.ANTHROPIC_API_KEY }}
