@@ -26,22 +26,57 @@ export function parseScenarios(text) {
   return list.map((item) => ({ name: item.name, description: item.description, steps: item.steps ?? [] }));
 }
 
-export function screenshotComment({ repo, branch, pr, sha, shots }) {
+/**
+ * Compares the PR's screens ("after") with main's ("before").
+ * `differs(name)` says whether two successful captures differ.
+ */
+export function classifyScreens(after, before, differs) {
+  const beforeByName = new Map(before.map((shot) => [shot.name, shot]));
+  const results = after.map((shot) => {
+    const old = beforeByName.get(shot.name);
+    if (shot.error) return { ...shot, status: 'failed' };
+    if (!old || old.error) return { ...shot, status: 'new' };
+    return { ...shot, status: differs(shot.name) ? 'changed' : 'unchanged' };
+  });
+  const afterNames = new Set(after.map((shot) => shot.name));
+  const removed = before.filter((shot) => !afterNames.has(shot.name)).map((shot) => ({ ...shot, status: 'removed' }));
+  return [...results, ...removed];
+}
+
+/** Paths, relative to the PR's folder on the screenshot branch, for each image to upload. */
+export function uploads(results) {
+  return results.flatMap((shot) => {
+    if (shot.status === 'changed') return [{ side: 'before', name: shot.name }, { side: 'after', name: shot.name }];
+    if (shot.status === 'new') return [{ side: 'after', name: shot.name }];
+    return [];
+  });
+}
+
+export function screenshotComment({ repo, branch, pr, sha, results }) {
   const short = sha.slice(0, 7);
+  const url = (side, name) => `https://raw.githubusercontent.com/${repo}/${branch}/pr-${pr}/${short}/${side}/${name}.png`;
+  const of = (status) => results.filter((shot) => shot.status === status);
   const lines = [
     '<!-- agent-screenshots -->',
     '## Screenshots',
     '',
-    `Taken automatically at commit \`${short}\`, from the screens listed in \`packages/web/screenshots.json\`.`,
+    `Commit \`${short}\` compared with \`main\`, using the screens listed in \`packages/web/screenshots.json\`.`,
   ];
-  if (shots.length === 0) lines.push('', 'Screenshots could not be taken. See the agent review run log.');
-  for (const shot of shots) {
-    lines.push('', `### ${shot.name}: ${shot.description}`);
-    lines.push(
-      shot.error
-        ? `Failed: ${shot.error}`
-        : `![${shot.name}](https://raw.githubusercontent.com/${repo}/${branch}/pr-${pr}/${short}/${shot.name}.png)`,
-    );
+  if (results.length === 0) lines.push('', 'Screenshots could not be taken. See the agent review run log.');
+
+  for (const shot of of('changed')) {
+    lines.push('', `### Changed: ${shot.name} (${shot.description})`, '', '| Before | After |', '|---|---|');
+    lines.push(`| ![before](${url('before', shot.name)}) | ![after](${url('after', shot.name)}) |`);
   }
+  for (const shot of of('new')) {
+    lines.push('', `### New: ${shot.name} (${shot.description})`, '', `![${shot.name}](${url('after', shot.name)})`);
+  }
+  for (const shot of of('failed')) lines.push('', `### Failed: ${shot.name} (${shot.description})`, '', shot.error);
+
+  const summary = [];
+  if (of('unchanged').length) summary.push(`Unchanged: ${of('unchanged').map((shot) => shot.name).join(', ')}.`);
+  if (of('removed').length) summary.push(`Removed from the list: ${of('removed').map((shot) => shot.name).join(', ')}.`);
+  if (results.length && !of('changed').length && !of('new').length && !of('failed').length) summary.unshift('No screen changed.');
+  if (summary.length) lines.push('', summary.join(' '));
   return `${lines.join('\n')}\n`;
 }

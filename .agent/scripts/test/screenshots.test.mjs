@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { changesUi, parseScenarios, screenshotComment } from '../lib/screenshots.mjs';
+import { changesUi, classifyScreens, parseScenarios, screenshotComment, uploads } from '../lib/screenshots.mjs';
 
-describe('screenshots', () => {
+const shot = (name, extra = {}) => ({ name, description: `${name} screen`, ...extra });
+
+describe('screen list', () => {
   it('detects UI changes', () => {
     expect(changesUi(['packages/web/src/render.ts'])).toBe(true);
     expect(changesUi(['packages/content/src/index.ts'])).toBe(true);
@@ -24,18 +26,48 @@ describe('screenshots', () => {
   ])('rejects %s', (_label, list) => {
     expect(() => parseScenarios(JSON.stringify(list))).toThrow();
   });
+});
 
-  it('writes a comment with images and failures', () => {
-    const body = screenshotComment({
-      repo: 'o/r', branch: 'agent-screenshots', pr: 8, sha: 'abcdef123',
-      shots: [{ name: 'title', description: '標題畫面' }, { name: 'game', description: '遊戲', error: 'timeout' }],
-    });
-    expect(body).toContain('<!-- agent-screenshots -->');
-    expect(body).toContain('](https://raw.githubusercontent.com/o/r/agent-screenshots/pr-8/abcdef1/title.png)');
-    expect(body).toContain('Failed: timeout');
+describe('comparing with main', () => {
+  const after = [shot('title'), shot('game'), shot('menu'), shot('broken', { error: 'timeout' })];
+  const before = [shot('title'), shot('game'), shot('old')];
+  const results = classifyScreens(after, before, (name) => name === 'title');
+  const status = Object.fromEntries(results.map((r) => [r.name, r.status]));
+
+  it('classifies each screen', () => {
+    expect(status).toEqual({ title: 'changed', game: 'unchanged', menu: 'new', broken: 'failed', old: 'removed' });
   });
 
-  it('says so when nothing was captured', () => {
-    expect(screenshotComment({ repo: 'o/r', branch: 'b', pr: 1, sha: 'abcdef1', shots: [] })).toContain('could not be taken');
+  it('treats a screen that failed on main as new', () => {
+    expect(classifyScreens([shot('a')], [shot('a', { error: 'x' })], () => false)[0].status).toBe('new');
+  });
+
+  it('uploads only what you need to see', () => {
+    expect(uploads(results)).toEqual([
+      { side: 'before', name: 'title' },
+      { side: 'after', name: 'title' },
+      { side: 'after', name: 'menu' },
+    ]);
+  });
+
+  it('shows changes side by side and sums up the rest', () => {
+    const body = screenshotComment({ repo: 'o/r', branch: 'b', pr: 8, sha: 'abcdef123', results });
+    expect(body).toContain('<!-- agent-screenshots -->');
+    expect(body).toContain('### Changed: title');
+    expect(body).toContain('](https://raw.githubusercontent.com/o/r/b/pr-8/abcdef1/before/title.png) | ![after](https://raw.githubusercontent.com/o/r/b/pr-8/abcdef1/after/title.png) |');
+    expect(body).toContain('### New: menu');
+    expect(body).toContain('### Failed: broken');
+    expect(body).toContain('Unchanged: game.');
+    expect(body).toContain('Removed from the list: old.');
+    expect(body).not.toContain('after/game.png');
+  });
+
+  it('says when nothing changed', () => {
+    const quiet = classifyScreens([shot('a')], [shot('a')], () => false);
+    expect(screenshotComment({ repo: 'o/r', branch: 'b', pr: 1, sha: 'abcdef1', results: quiet })).toContain('No screen changed. Unchanged: a.');
+  });
+
+  it('says when nothing was captured', () => {
+    expect(screenshotComment({ repo: 'o/r', branch: 'b', pr: 1, sha: 'abcdef1', results: [] })).toContain('could not be taken');
   });
 });
