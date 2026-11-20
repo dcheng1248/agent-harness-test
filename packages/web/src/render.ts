@@ -20,7 +20,7 @@ import {
   type GameState,
 } from '@emperor/core';
 import { PALACE_ANCHORS } from './palaceMap';
-import type { Screen } from './screen';
+import { ATLAS_PALACE, type Screen } from './screen';
 
 type Of<K extends Screen['screen']> = Extract<Screen, { screen: K }>;
 
@@ -63,7 +63,7 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
       const { x, y } = PALACE_ANCHORS[id];
       return `<button type="button" id="palace-${id}" data-palace="${id}" style="left:${x}%;top:${y}%">${game.palaces[id].name}</button>`;
     }).join('');
-    return `${header}<main id="palace-map"><h2 class="visually-hidden">${text.mapHeading}</h2><div id="map-stage"><img id="map-image" src="${mapImage}" alt="${text.mapImageAlt}">${buttons}</div><div id="map-footer"><button type="button" id="open-atlas">${text.atlasButton}</button></div></main>`;
+    return `${header}<main id="palace-map"><h2 class="visually-hidden">${text.mapHeading}</h2><div id="map-stage"><img id="map-image" src="${mapImage}" alt="${text.mapImageAlt}">${buttons}</div></main>`;
   }
   const palace = game.palaces[state.location];
   const ids = CATALOG.palaces[state.location].actions;
@@ -73,7 +73,9 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
       : `<div id="action-list">${ids
           .map((id) => `<button type="button" id="action-${id}" data-action="${id}">${game.actions[id].name}</button>`)
           .join('')}</div>`;
-  return `${header}<main id="palace-view"><h2>${palace.name}</h2><p>${palace.description}</p>${actions}<button type="button" id="back-to-map">${text.backToMap}</button></main>`;
+  const atlasButton =
+    state.location === ATLAS_PALACE ? `<button type="button" id="open-atlas">${text.atlasButton}</button>` : '';
+  return `${header}<main id="palace-view"><h2>${palace.name}</h2><p>${palace.description}</p>${actions}<div id="palace-nav">${atlasButton}<button type="button" id="back-to-map">${text.backToMap}</button></div></main>`;
 }
 
 export function renderResultScreen(screen: Of<'result'>, text: UiText, game: GameText): string {
@@ -105,7 +107,7 @@ export function renderAtlasScreen(screen: Of<'atlas'>, text: UiText, game: GameT
     })
     .join('');
   const head = `<tr><th>${text.regionColumn}</th><th>${game.statLabels.morale}</th><th>${game.statLabels.population}</th><th>${game.statLabels.prosperity}</th></tr>`;
-  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2><div id="atlas-scroll"><table id="atlas-table"><thead>${head}</thead><tbody>${rows}</tbody></table></div><button type="button" id="close-atlas">${text.backToMap}</button></main>`;
+  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2><div id="atlas-scroll"><table id="atlas-table"><thead>${head}</thead><tbody>${rows}</tbody></table></div><button type="button" id="close-atlas">${text.closeAtlas}</button></main>`;
 }
 
 export function renderEndingScreen(screen: Of<'ending'>, text: UiText, _game?: GameText): string {

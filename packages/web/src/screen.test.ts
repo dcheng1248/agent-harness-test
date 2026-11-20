@@ -71,9 +71,9 @@ describe('年號', () => {
 function fourthAction(): Screen {
   let screen: Screen = play(newState());
   for (let i = 0; i < 3; i += 1) {
-    screen = continueToMap(performAction(goToPalace(screen, 'qingong'), 'rest'));
+    screen = continueToMap(performAction(goToPalace(screen, 'yangxin'), 'rest'));
   }
-  return performAction(goToPalace(screen, 'qingong'), 'rest');
+  return performAction(goToPalace(screen, 'yangxin'), 'rest');
 }
 
 describe('palace loop', () => {
@@ -102,10 +102,10 @@ describe('palace loop', () => {
   it('UC-WEB-004 the 4th action shows the turn summary', () => {
     let screen: Screen = play(newState());
     for (let i = 0; i < 3; i += 1) {
-      screen = continueToMap(performAction(goToPalace(screen, 'qingong'), 'rest'));
+      screen = continueToMap(performAction(goToPalace(screen, 'yangxin'), 'rest'));
       expect(screen.screen).toBe('play');
     }
-    const last = goToPalace(screen, 'qingong');
+    const last = goToPalace(screen, 'yangxin');
     if (last.screen !== 'play') throw new Error('unexpected');
     const outcome = takeAction(last.state, 'rest');
     if (!outcome.ok || !outcome.turnEnd) throw new Error('expected turn end');
@@ -151,27 +151,32 @@ describe('輿圖', () => {
     return continueToMap(performAction(inChongwen(), 'study'));
   }
 
-  it('UC-WEB-006 opening 輿圖 from the map uses no action point and keeps the state', () => {
-    const screen = afterOneAction();
+  it('UC-WEB-006 opening 輿圖 from 崇文館 uses no action point and closing returns to 崇文館', () => {
+    const screen = goToPalace(afterOneAction(), 'chongwen');
     if (screen.screen !== 'play') throw new Error('unexpected');
     expect(screen.state.actionPoint).toBe(1);
+    expect(screen.state.location).toBe('chongwen');
     const atlas = openAtlas(screen);
     expect(atlas).toEqual({ screen: 'atlas', state: screen.state });
-    if (atlas.screen === 'atlas') expect(atlas.state).toBe(screen.state);
-    expect(closeAtlas(atlas)).toEqual(screen);
+    if (atlas.screen !== 'atlas') throw new Error('unexpected');
+    expect(atlas.state).toBe(screen.state);
+    const closed = closeAtlas(atlas);
+    expect(closed).toEqual(screen);
+    if (closed.screen !== 'play') throw new Error('unexpected');
+    expect(closed.state).toBe(screen.state);
   });
 
-  it('UC-WEB-006 輿圖 cannot be opened from a palace, a result or a summary screen', () => {
-    const palace = inChongwen();
-    expect(openAtlas(palace)).toBe(palace);
-    const result = performAction(palace, 'study');
-    expect(result.screen).toBe('result');
-    expect(openAtlas(result)).toBe(result);
-    const summary = fourthAction();
-    expect(summary.screen).toBe('summary');
-    expect(openAtlas(summary)).toBe(summary);
-    const title: Screen = { screen: 'title' };
-    expect(openAtlas(title)).toBe(title);
+  it('UC-WEB-006 輿圖 cannot be opened from the map, another palace, a result, a summary or the title', () => {
+    const screens: Screen[] = [
+      afterOneAction(),
+      goToPalace(afterOneAction(), 'yuhuayuan'),
+      goToPalace(afterOneAction(), 'yanwu'),
+      goToPalace(afterOneAction(), 'yangxin'),
+      performAction(inChongwen(), 'study'),
+      fourthAction(),
+      { screen: 'title' },
+    ];
+    for (const x of screens) expect(openAtlas(x)).toBe(x);
   });
 
   it('UC-WEB-006 closeAtlas on another screen is unchanged', () => {

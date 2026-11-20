@@ -32,6 +32,9 @@ export type Screen =
   | { screen: 'atlas'; state: GameState }
   | { screen: 'ending'; state: GameState };
 
+/** The palace that offers the 輿圖. */
+export const ATLAS_PALACE: PalaceId = 'chongwen';
+
 export function startGame(seed: number, pool: readonly string[]): Screen {
   return {
     screen: 'era',
@@ -84,7 +87,7 @@ export function performAction(screen: Screen, actionId: ActionId): Screen {
 }
 
 export function openAtlas(screen: Screen): Screen {
-  if (screen.screen !== 'play' || screen.state.location !== 'map') return screen;
+  if (screen.screen !== 'play' || screen.state.location !== ATLAS_PALACE) return screen;
   return { screen: 'atlas', state: screen.state };
 }
 

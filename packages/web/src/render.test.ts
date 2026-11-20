@@ -80,7 +80,7 @@ describe('game screens', () => {
     }
   });
 
-  it('UC-WEB-004 map shows the image with one positioned button per palace, a hidden heading and 輿圖 after', () => {
+  it('UC-WEB-004 map shows the image with one positioned button per palace, a hidden heading and no 輿圖', () => {
     const html = renderPlayScreen({ screen: 'play', state }, uiText, gameText, '/img/map.webp');
     expect(html).toContain(`<h2 class="visually-hidden">${uiText.mapHeading}</h2>`);
     expect(html).toContain(`<img id="map-image" src="/img/map.webp" alt="${uiText.mapImageAlt}">`);
@@ -91,7 +91,8 @@ describe('game screens', () => {
       expect(at).toBeGreaterThan(last);
       last = at;
     }
-    expect(html.indexOf('id="open-atlas"')).toBeGreaterThan(html.indexOf('</div>', last));
+    expect(html).not.toContain('open-atlas');
+    expect(html).not.toContain('map-footer');
     expect(html).not.toContain('palace-grid');
   });
 
@@ -105,8 +106,8 @@ describe('game screens', () => {
     expect(html).toContain(gameText.actions.study.name);
     expect(html.indexOf('id="action-study"')).toBeLessThan(html.indexOf('id="action-arts"'));
     expect(html).toContain(gameText.actions.arts.name);
-    expect(html).toContain('id="back-to-map"');
-    expect(html).toContain('返回');
+    expect(html).toContain(`id="back-to-map">${uiText.backToMap}<`);
+    expect(uiText.backToMap).toBe('返回宮城');
   });
 
   it('UC-WEB-004 a palace with no actions shows the empty line instead of an action list', () => {
@@ -165,9 +166,15 @@ describe('game screens', () => {
     expect(renderHeader(poor, uiText, gameText)).toContain('國庫 −20,000 兩');
   });
 
-  it('UC-WEB-004 the palace map has the 輿圖 entry', () => {
-    const html = renderPlayScreen({ screen: 'play', state }, uiText, gameText, '/img/map.webp');
+  it('UC-WEB-006 only 崇文館 shows 輿圖, after the actions and before 返回宮城', () => {
+    const html = renderPlayScreen({ screen: 'play', state: enterPalace(state, 'chongwen') }, uiText, gameText, '/img/map.webp');
     expect(html).toMatch(/id="open-atlas"[^>]*>輿圖</);
+    expect(html.indexOf('id="palace-nav"')).toBeGreaterThan(html.indexOf('id="action-arts"'));
+    expect(html.indexOf('id="open-atlas"')).toBeLessThan(html.indexOf('id="back-to-map"'));
+    for (const id of ['yuhuayuan', 'yanwu', 'yangxin'] as const) {
+      const other = renderPlayScreen({ screen: 'play', state: enterPalace(state, id) }, uiText, gameText, '/img/map.webp');
+      expect(other).not.toContain('open-atlas');
+    }
   });
 
   it('UC-WEB-004 the summary shows tax, upkeep and region changes', () => {
@@ -210,7 +217,7 @@ describe('game screens', () => {
     expect(html.match(/<tr data-region=/g)).toHaveLength(9);
     const row = html.match(/<tr data-region="guanzhong">.*?<\/tr>/)?.[0] ?? '';
     for (const t of ['關中（京師）', '65', '3,000,000', '60']) expect(row).toContain(t);
-    expect(html).toMatch(/id="close-atlas"[^>]*>返回</);
+    expect(html).toMatch(/id="close-atlas"[^>]*>返回崇文館</);
     expect(renderScreen({ screen: 'atlas', state }, uiText, gameText, images)).toContain('id="atlas"');
   });
 

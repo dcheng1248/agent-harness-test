@@ -5,5 +5,5 @@ export const PALACE_ANCHORS: Record<PalaceId, { x: number; y: number }> = {
   chongwen: { x: 22, y: 15 },
   yuhuayuan: { x: 50, y: 11 },
   yanwu: { x: 18, y: 70 },
-  qingong: { x: 50, y: 33 },
+  yangxin: { x: 50, y: 33 },
 };
