@@ -51,6 +51,27 @@
     ]
   },
   {
+    "name": "palace-map-noon",
+    "description": "宮城地圖（午）：早朝已過，宣政殿按鈕停用",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "waitFor": "#palace-xuanzheng[disabled]"
+      }
+    ]
+  },
+  {
     "name": "palace",
     "description": "崇文館畫面：背景圖、頂端橫幅、半透明面板內的讀經史與習書畫琴棋，另有輿圖按鈕",
     "steps": [
@@ -688,7 +709,7 @@
   },
   {
     "name": "palace-xuanzheng-personnel",
-    "description": "宣政殿畫面：展開吏部，選項列靠右對齊、位於工字上方，皆尚未開放",
+    "description": "宣政殿畫面：展開吏部，官員任命可點選，舉薦人選與開科取士尚未開放",
     "steps": [
       {
         "click": "#start"
@@ -704,6 +725,57 @@
       },
       {
         "waitFor": "#court-options"
+      }
+    ]
+  },
+  {
+    "name": "appoint-posts",
+    "description": "官員任命：中樞、六部、地方官位與在任官員",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-appoint-officials"
+      },
+      {
+        "waitFor": "#post-groups"
+      }
+    ]
+  },
+  {
+    "name": "appoint-idle",
+    "description": "官員任命：選定丞相後列出賦閑官員，可依屬性排序",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-appoint-officials"
+      },
+      {
+        "click": "#post-chancellor"
+      },
+      {
+        "waitFor": "#idle-list"
       }
     ]
   }

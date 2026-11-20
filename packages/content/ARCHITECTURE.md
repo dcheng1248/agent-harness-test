@@ -4,18 +4,19 @@ Owns Traditional Chinese text and event data. `src/schema.ts` defines the shapes
 
 Behaviour is described in `USE_CASES.md`. The text itself, and all data values, live in the source files and are not repeated in docs.
 
-Data flow: content is plain data and text formatting, read by `web`. Text for `core` registries is keyed by the `core` IDs (`StatId`, `PalaceId`, `ActionId`, `ActionPointId`, `HalfSeasonId`, `DepartmentId`, `CourtOptionId`), with `Record<Id, …>` types, so a new registry entry without text fails the type check. Region data is typed with `core`'s `RegionData`, and `web` passes it to `createInitialState`.
+Data flow: content is plain data and text formatting, read by `web`. Text for `core` registries is keyed by the `core` IDs (`StatId`, `PalaceId`, `ActionId`, `ActionPointId`, `HalfSeasonId`, `DepartmentId`, `CourtOptionId`), with `Record<Id, …>` types, so a new registry entry without text fails the type check. Region data is typed with `core`'s `RegionData`, and the official name pool with `core`'s `NamePool`; `web` passes both to `createInitialState`. Post text is keyed by `core`'s post registry IDs (`CentralPostId`, `MinistryRankId`, `RegionOfficeId`).
 
 ```mermaid
 flowchart LR
-  core -->|IDs and types, RegionData| content
-  content -->|uiText, gameText with regions, format functions| web
-  web -->|region data| core
+  core -->|IDs and types, RegionData, NamePool, PostInfo| content
+  content -->|uiText, gameText with regions and officialNames, format functions| web
+  web -->|region data, name pool| core
 ```
 
 ## Exports
 - `uiText`: screen labels and fixed lines, keyed by name.
-- `gameText`: text for `core` registries (`statLabels`, `actionPointLabels`, `halfSeasonLabels`, `palaces` with a name, a description (required for every palace except 宣政殿, enforced by the type) and the alt text of the palace's background image (`imageAlt`), `actions` with a name, `departments` with a short `label` for its button and its full `name`, `courtOptions` with a name), the 年號 pool (`eraNamePool`), and the regions (`regions`, `readonly RegionEntry[]`).
+- `gameText`: text for `core` registries (`statLabels`, `actionPointLabels`, `halfSeasonLabels`, `palaces` with a name, a description (required for every palace except 宣政殿, enforced by the type) and the alt text of the palace's background image (`imageAlt`), `actions` with a name, `departments` with a short `label` for its button and its full `name`, `courtOptions` with a name, `centralPosts`, `ministryRanks` and `regionOffices` with a name), the 年號 pool (`eraNamePool`), the regions (`regions`, `readonly RegionEntry[]`), and the official name pool (`officialNames`, a `NamePool`, in `src/officialNames.ts`).
+- `formatPostName(post: PostInfo)` in `src/format.ts` builds a post's full name from that text.
 - Format functions in `src/format.ts`. They are pure.
 
 ## Regions
@@ -28,4 +29,4 @@ interface RegionEntry extends RegionData {
 }
 ```
 
-Adding a region means adding one entry.
+Adding a region means adding one entry. Region IDs must not equal a 部 ID or a central post ID (see `core`'s "Posts").

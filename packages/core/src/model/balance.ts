@@ -1,6 +1,6 @@
 import type { HalfSeasonId } from "./calendar";
 import type { ActionId } from "./catalog";
-import type { EmperorStatId, StatId } from "./stats";
+import type { EmperorStatId, OfficialStatId, StatId } from "./stats";
 
 export interface StatChange {
   stat: StatId;
@@ -39,4 +39,21 @@ export const BALANCE = {
   bankruptcyMoraleLoss: 3,
   population: { growAtOrAbove: 120, shrinkAtOrBelow: 80, ratePercent: 2 },
   aging: { startAge: 40, baseLoss: 1, yearsPerStep: 5 },
+  officials: {
+    startingIdle: 30,
+    outlierChance: 0.1,
+    ordinary: {
+      administration: { min: 40, max: 70 },
+      military: { min: 40, max: 70 },
+      ambition: { min: 0, max: 80 },
+      loyalty: { min: 30, max: 80 },
+    } as Record<OfficialStatId, { min: number; max: number }>,
+    outlier: {
+      administration: { min: 20, max: 85 },
+      military: { min: 20, max: 85 },
+      ambition: { min: 0, max: 95 },
+      loyalty: { min: 10, max: 95 },
+    } as Record<OfficialStatId, { min: number; max: number }>,
+    maxNameDraws: 1000,
+  },
 };

@@ -1,4 +1,4 @@
-import type { EconomyReport, HalfSeasonId, StatChange } from '@emperor/core';
+import type { EconomyReport, HalfSeasonId, PostInfo, StatChange } from '@emperor/core';
 import { gameText, uiText } from './index';
 
 const DIGITS = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
@@ -55,4 +55,11 @@ export function formatReign(years: number): string {
 
 export function formatLifespan(age: number): string {
   return `享年${formatChineseNumber(age)}歲`;
+}
+
+export function formatPostName(post: PostInfo): string {
+  if (post.group === 'central') return gameText.centralPosts[post.office].name;
+  if (post.group === 'ministry') return gameText.departments[post.department].name + gameText.ministryRanks[post.rank].name;
+  const region = gameText.regions.find((r) => r.id === post.region);
+  return (region?.name ?? post.region) + gameText.regionOffices[post.office].name;
 }

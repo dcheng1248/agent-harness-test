@@ -7,16 +7,24 @@ import {
   takeAction,
   type DepartmentId,
   type GameState,
+  type OfficialStatId,
 } from '@emperor/core';
 import {
+  appoint,
+  backToCourt,
+  cancelPost,
+  chooseCourtOption,
   chooseEraName,
   closeAtlas,
   continueToMap,
   goToMap,
   goToPalace,
+  idleOfficials,
   openAtlas,
   performAction,
   restart,
+  selectPost,
+  sortIdle,
   startGame,
   toggleDepartment,
   type Screen,
@@ -25,9 +33,10 @@ import {
 const era = startGame(42, gameText.eraNamePool);
 
 const regions = gameText.regions;
+const names = gameText.officialNames;
 
 function newState(): GameState {
-  return createInitialState(42, '承平', regions);
+  return createInitialState(42, '承平', regions, names);
 }
 
 function play(state: GameState): Screen {
@@ -52,7 +61,7 @@ describe('start game', () => {
 
 describe('年號', () => {
   it('UC-WEB-003 a valid 年號 starts the game', () => {
-    expect(chooseEraName(era, ' 承平 ', regions)).toEqual({
+    expect(chooseEraName(era, ' 承平 ', regions, names)).toEqual({
       screen: 'play',
       state: newState(),
     });
@@ -60,13 +69,13 @@ describe('年號', () => {
 
   it('UC-WEB-003 an invalid 年號 shows the error and keeps the typed text', () => {
     for (const input of ['承', 'abc', '<b>']) {
-      expect(chooseEraName(era, input, regions)).toEqual({ ...era, error: true, draft: input });
+      expect(chooseEraName(era, input, regions, names)).toEqual({ ...era, error: true, draft: input });
     }
   });
 
   it('UC-WEB-003 chooseEraName on another screen is unchanged', () => {
     const title: Screen = { screen: 'title' };
-    expect(chooseEraName(title, '承平', regions)).toBe(title);
+    expect(chooseEraName(title, '承平', regions, names)).toBe(title);
   });
 });
 
@@ -216,11 +225,11 @@ describe('ending', () => {
   });
 });
 
-describe('宣政殿', () => {
-  function inCourt(): Screen {
-    return goToPalace(play(newState()), 'xuanzheng');
-  }
+function inCourt(): Screen {
+  return goToPalace(play(newState()), 'xuanzheng');
+}
 
+describe('宣政殿', () => {
   it('UC-WEB-007 toggling departments in 宣政殿 opens, switches and closes without changing the state', () => {
     const court = inCourt();
     if (court.screen !== 'play') throw new Error('unexpected');
@@ -241,11 +250,13 @@ describe('宣政殿', () => {
     for (const s of [opened, switched, closed]) expect(s.state.actionPoint).toBe(ap);
   });
 
-  it('UC-WEB-007 leaving 宣政殿 closes the list', () => {
-    const back = goToPalace(goToMap(toggleDepartment(inCourt(), 'personnel')), 'xuanzheng');
+  it('UC-WEB-007 退 closes the list, moves the clock to 午, and 宣政殿 cannot be re-entered', () => {
+    const back = goToMap(toggleDepartment(inCourt(), 'personnel'));
     if (back.screen !== 'play') throw new Error('unexpected');
-    expect(back.state.location).toBe('xuanzheng');
-    expect(back.department).toBeUndefined();
+    expect([back.state.location, back.state.actionPoint, back.department]).toEqual(['map', 1, undefined]);
+    const again = goToPalace(back, 'xuanzheng');
+    if (again.screen !== 'play') throw new Error('unexpected');
+    expect(again.state).toBe(back.state);
   });
 
   it('UC-WEB-007 toggleDepartment elsewhere or with an unknown ID is unchanged', () => {
@@ -253,5 +264,91 @@ describe('宣政殿', () => {
     for (const x of screens) expect(toggleDepartment(x, 'personnel')).toBe(x);
     const court = inCourt();
     expect(toggleDepartment(court, 'nope' as DepartmentId)).toBe(court);
+  });
+});
+
+describe('官員任命', () => {
+  type Appoint = Extract<Screen, { screen: 'appoint' }>;
+  function appointScreen(): Appoint {
+    const s = chooseCourtOption(toggleDepartment(inCourt(), 'personnel'), 'appoint-officials');
+    if (s.screen !== 'appoint') throw new Error('unexpected');
+    return s;
+  }
+
+  it('UC-WEB-007 only 官員任命 opens, only during 早朝', () => {
+    const court = toggleDepartment(inCourt(), 'personnel');
+    if (court.screen !== 'play') throw new Error('unexpected');
+    const opened = chooseCourtOption(court, 'appoint-officials');
+    expect(opened).toEqual({ screen: 'appoint', state: court.state });
+    if (opened.screen !== 'appoint') throw new Error('unexpected');
+    expect(opened.state).toBe(court.state);
+    expect(chooseCourtOption(court, 'recommend-officials')).toBe(court);
+    const onMap = play(newState());
+    expect(chooseCourtOption(onMap, 'appoint-officials')).toBe(onMap);
+  });
+
+  it('UC-WEB-008 selecting a post, sorting and appointing', () => {
+    const s = appointScreen();
+    const selected = selectPost(s, 'chancellor');
+    if (selected.screen !== 'appoint') throw new Error('unexpected');
+    expect(selected.post).toBe('chancellor');
+    expect(selectPost(s, 'nope')).toBe(s);
+    expect(selectPost(s, 'zz-governor')).toBe(s);
+    const sorted = sortIdle(s, 'loyalty');
+    if (sorted.screen !== 'appoint') throw new Error('unexpected');
+    expect(sorted.sort).toBe('loyalty');
+    expect(sortIdle(s, 'health' as OfficialStatId)).toBe(s);
+    const idleId = s.state.officials.find((o) => o.post === null)!.id;
+    expect(appoint(s, idleId)).toBe(s);
+    const ready: Appoint = { ...s, post: 'chancellor', sort: 'loyalty' };
+    const done = appoint(ready, idleId);
+    if (done.screen !== 'appoint') throw new Error('unexpected');
+    expect(done.post).toBeUndefined();
+    expect(done.sort).toBe('loyalty');
+    expect(done.state.officials.find((o) => o.id === idleId)!.post).toBe('chancellor');
+    expect(done.state.actionPoint).toBe(0);
+    const heldId = s.state.officials.find((o) => o.post === 'grand-tutor')!.id;
+    expect(appoint(ready, heldId)).toBe(ready);
+  });
+
+  it('UC-WEB-008 selecting keeps the sort', () => {
+    const s = sortIdle(appointScreen(), 'military');
+    const selected = selectPost(s, 'chancellor');
+    if (selected.screen !== 'appoint') throw new Error('unexpected');
+    expect([selected.post, selected.sort]).toEqual(['chancellor', 'military']);
+  });
+
+  it('UC-WEB-008 back to posts and back to 宣政殿', () => {
+    const s = appointScreen();
+    const cancelled = cancelPost({ ...s, post: 'chancellor' });
+    if (cancelled.screen !== 'appoint') throw new Error('unexpected');
+    expect(cancelled.post).toBeUndefined();
+    const court = backToCourt(s);
+    expect(court).toEqual({ screen: 'play', state: s.state, department: 'personnel' });
+    const map = goToMap(court);
+    if (map.screen !== 'play') throw new Error('unexpected');
+    expect(map.state.actionPoint).toBe(1);
+    const onPlay = play(newState());
+    expect(cancelPost(onPlay)).toBe(onPlay);
+    expect(backToCourt(onPlay)).toBe(onPlay);
+    expect(selectPost(onPlay, 'chancellor')).toBe(onPlay);
+    expect(sortIdle(onPlay, 'loyalty')).toBe(onPlay);
+    expect(appoint(onPlay, 'official-1')).toBe(onPlay);
+  });
+
+  it('UC-WEB-008 idleOfficials order', () => {
+    const { state } = appointScreen();
+    const idle = state.officials.filter((o) => o.post === null);
+    expect(idleOfficials(state)).toEqual(idle);
+    const sorted = idleOfficials(state, 'administration');
+    expect(sorted).toHaveLength(idle.length);
+    for (let i = 1; i < sorted.length; i += 1) {
+      const a = sorted[i - 1]!;
+      const b = sorted[i]!;
+      expect(a.stats.administration).toBeGreaterThanOrEqual(b.stats.administration);
+      if (a.stats.administration === b.stats.administration) {
+        expect(state.officials.indexOf(a)).toBeLessThan(state.officials.indexOf(b));
+      }
+    }
   });
 });

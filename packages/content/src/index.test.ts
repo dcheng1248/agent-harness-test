@@ -75,4 +75,19 @@ describe('content', () => {
     expect(uiText.leaveCourtLabel).toBe('退出宣政殿');
     expect(uiText.notYetOpen).toBe('尚未開放');
   });
+
+  it('UC-WEB-008 official stat labels, post and appointment text', () => {
+    expect(gameText.statLabels.administration).toBe('文治');
+    expect(gameText.statLabels.military).toBe('武功');
+    expect(gameText.statLabels.ambition).toBe('野心');
+    expect(gameText.statLabels.loyalty).toBe('忠誠');
+    expect(gameText.centralPosts).toEqual({ chancellor: { name: '丞相' }, 'grand-general': { name: '大將軍' }, 'grand-tutor': { name: '太傅' } });
+    expect(gameText.ministryRanks).toEqual({ minister: { name: '尚書' }, 'vice-minister': { name: '侍郎' } });
+    expect(gameText.regionOffices).toEqual({ governor: { name: '知州' }, commander: { name: '總兵' } });
+    expect(uiText).toMatchObject({
+      appointHeading: '官員任命', postGroupCentral: '中樞', postGroupMinistry: '六部', postGroupRegion: '地方',
+      postColumn: '官位', holderColumn: '在任', nameColumn: '姓名', vacant: '空缺', idleHeading: '賦閑官員',
+      noIdleOfficials: '並無賦閑官員', appointButton: '任命', backToPosts: '返回官位列表', backToCourt: '返回宣政殿',
+    });
+  });
 });

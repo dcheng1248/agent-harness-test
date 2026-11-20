@@ -72,12 +72,17 @@ button#start:hover {
 #action-result,
 #turn-summary,
 #atlas,
-#ending {
+#ending,
+#appoint-screen {
   max-width: 32rem;
   margin: 0 auto;
   padding: 1rem;
   font-size: 1.125rem;
   line-height: 1.6;
+}
+
+#appoint-screen {
+  max-width: 48rem;
 }
 
 #game-header {
@@ -128,7 +133,9 @@ button#start:hover {
 #close-atlas,
 #continue,
 #next-turn,
-#restart {
+#restart,
+#back-to-posts,
+#back-to-court {
   min-width: 44px;
   min-height: 44px;
   margin-top: 0.5rem;
@@ -147,7 +154,9 @@ button#start:hover {
 #close-atlas:hover,
 #continue:hover,
 #next-turn:hover,
-#restart:hover {
+#restart:hover,
+#back-to-posts:hover,
+#back-to-court:hover {
   background: #922424;
 }
 
@@ -170,6 +179,61 @@ button#start:hover {
 
 #atlas-table th:first-child {
   text-align: left;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.post-table,
+#idle-list {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.post-table th,
+.post-table td,
+#idle-list th,
+#idle-list td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #c9a227;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.post-table th:first-child,
+.post-table td:nth-child(2),
+#idle-list th:first-child {
+  text-align: left;
+}
+
+.vacant {
+  color: #8b6b4a;
+}
+
+.post-table button[data-post],
+#idle-list button[data-sort],
+#idle-list button[data-official] {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.3em 0.8em;
+  font-size: 1rem;
+  color: #f0d78c;
+  background: #7a1c1c;
+  border: 2px solid #c9a227;
+  border-radius: 0.5em;
+  cursor: pointer;
+}
+
+.post-table button[data-post]:hover,
+#idle-list button[data-sort]:hover,
+#idle-list button[data-official]:hover {
+  background: #922424;
+}
+
+#idle-list button[data-sort][aria-pressed="true"] {
+  color: #24140a;
+  background: #c9a227;
 }
 
 .visually-hidden {
@@ -306,8 +370,13 @@ button#start:hover {
   cursor: pointer;
 }
 
-#map-stage button[data-palace]:hover {
+#map-stage button[data-palace]:hover:not(:disabled) {
   background: #922424;
+}
+
+#map-stage button[data-palace]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 #court-row {
@@ -404,4 +473,15 @@ button#start:hover {
   color: #f0d78c;
   background: rgba(201, 162, 39, 0.25);
   border-radius: 1em;
+}
+
+#court-options button:not(:disabled) {
+  color: #f0d78c;
+  background: #7a1c1c;
+  border: 1px solid #c9a227;
+  cursor: pointer;
+}
+
+#court-options button:not(:disabled):hover {
+  background: #922424;
 }
