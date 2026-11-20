@@ -15,6 +15,7 @@ jobs:
   route:
     if: >-
       (github.event_name == 'issue_comment' && !github.event.issue.pull_request && startsWith(github.event.comment.body, '/answer')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/resume')) ||
       github.event_name == 'pull_request_review' ||
       (github.event_name == 'pull_request' && github.event.label.name == 'plan-approved') ||
       (github.event_name == 'workflow_run' && startsWith(github.event.workflow_run.head_branch, 'agent/issue-'))

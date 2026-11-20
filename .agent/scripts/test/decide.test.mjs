@@ -178,6 +178,40 @@ describe('routeEvent: CI', () => {
   });
 });
 
+describe('routeEvent: /resume', () => {
+  const paused = ['stage:agent-review', 'needs-human'];
+  const passed = { status: 'completed', conclusion: 'success', failedJobs: [] };
+  const resume = (labels, headCi, extra = {}) =>
+    routeEvent({ kind: 'resume', actor: 'owner', body: '/resume', reviewers, pr: pr(labels), headCi, ...extra });
+
+  it('starts the agent review when CI already passed on the latest commit', () => {
+    expect(resume(paused, passed)).toEqual([{ type: 'removeLabel', label: 'needs-human' }, { type: 'runReview' }]);
+  });
+
+  it('unpauses and waits when CI is still running', () => {
+    const actions = resume(paused, { status: 'in_progress', conclusion: null, failedJobs: [] });
+    expect(actions).toContainEqual({ type: 'removeLabel', label: 'needs-human' });
+    expect(types(actions)).not.toContain('runReview');
+  });
+
+  it('stays paused when CI still fails, naming the failed jobs', () => {
+    const actions = resume(paused, { status: 'completed', conclusion: 'failure', failedJobs: ['check-core-paths'] });
+    expect(types(actions)).toEqual(['comment']);
+    expect(actions[0].body).toContain('check-core-paths');
+  });
+
+  it('explains instead of acting outside a paused agent review', () => {
+    expect(types(resume(['stage:agent-review'], passed))).toEqual(['comment']);
+    expect(types(resume(['stage:human-review', 'needs-human'], passed))).toEqual(['comment']);
+  });
+
+  it('ignores strangers, other comments and non-agent PRs', () => {
+    expect(resume(paused, passed, { actor: 'stranger' })).toEqual([]);
+    expect(resume(paused, passed, { body: 'please /resume' })).toEqual([]);
+    expect(resume(paused, passed, { pr: pr(paused, { isAgent: false }) })).toEqual([]);
+  });
+});
+
 describe('helpers', () => {
   it('gives up after three failed rounds', () => {
     expect(types(failedRound(['review-round:1'], 'review'))).toContain('runImplement');
