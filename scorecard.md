@@ -6,6 +6,6 @@ Low-risk clean streak: **0 / 20**
 |---|---|---|---|---|
 | low | 0 | 0 | 0 | 0.0 |
 | medium | 1 | 1 | 1 | 0.0 |
-| high | 6 | 6 | 6 | 0.0 |
+| high | 7 | 7 | 7 | 0.1 |
 
 Reverts: 0. Escapes: 0.
