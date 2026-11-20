@@ -70,7 +70,7 @@ interface RegionState { id: string; owner: string; stats: RegionStatValues }
 `createInitialState` copies each entry's `id`, `owner` and `start` into a `RegionState`, keeping the order. Adding a region means adding one data entry; no `core` code changes.
 
 ## Registries
-Registries are data. Adding a stat, palace or action means adding an entry to its registry and its text in `content`. `content` keys its text by these IDs.
+Registries are data. Adding a stat, palace, action, department or court option means adding an entry to its registry and its text in `content`. `content` keys its text by these IDs.
 
 | Registry | Holds |
 |---|---|
@@ -79,6 +79,7 @@ Registries are data. Adding a stat, palace or action means adding an entry to it
 | `ACTION_POINTS` | The action points of a turn, in order |
 | `CATALOG.palaces` | Each palace and the actions it offers |
 | `CATALOG.actions` | Each action and the action points it is allowed in |
+| `DEPARTMENTS` | Each court department (`DEPARTMENT_IDS`) and the court options it lists (`COURT_OPTION_IDS`), in `src/model/court.ts`. Data only: no rule reads it yet. |
 
 Registry order is the display order. Infinite bounds are never stored in a `GameState`.
 
