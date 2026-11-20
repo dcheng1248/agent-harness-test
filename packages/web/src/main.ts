@@ -6,6 +6,7 @@ import scrollImage from './assets/title-scroll.webp';
 import { PALACE_BACKGROUNDS } from './palaceBackgrounds';
 import { renderScreen } from './render';
 import {
+  acceptRecommendation,
   appoint,
   backToCourt,
   cancelPost,
@@ -13,6 +14,7 @@ import {
   chooseEraName,
   closeAtlas,
   continueToMap,
+  declineRecommendation,
   goToMap,
   goToPalace,
   openAtlas,
@@ -59,13 +61,22 @@ if (root) {
     } else if (hit('[data-department]')) {
       current = toggleDepartment(current, hit('[data-department]')?.dataset.department as DepartmentId);
     } else if (hit('[data-court-option]')) {
-      current = chooseCourtOption(current, hit('[data-court-option]')?.dataset.courtOption as CourtOptionId);
+      current = chooseCourtOption(
+        current,
+        hit('[data-court-option]')?.dataset.courtOption as CourtOptionId,
+        gameText.notables,
+        gameText.officialNames,
+      );
     } else if (hit('[data-post]')) {
       current = selectPost(current, hit('[data-post]')?.dataset.post ?? '');
     } else if (hit('[data-sort]')) {
       current = sortIdle(current, hit('[data-sort]')?.dataset.sort as OfficialStatId);
     } else if (hit('[data-official]')) {
       current = appoint(current, hit('[data-official]')?.dataset.official ?? '');
+    } else if (hit('#accept-candidate')) {
+      current = acceptRecommendation(current);
+    } else if (hit('#decline-candidate')) {
+      current = declineRecommendation(current);
     } else if (hit('#back-to-posts')) {
       current = cancelPost(current);
     } else if (hit('#back-to-court')) {

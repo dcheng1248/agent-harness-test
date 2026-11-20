@@ -19,6 +19,7 @@ import {
   renderEraScreen,
   renderHeader,
   renderPlayScreen,
+  renderRecommendScreen,
   renderResultScreen,
   renderScreen,
   renderSummaryScreen,
@@ -443,5 +444,62 @@ describe('ending', () => {
     expect(html).toContain('享年十六歲');
     expect(html).toContain('id="restart"');
     expect(html).toContain('再開新局');
+  });
+});
+
+describe('舉薦人選', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const withCandidate = (candidate: { name: string; stats: Record<(typeof OFFICIAL_STAT_IDS)[number], number>; notable: string | null } | null): GameState => ({
+    ...court,
+    recommendation: { turn: court.turn, candidate },
+  });
+  const render = (s: GameState): string => renderScreen({ screen: 'recommend', state: s }, uiText, gameText, images);
+  const stats = { administration: 71, military: 62, ambition: 33, loyalty: 88 };
+
+  it('UC-WEB-009 an ordinary candidate shows name and four stats, with no 名臣 mark', () => {
+    const html = render(withCandidate({ name: '<林&"遠">', stats, notable: null }));
+    expect(html).toContain('<main id="recommend-screen">');
+    expect(html).toContain(`<h2>${uiText.recommendHeading}</h2>`);
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('id="recommend-screen"'));
+    expect(html).toContain('id="candidate"');
+    expect(html).not.toContain('data-notable');
+    expect(html).not.toContain('notable-mark');
+    expect(html).toContain(`id="candidate-name">${escapeHtml('<林&"遠">')}</h3>`);
+    expect(html).not.toContain('<林');
+    for (const stat of OFFICIAL_STAT_IDS) expect(html).toContain(`<th>${gameText.statLabels[stat]}</th>`);
+    const row = OFFICIAL_STAT_IDS.map((stat) => `<td>${stats[stat]}</td>`).join('');
+    expect(html).toContain(`<tbody><tr>${row}</tr></tbody>`);
+    expect(html).toContain(`id="accept-candidate">${uiText.acceptCandidate}</button>`);
+    expect(html).toContain(`id="decline-candidate">${uiText.declineCandidate}</button>`);
+    expect(html).not.toContain('back-to-court');
+  });
+
+  it('UC-WEB-009 a 名臣 candidate carries data-notable and the 名臣 mark', () => {
+    const html = render(withCandidate({ name: '某臣', stats, notable: 'guan-zhong' }));
+    expect(html).toContain('id="candidate" data-notable="guan-zhong"');
+    expect(html).toContain(`<span class="notable-mark">${uiText.notableMark}</span>`);
+    expect(html).toContain('名臣');
+    expect(html.indexOf('某臣')).toBeLessThan(html.indexOf('notable-mark'));
+    expect(html.indexOf('notable-mark')).toBeLessThan(html.indexOf('</h3>'));
+  });
+
+  it('UC-WEB-009 with no candidate only a way back to 宣政殿 is shown', () => {
+    const html = render(withCandidate(null));
+    expect(html).toContain(`<p id="no-candidate">${uiText.noCandidate}</p>`);
+    expect(html).toContain('id="back-to-court"');
+    for (const absent of ['accept-candidate', 'decline-candidate', 'id="candidate"']) expect(html).not.toContain(absent);
+  });
+
+  it('UC-WEB-009 the 舉薦人選 option is disabled and tagged once used this 早朝, enabled otherwise', () => {
+    const view = (s: GameState): string => renderPlayScreen({ screen: 'play', state: s, department: 'personnel' }, uiText, gameText, images);
+    const used = view({ ...court, recommendation: { turn: court.turn, candidate: null } });
+    expect(used).toContain(
+      `<button type="button" id="court-option-recommend-officials" data-court-option="recommend-officials" disabled>${gameText.courtOptions['recommend-officials'].name}<span class="court-option-tag">${uiText.recommendUsed}</span></button>`,
+    );
+    const older = view({ ...court, turn: court.turn + 1, recommendation: { turn: court.turn, candidate: null } });
+    expect(older).toContain(
+      `<button type="button" id="court-option-recommend-officials" data-court-option="recommend-officials">${gameText.courtOptions['recommend-officials'].name}</button>`,
+    );
+    expect(older).not.toContain(uiText.recommendUsed);
   });
 });

@@ -20,6 +20,7 @@ classDiagram
     NationStatValues nation
     RegionState[] regions
     Official[] officials
+    Recommendation or null recommendation
     boolean dead
   }
   class Official {
@@ -27,6 +28,23 @@ classDiagram
     string name
     OfficialStatValues stats
     PostId or null post
+    string or null notable
+  }
+  class Recommendation {
+    number turn
+    Candidate or null candidate
+  }
+  class Candidate {
+    string name
+    OfficialStatValues stats
+    string or null notable
+  }
+  class NotableData {
+    string id
+    string name
+    NotableType type
+    OfficialStatValues stats
+    NotableGate gate
   }
   class NamePool {
     string[] surnames
@@ -48,6 +66,10 @@ classDiagram
   RegionData ..> RegionState : createInitialState copies
   GameState "1" *-- "many" Official
   NamePool ..> Official : createInitialState draws names
+  GameState "1" *-- "0..1" Recommendation
+  Recommendation "1" *-- "0..1" Candidate
+  NotableData ..> Candidate : recommend draws
+  Candidate ..> Official : acceptCandidate adds
 ```
 
 `StatValues` is `Record<EmperorStatId, number>`, `NationStatValues` is `Record<NationStatId, number>`, `RegionStatValues` is `Record<RegionStatId, number>`, and `OfficialStatValues` is `Record<OfficialStatId, number>`. `PostId` is a string (see "Posts"). `Location` is `'map' | PalaceId`.
@@ -60,7 +82,8 @@ classDiagram
 - `turnDeltas` adds up the applied emperor stat changes of the current turn. It resets when the turn ends.
 - `nation` holds every stat owned by the nation.
 - `regions` holds one entry per region, in the order of the region data passed to `createInitialState`. The player's regions have owner `PLAYER_OWNER`. Any other owner is a foreign power. Adjacency is static data and is not stored in the state.
-- `officials` holds every official, in the order they were generated. IDs are unique and never reused. `post` is the `PostId` the official holds, or `null` for 賦閑. At most one official holds each post. Who holds a post is found by searching `officials`; it is not stored twice.
+- `officials` holds every official, in the order they were generated. IDs are unique and never reused. `post` is the `PostId` the official holds, or `null` for 賦閑. At most one official holds each post. Who holds a post is found by searching `officials`; it is not stored twice. `notable` is the 名臣 ID of a 名臣, or `null` for an ordinary official; whether a 名臣 is at court is found by searching `officials`.
+- `recommendation` is the last 舉薦: the `turn` it was used in, and the `candidate` waiting for a decision, or `null` once accepted or declined. It is `null` until the first 舉薦. 舉薦 is used this half-season when its `turn` equals `turn`.
 - `dead` is set when the emperor dies. A dead state accepts no action.
 
 Derived values are never stored:
@@ -97,6 +120,25 @@ interface NamePool {
 
 The name-drawing helper in `src/rules/officials.ts` takes the pool and the names already taken, so later rules that add officials reuse it. Reserving a name means adding it to `reserved`; no `core` code changes.
 
+## 名臣 data
+`core` does not hold the 名臣 list. `content` does, and passes it to `recommend` through this interface, in `src/model/notables.ts`:
+
+```ts
+type NotableType = 'civil' | 'military' | 'both'; // 文, 武, 文武
+interface NotableGate { stat: EmperorStatId; min: number }
+interface NotableData {
+  id: string;
+  name: string;
+  type: NotableType;
+  stats: OfficialStatValues;
+  gate: NotableGate;
+}
+interface Candidate { name: string; stats: OfficialStatValues; notable: string | null }
+interface Recommendation { turn: number; candidate: Candidate | null }
+```
+
+Adding a 名臣 means adding one data entry and nothing in `core`. `content` also puts every 名臣 name in `NamePool.reserved`, so generated officials never take one.
+
 ## Posts
 Posts are derived, not stored: `listPosts(state)` builds them from the post registries and the player's regions. A `PostId` is one of:
 - a `CentralPostId`, such as `chancellor`;
@@ -111,7 +153,7 @@ type PostInfo =
   | { id: PostId; group: 'central'; office: CentralPostId }
   | { id: PostId; group: 'ministry'; department: MinistryDepartmentId; rank: MinistryRankId }
   | { id: PostId; group: 'region'; region: string; office: RegionOfficeId };
-interface Official { id: string; name: string; stats: OfficialStatValues; post: PostId | null }
+interface Official { id: string; name: string; stats: OfficialStatValues; post: PostId | null; notable: string | null }
 ```
 
 ## Registries
@@ -140,6 +182,14 @@ type AppointRejection = 'not-in-court' | 'region-not-owned' | 'unknown-post' | '
 type AppointOutcome =
   | { ok: false; reason: AppointRejection; state: GameState }
   | { ok: true; state: GameState };
+type RecommendRejection = 'not-in-court' | 'already-used';
+type CandidateRejection = 'not-in-court' | 'no-candidate';
+type RecommendOutcome =
+  | { ok: false; reason: RecommendRejection; state: GameState }
+  | { ok: true; state: GameState; candidate: Candidate };
+type CandidateOutcome =
+  | { ok: false; reason: CandidateRejection; state: GameState }
+  | { ok: true; state: GameState };
 interface StatChange { stat: StatId; amount: number }
 interface RegionChange { region: string; changes: StatChange[] }
 interface EconomyReport { taxIncome: number; upkeep: number; regionChanges: RegionChange[] }
@@ -153,6 +203,10 @@ function canEnterPalace(state: GameState, palaceId: PalaceId): boolean;
 function isMorningCourt(state: GameState): boolean;
 function listPosts(state: GameState): PostInfo[];
 function appointOfficial(state: GameState, postId: PostId, officialId: string): AppointOutcome;
+function canRecommend(state: GameState): boolean;
+function recommend(state: GameState, notables: readonly NotableData[], names: NamePool): RecommendOutcome;
+function acceptCandidate(state: GameState): CandidateOutcome;
+function declineCandidate(state: GameState): CandidateOutcome;
 function regionTax(stats: RegionStatValues): number;
 function settleEconomy(
   nation: NationStatValues,

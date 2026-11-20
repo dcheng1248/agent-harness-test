@@ -76,3 +76,22 @@ export type {
 } from "./model/officials";
 export { appointOfficial } from "./rules/officials";
 export type { AppointRejection, AppointOutcome } from "./rules/officials";
+export type {
+  NotableType,
+  NotableGate,
+  NotableData,
+  Candidate,
+  Recommendation,
+} from "./model/notables";
+export {
+  canRecommend,
+  recommend,
+  acceptCandidate,
+  declineCandidate,
+} from "./rules/recommend";
+export type {
+  RecommendRejection,
+  CandidateRejection,
+  RecommendOutcome,
+  CandidateOutcome,
+} from "./rules/recommend";

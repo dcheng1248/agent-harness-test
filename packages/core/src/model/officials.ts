@@ -34,6 +34,8 @@ export interface Official {
   name: string;
   stats: OfficialStatValues;
   post: PostId | null;
+  /** The 名臣 ID, or `null` for an ordinary official. */
+  notable: string | null;
 }
 
 export interface NamePool {

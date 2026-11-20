@@ -1,4 +1,4 @@
-import type { ActionId, ActionPointId, CentralPostId, CourtOptionId, DepartmentId, HalfSeasonId, MinistryRankId, NamePool, PalaceId, RegionData, RegionOfficeId, StatId } from '@emperor/core';
+import type { ActionId, ActionPointId, CentralPostId, CourtOptionId, DepartmentId, HalfSeasonId, MinistryRankId, NamePool, NotableData, PalaceId, RegionData, RegionOfficeId, StatId } from '@emperor/core';
 
 export interface UiText {
   gameTitle: string;
@@ -44,6 +44,12 @@ export interface UiText {
   appointButton: string;
   backToPosts: string;
   backToCourt: string;
+  recommendHeading: string;
+  notableMark: string;
+  acceptCandidate: string;
+  declineCandidate: string;
+  recommendUsed: string;
+  noCandidate: string;
 }
 
 export interface RegionEntry extends RegionData {
@@ -71,4 +77,5 @@ export interface GameText {
   eraNamePool: readonly string[];
   regions: readonly RegionEntry[];
   officialNames: NamePool;
+  notables: readonly NotableData[];
 }

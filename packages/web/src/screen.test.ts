@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { gameText } from '@emperor/content';
 import {
   createInitialState,
+  nextRandom,
   drawEraNameSuggestions,
   enterPalace,
   takeAction,
@@ -10,6 +11,7 @@ import {
   type OfficialStatId,
 } from '@emperor/core';
 import {
+  acceptRecommendation,
   appoint,
   backToCourt,
   cancelPost,
@@ -17,6 +19,7 @@ import {
   chooseEraName,
   closeAtlas,
   continueToMap,
+  declineRecommendation,
   goToMap,
   goToPalace,
   idleOfficials,
@@ -34,6 +37,7 @@ const era = startGame(42, gameText.eraNamePool);
 
 const regions = gameText.regions;
 const names = gameText.officialNames;
+const notables = gameText.notables;
 
 function newState(): GameState {
   return createInitialState(42, '承平', regions, names);
@@ -270,7 +274,7 @@ describe('宣政殿', () => {
 describe('官員任命', () => {
   type Appoint = Extract<Screen, { screen: 'appoint' }>;
   function appointScreen(): Appoint {
-    const s = chooseCourtOption(toggleDepartment(inCourt(), 'personnel'), 'appoint-officials');
+    const s = chooseCourtOption(toggleDepartment(inCourt(), 'personnel'), 'appoint-officials', notables, names);
     if (s.screen !== 'appoint') throw new Error('unexpected');
     return s;
   }
@@ -278,13 +282,12 @@ describe('官員任命', () => {
   it('UC-WEB-007 only 官員任命 opens, only during 早朝', () => {
     const court = toggleDepartment(inCourt(), 'personnel');
     if (court.screen !== 'play') throw new Error('unexpected');
-    const opened = chooseCourtOption(court, 'appoint-officials');
+    const opened = chooseCourtOption(court, 'appoint-officials', notables, names);
     expect(opened).toEqual({ screen: 'appoint', state: court.state });
     if (opened.screen !== 'appoint') throw new Error('unexpected');
     expect(opened.state).toBe(court.state);
-    expect(chooseCourtOption(court, 'recommend-officials')).toBe(court);
     const onMap = play(newState());
-    expect(chooseCourtOption(onMap, 'appoint-officials')).toBe(onMap);
+    expect(chooseCourtOption(onMap, 'appoint-officials', notables, names)).toBe(onMap);
   });
 
   it('UC-WEB-008 selecting a post, sorting and appointing', () => {
@@ -350,5 +353,109 @@ describe('官員任命', () => {
         expect(state.officials.indexOf(a)).toBeLessThan(state.officials.indexOf(b));
       }
     }
+  });
+});
+
+describe('舉薦人選', () => {
+  type Recommend = Extract<Screen, { screen: 'recommend' }>;
+  const personnel = (): Screen => toggleDepartment(inCourt(), 'personnel');
+  function recommendScreen(): Recommend {
+    const s = chooseCourtOption(personnel(), 'recommend-officials', notables, names);
+    if (s.screen !== 'recommend') throw new Error('unexpected');
+    return s;
+  }
+
+  it('UC-WEB-009 opening 舉薦人選 draws a candidate for this half-season', () => {
+    const s = recommendScreen();
+    expect(s.state.recommendation?.turn).toBe(s.state.turn);
+    expect(s.state.recommendation?.candidate).not.toBeNull();
+    expect(s.state.actionPoint).toBe(0);
+  });
+
+  it('UC-WEB-009 accepting hires a 賦閑 official and returns to 吏部', () => {
+    const s = recommendScreen();
+    const before = s.state.officials.length;
+    const done = acceptRecommendation(s);
+    if (done.screen !== 'play') throw new Error('unexpected');
+    expect(done.department).toBe('personnel');
+    expect(done.state.location).toBe('xuanzheng');
+    expect(done.state.officials).toHaveLength(before + 1);
+    expect(done.state.officials.at(-1)!.post).toBeNull();
+  });
+
+  it('UC-WEB-009 declining keeps the officials and a second 舉薦 is refused', () => {
+    const s = recommendScreen();
+    const done = declineRecommendation(s);
+    if (done.screen !== 'play') throw new Error('unexpected');
+    expect(done.department).toBe('personnel');
+    expect(done.state.officials).toHaveLength(s.state.officials.length);
+    const again = toggleDepartment(done, 'personnel');
+    const reopened = chooseCourtOption(done, 'recommend-officials', notables, names);
+    expect(reopened).toBe(done);
+    expect(again.screen).toBe('play');
+  });
+
+  it('UC-WEB-009 accept and decline do nothing outside the 舉薦 screen', () => {
+    const onPlay = play(newState());
+    expect(acceptRecommendation(onPlay)).toBe(onPlay);
+    expect(declineRecommendation(onPlay)).toBe(onPlay);
+  });
+
+  it('UC-WEB-009 a decision with no candidate leaves the screen unchanged', () => {
+    const s = recommendScreen();
+    const empty: Recommend = { ...s, state: { ...s.state, recommendation: { turn: s.state.turn, candidate: null } } };
+    expect(acceptRecommendation(empty)).toBe(empty);
+    expect(declineRecommendation(empty)).toBe(empty);
+  });
+
+  it('UC-WEB-009 backToCourt returns from 舉薦人選 to 吏部', () => {
+    const s = recommendScreen();
+    expect(backToCourt(s)).toEqual({ screen: 'play', state: s.state, department: 'personnel' });
+  });
+});
+
+/** Half-seasons before the last 舉薦 of recommend-notable: false skips 舉薦, true uses and declines it. */
+const NOTABLE_PATH: boolean[] = [false, true, true, true, true, true, true];
+
+describe('screenshot scenarios', () => {
+  function harnessSeed(): number {
+    let s = 0x2545f491;
+    const bytes: number[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      const r = nextRandom(s);
+      s = r.rngState;
+      bytes.push(Math.floor(r.value * 256));
+    }
+    return (bytes[0]! | (bytes[1]! << 8) | (bytes[2]! << 16) | (bytes[3]! << 24)) >>> 0;
+  }
+  function toCourt(): Screen {
+    let s = startGame(harnessSeed(), gameText.eraNamePool);
+    if (s.screen !== 'era') throw new Error('unexpected');
+    s = chooseEraName(s, s.suggestions[0]!, regions, names);
+    return toggleDepartment(goToPalace(s, 'xuanzheng'), 'personnel');
+  }
+  const open = (s: Screen): Screen => chooseCourtOption(s, 'recommend-officials', notables, names);
+  function candidateOf(s: Screen) {
+    if (s.screen !== 'recommend') throw new Error('unexpected');
+    return s.state.recommendation!.candidate!;
+  }
+  /** Leaves 宣政殿 and rests through the three actions of the half-season. */
+  function restHalfSeason(s: Screen): Screen {
+    let cur = goToMap(s);
+    for (let i = 0; i < 3; i += 1) {
+      cur = continueToMap(performAction(goToPalace(cur, 'yangxin'), 'rest'));
+    }
+    return cur;
+  }
+
+  it('UC-WEB-009 the screenshot scenarios reach an ordinary candidate and a 名臣 with the harness seed', () => {
+    expect(candidateOf(open(toCourt())).notable).toBeNull();
+    let s: Screen = toCourt();
+    for (const use of NOTABLE_PATH) {
+      if (use) s = declineRecommendation(open(s));
+      s = restHalfSeason(s);
+      s = toggleDepartment(goToPalace(s, 'xuanzheng'), 'personnel');
+    }
+    expect(candidateOf(open(s)).notable).not.toBeNull();
   });
 });

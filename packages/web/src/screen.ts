@@ -1,7 +1,10 @@
 import {
+  acceptCandidate,
   appointOfficial,
+  canRecommend,
   COURT_PALACE_ID,
   createInitialState,
+  declineCandidate,
   DEPARTMENT_IDS,
   drawEraNameSuggestions,
   enterPalace,
@@ -9,7 +12,9 @@ import {
   isMorningCourt,
   isValidEraName,
   listPosts,
+  type NotableData,
   OFFICIAL_STAT_IDS,
+  recommend,
   returnToMap,
   takeAction,
   type ActionId,
@@ -42,6 +47,7 @@ export type Screen =
       economy: EconomyReport;
     }
   | { screen: 'atlas'; state: GameState }
+  | { screen: 'recommend'; state: GameState }
   | { screen: 'appoint'; state: GameState; post?: PostId; sort?: OfficialStatId }
   | { screen: 'ending'; state: GameState };
 
@@ -52,7 +58,7 @@ export const ATLAS_PALACE: PalaceId = 'chongwen';
 export const COURT_PALACE: PalaceId = COURT_PALACE_ID;
 
 /** The court options that open a screen; every other option is not yet open. */
-export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = ['appoint-officials'];
+export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = ['recommend-officials', 'appoint-officials'];
 
 export function startGame(seed: number, pool: readonly string[]): Screen {
   return {
@@ -94,10 +100,35 @@ export function toggleDepartment(screen: Screen, departmentId: DepartmentId): Sc
   return { screen: 'play', state, department: departmentId };
 }
 
-export function chooseCourtOption(screen: Screen, optionId: CourtOptionId): Screen {
+export function chooseCourtOption(
+  screen: Screen,
+  optionId: CourtOptionId,
+  notables: readonly NotableData[],
+  names: NamePool,
+): Screen {
   if (screen.screen !== 'play' || !isMorningCourt(screen.state)) return screen;
   if (!OPEN_COURT_OPTIONS.includes(optionId)) return screen;
+  if (optionId === 'recommend-officials') {
+    if (!canRecommend(screen.state)) return screen;
+    const outcome = recommend(screen.state, notables, names);
+    return outcome.ok ? { screen: 'recommend', state: outcome.state } : screen;
+  }
   return { screen: 'appoint', state: screen.state };
+}
+
+function decide(screen: Screen, rule: typeof acceptCandidate): Screen {
+  if (screen.screen !== 'recommend') return screen;
+  const outcome = rule(screen.state);
+  if (!outcome.ok) return screen;
+  return { screen: 'play', state: outcome.state, department: 'personnel' };
+}
+
+export function acceptRecommendation(screen: Screen): Screen {
+  return decide(screen, acceptCandidate);
+}
+
+export function declineRecommendation(screen: Screen): Screen {
+  return decide(screen, declineCandidate);
 }
 
 export function selectPost(screen: Screen, postId: PostId): Screen {
@@ -128,7 +159,7 @@ export function cancelPost(screen: Screen): Screen {
 }
 
 export function backToCourt(screen: Screen): Screen {
-  if (screen.screen !== 'appoint') return screen;
+  if (screen.screen !== 'appoint' && screen.screen !== 'recommend') return screen;
   return { screen: 'play', state: screen.state, department: 'personnel' };
 }
 

@@ -6,6 +6,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 |---|---|---|
 | UC-CONTENT-001 | 九州地域資料：名稱、相鄰地域、歸屬與初始數值 | implemented |
 | UC-CONTENT-002 | 官員姓名庫與官位名稱 | implemented |
+| UC-CONTENT-003 | 名臣名錄：歷代名臣的文武類型、四項屬性與登場門檻 | implemented |
 
 ## UC-CONTENT-001 Regions
 - The nine home regions of 九州, each with a Chinese name, its adjacent regions, owner `PLAYER_OWNER`, and starting 民心, 人口 and 富庶. 關中 is the capital. Later slices add foreign regions with other owners.
@@ -13,9 +14,15 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 
 ## UC-CONTENT-002 Official names and post names
 - `officialNames` holds a large pool of surnames and of male given names, each a short run of Han characters with no repeats. A full name is surname + given name. The pool is far larger than the number of officials a game needs.
-- `officialNames.reserved` lists full names that must never be generated. It is empty until the 名臣 list exists; a later issue fills it from that list, with no `core` change.
+- `officialNames.reserved` lists full names that must never be generated: exactly the names in the 名臣 list (UC-CONTENT-003).
 - Region IDs never equal a 部 ID or a central post ID, so post IDs stay unique.
 - `formatPostName(post)` gives a post's full name: a central post's own name (such as 丞相); a 部 post as the 部's full name plus its rank (such as 吏部尚書); a region post as the region's name plus its office (such as 關中知州).
+
+## UC-CONTENT-003 名臣
+- `notables` lists about sixty famous ministers and generals from across Chinese history, in historical order, one per line. Each has a unique ID, a unique name, a type (文, 武 or 文武), four official stats, and an entry gate on one emperor stat.
+- Stats follow each person's historical reputation: 文 名臣 are strong in 文治, 武 名臣 in 武功, and 文武 名臣 in both. A few who are remembered for seizing or abusing power have high 野心 and lower 忠誠. Every stat is within its `STAT_REGISTRY` bounds.
+- Gates are a minimum on one emperor stat, mostly 學識 for 文 and 魄力 for 武. Some gates are low enough that a 名臣 can appear early in a reign.
+- No 名臣 name can be generated as an ordinary official's name.
 
 ## Text rules
 - Every `core` registry entry has text, enforced by the types.
