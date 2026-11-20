@@ -9,9 +9,11 @@ import {
 } from '@emperor/core';
 import {
   chooseEraName,
+  closeAtlas,
   continueToMap,
   goToMap,
   goToPalace,
+  openAtlas,
   performAction,
   restart,
   startGame,
@@ -20,11 +22,17 @@ import {
 
 const era = startGame(42, gameText.eraNamePool);
 
+const regions = gameText.regions;
+
+function newState(): GameState {
+  return createInitialState(42, '承平', regions);
+}
+
 function play(state: GameState): Screen {
   return { screen: 'play', state };
 }
 
-function inChongwen(state: GameState = createInitialState(42, '承平')): Screen {
+function inChongwen(state: GameState = newState()): Screen {
   return goToPalace(play(state), 'chongwen');
 }
 
@@ -42,34 +50,42 @@ describe('start game', () => {
 
 describe('年號', () => {
   it('UC-WEB-003 a valid 年號 starts the game', () => {
-    expect(chooseEraName(era, ' 承平 ')).toEqual({
+    expect(chooseEraName(era, ' 承平 ', regions)).toEqual({
       screen: 'play',
-      state: createInitialState(42, '承平'),
+      state: newState(),
     });
   });
 
   it('UC-WEB-003 an invalid 年號 shows the error and keeps the typed text', () => {
     for (const input of ['承', 'abc', '<b>']) {
-      expect(chooseEraName(era, input)).toEqual({ ...era, error: true, draft: input });
+      expect(chooseEraName(era, input, regions)).toEqual({ ...era, error: true, draft: input });
     }
   });
 
   it('UC-WEB-003 chooseEraName on another screen is unchanged', () => {
     const title: Screen = { screen: 'title' };
-    expect(chooseEraName(title, '承平')).toBe(title);
+    expect(chooseEraName(title, '承平', regions)).toBe(title);
   });
 });
 
+function fourthAction(): Screen {
+  let screen: Screen = play(newState());
+  for (let i = 0; i < 3; i += 1) {
+    screen = continueToMap(performAction(goToPalace(screen, 'qingong'), 'rest'));
+  }
+  return performAction(goToPalace(screen, 'qingong'), 'rest');
+}
+
 describe('palace loop', () => {
   it('UC-WEB-004 entering a palace and going back keep the action point', () => {
-    const start = play(createInitialState(42, '承平'));
+    const start = play(newState());
     const inside = goToPalace(start, 'chongwen');
-    expect(inside).toEqual(play(enterPalace(createInitialState(42, '承平'), 'chongwen')));
+    expect(inside).toEqual(play(enterPalace(newState(), 'chongwen')));
     expect(goToMap(inside)).toEqual(start);
   });
 
   it('UC-WEB-004 an action shows its result', () => {
-    const before = createInitialState(42, '承平');
+    const before = newState();
     const outcome = takeAction(enterPalace(before, 'chongwen'), 'study');
     if (!outcome.ok) throw new Error('rejected');
     const result = performAction(inChongwen(), 'study');
@@ -84,7 +100,7 @@ describe('palace loop', () => {
   });
 
   it('UC-WEB-004 the 4th action shows the turn summary', () => {
-    let screen: Screen = play(createInitialState(42, '承平'));
+    let screen: Screen = play(newState());
     for (let i = 0; i < 3; i += 1) {
       screen = continueToMap(performAction(goToPalace(screen, 'qingong'), 'rest'));
       expect(screen.screen).toBe('play');
@@ -101,13 +117,20 @@ describe('palace loop', () => {
       changes: outcome.changes,
       endedHalfSeason: 'spring-early',
       totals: outcome.turnEnd.totals,
+      economy: outcome.turnEnd.economy,
     });
     expect(outcome.state.turn).toBe(1);
     expect(continueToMap(summary)).toEqual(play(outcome.state));
   });
 
+  it('UC-WEB-004 the summary screen carries the economy report', () => {
+    const summary = fourthAction();
+    if (summary.screen !== 'summary') throw new Error('expected summary');
+    expect(summary.economy.upkeep).toBe(120000);
+  });
+
   it('UC-WEB-004 a rejected action leaves the screen unchanged', () => {
-    const onMap = play(createInitialState(42, '承平'));
+    const onMap = play(newState());
     expect(performAction(onMap, 'study')).toBe(onMap);
     const inside = inChongwen();
     expect(performAction(inside, 'rest')).toBe(inside);
@@ -123,16 +146,50 @@ describe('palace loop', () => {
   });
 });
 
+describe('輿圖', () => {
+  function afterOneAction(): Screen {
+    return continueToMap(performAction(inChongwen(), 'study'));
+  }
+
+  it('UC-WEB-006 opening 輿圖 from the map uses no action point and keeps the state', () => {
+    const screen = afterOneAction();
+    if (screen.screen !== 'play') throw new Error('unexpected');
+    expect(screen.state.actionPoint).toBe(1);
+    const atlas = openAtlas(screen);
+    expect(atlas).toEqual({ screen: 'atlas', state: screen.state });
+    if (atlas.screen === 'atlas') expect(atlas.state).toBe(screen.state);
+    expect(closeAtlas(atlas)).toEqual(screen);
+  });
+
+  it('UC-WEB-006 輿圖 cannot be opened from a palace, a result or a summary screen', () => {
+    const palace = inChongwen();
+    expect(openAtlas(palace)).toBe(palace);
+    const result = performAction(palace, 'study');
+    expect(result.screen).toBe('result');
+    expect(openAtlas(result)).toBe(result);
+    const summary = fourthAction();
+    expect(summary.screen).toBe('summary');
+    expect(openAtlas(summary)).toBe(summary);
+    const title: Screen = { screen: 'title' };
+    expect(openAtlas(title)).toBe(title);
+  });
+
+  it('UC-WEB-006 closeAtlas on another screen is unchanged', () => {
+    const title: Screen = { screen: 'title' };
+    expect(closeAtlas(title)).toBe(title);
+  });
+});
+
 describe('ending', () => {
   it('UC-WEB-005 death goes to the ending', () => {
-    const state = { ...createInitialState(42, '承平'), stats: { ...createInitialState(42, '承平').stats, health: 1 } };
+    const state = { ...newState(), stats: { ...newState().stats, health: 1 } };
     const result = performAction(inChongwen(state), 'study');
     expect(result.screen).toBe('ending');
     if (result.screen === 'ending') expect(result.state.dead).toBe(true);
   });
 
   it('UC-WEB-005 death from aging on the 4th action goes to the ending, not the summary', () => {
-    const base = createInitialState(42, '承平');
+    const base = newState();
     // age 46 at turn 240: aging costs 2; study costs about 1, so 健康 3 survives the action only
     const aged: GameState = {
       ...base,
