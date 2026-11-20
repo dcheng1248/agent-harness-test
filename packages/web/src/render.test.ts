@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gameText, uiText } from '@emperor/content';
-import { createInitialState, EMPEROR_STAT_IDS, enterPalace } from '@emperor/core';
+import { createInitialState, EMPEROR_STAT_IDS, enterPalace, PALACE_IDS } from '@emperor/core';
 import {
   escapeHtml,
   renderAtlasScreen,
@@ -13,9 +13,10 @@ import {
   renderSummaryScreen,
   renderTitleScreen,
 } from './render';
+import { PALACE_ANCHORS } from './palaceMap';
 import type { Screen } from './screen';
 
-const images = { palace: '/img/palace.webp', scroll: '/img/scroll.webp' };
+const images = { palace: '/img/palace.webp', scroll: '/img/scroll.webp', map: '/img/map.webp' };
 
 describe('title screen', () => {
   it('UC-WEB-001 renders the palace image with the title on a decorative scroll', () => {
@@ -79,27 +80,44 @@ describe('game screens', () => {
     }
   });
 
-  it('UC-WEB-004 map has one button per palace', () => {
-    const html = renderPlayScreen({ screen: 'play', state }, uiText, gameText);
-    expect(html).toContain('id="palace-map"');
-    expect(html).toContain(uiText.mapHeading);
-    for (const id of ['chongwen', 'hanmo', 'yanwu', 'qingong'] as const) {
-      expect(html).toContain(`id="palace-${id}"`);
-      expect(html).toContain(`data-palace="${id}"`);
-      expect(html).toContain(gameText.palaces[id].name);
+  it('UC-WEB-004 map shows the image with one positioned button per palace, a hidden heading and 輿圖 after', () => {
+    const html = renderPlayScreen({ screen: 'play', state }, uiText, gameText, '/img/map.webp');
+    expect(html).toContain(`<h2 class="visually-hidden">${uiText.mapHeading}</h2>`);
+    expect(html).toContain(`<img id="map-image" src="/img/map.webp" alt="${uiText.mapImageAlt}">`);
+    let last = -1;
+    for (const id of PALACE_IDS) {
+      const { x, y } = PALACE_ANCHORS[id];
+      const at = html.indexOf(`<button type="button" id="palace-${id}" data-palace="${id}" style="left:${x}%;top:${y}%">${gameText.palaces[id].name}</button>`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
     }
+    expect(html.indexOf('id="open-atlas"')).toBeGreaterThan(html.indexOf('</div>', last));
+    expect(html).not.toContain('palace-grid');
   });
 
   it('UC-WEB-004 palace shows name, description, actions and 返回', () => {
     const inside = enterPalace(state, 'chongwen');
-    const html = renderPlayScreen({ screen: 'play', state: inside }, uiText, gameText);
+    const html = renderPlayScreen({ screen: 'play', state: inside }, uiText, gameText, '/img/map.webp');
     expect(html).toContain('id="palace-view"');
     expect(html).toContain(gameText.palaces.chongwen.name);
     expect(html).toContain(gameText.palaces.chongwen.description);
     expect(html).toContain('id="action-study"');
     expect(html).toContain(gameText.actions.study.name);
+    expect(html.indexOf('id="action-study"')).toBeLessThan(html.indexOf('id="action-arts"'));
+    expect(html).toContain(gameText.actions.arts.name);
     expect(html).toContain('id="back-to-map"');
     expect(html).toContain('返回');
+  });
+
+  it('UC-WEB-004 a palace with no actions shows the empty line instead of an action list', () => {
+    const html = renderPlayScreen({ screen: 'play', state: enterPalace(state, 'yuhuayuan') }, uiText, gameText, '/img/map.webp');
+    expect(html).toContain('id="palace-view"');
+    expect(html).toContain(gameText.palaces.yuhuayuan.name);
+    expect(html).toContain(gameText.palaces.yuhuayuan.description);
+    expect(html).toContain(`<p id="no-actions">${uiText.noActions}</p>`);
+    expect(html).not.toContain('action-list');
+    expect(html).not.toContain('data-action');
+    expect(html).toContain('id="back-to-map"');
   });
 
   it('UC-WEB-004 result shows the action name and change line with #continue', () => {
@@ -148,7 +166,7 @@ describe('game screens', () => {
   });
 
   it('UC-WEB-004 the palace map has the 輿圖 entry', () => {
-    const html = renderPlayScreen({ screen: 'play', state }, uiText, gameText);
+    const html = renderPlayScreen({ screen: 'play', state }, uiText, gameText, '/img/map.webp');
     expect(html).toMatch(/id="open-atlas"[^>]*>輿圖</);
   });
 

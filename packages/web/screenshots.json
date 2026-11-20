@@ -37,7 +37,7 @@
   },
   {
     "name": "palace-map",
-    "description": "宮城地圖",
+    "description": "宮城地圖：宮城圖上的宮殿按鈕與下方輿圖按鈕",
     "steps": [
       {
         "click": "#start"
@@ -52,7 +52,7 @@
   },
   {
     "name": "palace",
-    "description": "崇文館畫面",
+    "description": "崇文館畫面：讀經史與習書畫琴棋",
     "steps": [
       {
         "click": "#start"
@@ -62,6 +62,24 @@
       },
       {
         "click": "#palace-chongwen"
+      },
+      {
+        "waitFor": "#palace-view"
+      }
+    ]
+  },
+  {
+    "name": "palace-empty",
+    "description": "御花園畫面：此處暫無可行之事",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-yuhuayuan"
       },
       {
         "waitFor": "#palace-view"
