@@ -3,6 +3,7 @@ import type { ActionId, PalaceId } from '@emperor/core';
 import titleImage from './assets/title-forbidden-city.webp';
 import mapImage from './assets/map-forbidden-city.webp';
 import scrollImage from './assets/title-scroll.webp';
+import { PALACE_BACKGROUNDS } from './palaceBackgrounds';
 import { renderScreen } from './render';
 import {
   chooseEraName,
@@ -23,7 +24,10 @@ const root = document.querySelector<HTMLElement>('#app');
 if (root) {
   let current: Screen = { screen: 'title' };
   const draw = (): void => {
-    root.innerHTML = renderScreen(current, uiText, gameText, { palace: titleImage, scroll: scrollImage, map: mapImage });
+    root.innerHTML = renderScreen(current, uiText, gameText, {
+      palace: titleImage, scroll: scrollImage, map: mapImage,
+      backgrounds: PALACE_BACKGROUNDS,
+    });
   };
   const confirmTyped = (): void => {
     const input = root.querySelector<HTMLInputElement>('#era-input');

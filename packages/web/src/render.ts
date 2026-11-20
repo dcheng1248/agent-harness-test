@@ -18,13 +18,14 @@ import {
   getHalfSeason,
   getReignYear,
   type GameState,
+  type PalaceId,
 } from '@emperor/core';
 import { PALACE_ANCHORS } from './palaceMap';
 import { ATLAS_PALACE, type Screen } from './screen';
 
 type Of<K extends Screen['screen']> = Extract<Screen, { screen: K }>;
 
-export type ScreenImages = { palace: string; scroll: string; map: string };
+export type ScreenImages = { palace: string; scroll: string; map: string; backgrounds: Record<PalaceId, string> };
 
 export function escapeHtml(text: string): string {
   return text
@@ -55,7 +56,7 @@ export function renderHeader(state: GameState, _text: UiText, game: GameText): s
   return `<header id="game-header"><span id="header-date">${escapeHtml(date)}</span><span id="header-action-point">${game.actionPointLabels[getActionPointId(state)]}</span><span id="header-age">${formatAge(getAge(state))}</span><div id="header-stats">${stats}</div><span id="header-treasury">${game.statLabels.treasury} ${formatTaels(state.nation.treasury)}</span></header>`;
 }
 
-export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameText, mapImage: string): string {
+export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameText, images: ScreenImages): string {
   const { state } = screen;
   const header = renderHeader(state, text, game);
   if (state.location === 'map') {
@@ -63,7 +64,7 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
       const { x, y } = PALACE_ANCHORS[id];
       return `<button type="button" id="palace-${id}" data-palace="${id}" style="left:${x}%;top:${y}%">${game.palaces[id].name}</button>`;
     }).join('');
-    return `${header}<main id="palace-map"><h2 class="visually-hidden">${text.mapHeading}</h2><div id="map-stage"><img id="map-image" src="${mapImage}" alt="${text.mapImageAlt}">${buttons}</div></main>`;
+    return `<main id="palace-map"><h2 class="visually-hidden">${text.mapHeading}</h2><div id="map-stage" class="image-stage">${header}<img id="map-image" src="${images.map}" alt="${text.mapImageAlt}">${buttons}</div></main>`;
   }
   const palace = game.palaces[state.location];
   const ids = CATALOG.palaces[state.location].actions;
@@ -75,7 +76,7 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
           .join('')}</div>`;
   const atlasButton =
     state.location === ATLAS_PALACE ? `<button type="button" id="open-atlas">${text.atlasButton}</button>` : '';
-  return `${header}<main id="palace-view"><h2>${palace.name}</h2><p>${palace.description}</p>${actions}<div id="palace-nav">${atlasButton}<button type="button" id="back-to-map">${text.backToMap}</button></div></main>`;
+  return `<main id="palace-view"><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[state.location]}" alt="${palace.imageAlt}"></div><div id="palace-panel"><h2>${palace.name}</h2><p id="palace-description">${palace.description}</p>${actions}<div id="palace-nav">${atlasButton}<button type="button" id="back-to-map">${text.backToMap}</button></div></div></main>`;
 }
 
 export function renderResultScreen(screen: Of<'result'>, text: UiText, game: GameText): string {
@@ -122,7 +123,7 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
     case 'era':
       return renderEraScreen(screen, text);
     case 'play':
-      return renderPlayScreen(screen, text, game, images.map);
+      return renderPlayScreen(screen, text, game, images);
     case 'result':
       return renderResultScreen(screen, text, game);
     case 'summary':

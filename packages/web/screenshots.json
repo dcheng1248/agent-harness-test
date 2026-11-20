@@ -37,7 +37,7 @@
   },
   {
     "name": "palace-map",
-    "description": "宮城地圖：宮城圖上的宮殿按鈕",
+    "description": "宮城地圖：頂端半透明橫幅、宮城圖上的宮殿按鈕，圖下無輿圖按鈕",
     "steps": [
       {
         "click": "#start"
@@ -52,7 +52,7 @@
   },
   {
     "name": "palace",
-    "description": "崇文館畫面：讀經史與習書畫琴棋",
+    "description": "崇文館畫面：背景圖、頂端橫幅、半透明面板內的讀經史與習書畫琴棋，另有輿圖按鈕",
     "steps": [
       {
         "click": "#start"
@@ -70,7 +70,7 @@
   },
   {
     "name": "palace-empty",
-    "description": "御花園畫面：此處暫無可行之事",
+    "description": "御花園畫面：背景圖與面板，此處暫無可行之事",
     "steps": [
       {
         "click": "#start"
@@ -80,6 +80,42 @@
       },
       {
         "click": "#palace-yuhuayuan"
+      },
+      {
+        "waitFor": "#palace-view"
+      }
+    ]
+  },
+  {
+    "name": "palace-yanwu",
+    "description": "演武場畫面：背景圖與面板，騎射",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-yanwu"
+      },
+      {
+        "waitFor": "#palace-view"
+      }
+    ]
+  },
+  {
+    "name": "palace-yangxin",
+    "description": "養心殿畫面：背景圖與面板，靜養",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-yangxin"
       },
       {
         "waitFor": "#palace-view"
@@ -457,7 +493,7 @@
   },
   {
     "name": "atlas",
-    "description": "輿圖畫面",
+    "description": "輿圖畫面（自崇文館開啟），返回崇文館",
     "steps": [
       {
         "click": "#start"
