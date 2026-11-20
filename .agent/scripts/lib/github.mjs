@@ -89,8 +89,9 @@ export function pushBranch(branch, commit = 'HEAD') {
   const remote = `https://x-access-token:${token}@github.com/${repo()}.git`;
   try {
     execFileSync('git', ['push', remote, `${commit}:refs/heads/${branch}`], { stdio: 'pipe' });
-  } catch {
-    throw new Error(`Could not push ${branch}`);
+  } catch (error) {
+    const detail = String(error.stderr ?? '').split(token).join('***').trim();
+    throw new Error(`Could not push ${branch}${detail ? `:\n${detail}` : ''}`);
   }
 }
 

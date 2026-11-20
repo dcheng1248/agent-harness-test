@@ -4,7 +4,7 @@ How the engineering skills should consume this repo's domain documentation when 
 
 ## Before exploring, read these
 
-- **`docs/architecture.md`**: the main domain doc and the spec. Also read the `ARCHITECTURE.md` of each package you touch (`packages/*/ARCHITECTURE.md`).
+- **`docs/architecture.md`**: the main domain doc. With the module docs it is the spec. Also read the `ARCHITECTURE.md` (structure) and `USE_CASES.md` (behaviour) of each package you touch.
 - **`GLOSSARY.md`** at the repo root, or
 - **`GLOSSARY-MAP.md`** at the repo root if it exists: it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
 - **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.

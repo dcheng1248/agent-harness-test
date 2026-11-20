@@ -14,11 +14,11 @@ A Traditional Chinese, text-based emperor-raising web game, built through an age
 | `packages/content` | Chinese text and event data | `core` |
 | `packages/web` | Vite UI | `core`, `content` |
 
-Read `docs/architecture.md` and the `ARCHITECTURE.md` of each module you touch before changing it.
+Read `docs/architecture.md`, and the `ARCHITECTURE.md` and `USE_CASES.md` of each module you touch, before changing it.
 
 ## Specs and tests
-- Architecture docs are the spec. Diagrams are Mermaid.
-- Use case IDs are `UC-<MODULE>-NNN`. A use case marked `implemented` must be referenced by a test name or comment.
+- The spec is the architecture docs (structure) plus each module's `USE_CASES.md` (behaviour). Exact values live only in code. See "What goes where" in `docs/architecture.md`. Diagrams are Mermaid.
+- Use case IDs are `UC-<MODULE>-NNN`, defined only in `USE_CASES.md` files. A use case marked `implemented` must be referenced by a test name or comment.
 - Run `npm run verify` before calling work complete.
 - When a change adds or changes a screen, list it in `packages/web/screenshots.json`. The pipeline photographs those screens for review.
 

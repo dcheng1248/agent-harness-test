@@ -18,3 +18,15 @@ describe('checkIds', () => {
     expect(checkIds([doc('UC-CORE-001', 'planned'), doc('UC-CORE-001', 'planned')], [])).toHaveLength(1);
   });
 });
+
+describe('use cases stay out of architecture files', () => {
+  it('rejects a use case table in an architecture file', () => {
+    expect(checkIds([], [], [doc('UC-CORE-001', 'planned')])).toEqual([
+      "UC-CORE-001 is listed in an architecture file. Use cases belong in the module's USE_CASES.md",
+    ]);
+  });
+
+  it('allows architecture files to mention an ID in prose', () => {
+    expect(checkIds([doc('UC-CORE-001', 'planned')], [], ['See UC-CORE-001 in USE_CASES.md.'])).toEqual([]);
+  });
+});

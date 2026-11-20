@@ -10,6 +10,8 @@ Use the highest level that applies. `.agent/plans/` does not count.
 
 Core-path changes are never low risk.
 
+`packages/*/USE_CASES.md` is not a core path. Adding or changing a use case does not raise risk by itself. Behaviour changes are still checked at your plan review and in the screenshots.
+
 A script applies the path-based rules after coding (`.agent/risk-rules.yml` and `.agent/core-paths.yml`). It can only raise the rating. The planner and agent reviewer apply the judgement rules. To correct a rating, change the `risk:` label yourself, and the metrics record that.
 
 ## Trial mode and skipping gates

@@ -62,3 +62,13 @@ describe('risk rules', () => {
     expect(maxRisk('high', 'medium')).toBe('high');
   });
 });
+
+describe('use case files', () => {
+  it('do not raise risk on their own', () => {
+    expect(risk(['packages/web/USE_CASES.md', 'packages/web/src/style.css', 'packages/web/screenshots.json'])).toBe('low');
+  });
+
+  it('leave architecture files at medium or above', () => {
+    expect(risk(['packages/web/ARCHITECTURE.md'])).toBe('medium');
+  });
+});

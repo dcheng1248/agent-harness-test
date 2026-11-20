@@ -9,8 +9,8 @@ Two or three sentences.
 `low`, `medium` or `high`, with one line of reasoning from `docs/harness/risk-rules.md`.
 
 ## Doc impact
-- Root: module dependencies yes/no, data flow yes/no
-- Module: use cases yes/no, data flow yes/no, class diagram yes/no
+- Use cases (`USE_CASES.md`): added or changed IDs, or none
+- Architecture (structure only): module dependencies yes/no, data flow yes/no, state or schema shape yes/no, public interface yes/no. Say why if any is yes.
 
 ## IDs added or changed
 - `UC-...`
