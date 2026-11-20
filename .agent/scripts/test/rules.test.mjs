@@ -39,6 +39,12 @@ describe('path rules', () => {
       .toEqual(['packages/core/src/index.ts']);
   });
 
+  it('counts a test file as declared when the file it tests is declared', () => {
+    const files = ['packages/core/src/model/state.test.ts', 'packages/core/src/model/stats.test.ts', 'packages/core/src/model/state.ts'];
+    expect(undeclaredCorePaths(files, corePaths, ['packages/core/src/model/state.ts']))
+      .toEqual(['packages/core/src/model/stats.test.ts']);
+  });
+
   it('reads core paths folded in a details block at the end of the brief', () => {
     const brief = '## Rejected alternatives\n- `not/a/path`\n\n<details><summary>Core paths</summary>\n\n## Core paths\n- `docs/architecture.md`\n- `packages/core/src/index.ts`\n\n</details>\n';
     expect(declaredCorePaths(brief)).toEqual(['docs/architecture.md', 'packages/core/src/index.ts']);

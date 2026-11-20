@@ -26,7 +26,7 @@ Answers already given under "Questions and your answers" are binding. Ask again 
    - Under "Architecture" and "Data flow", draw a diagram of the result whenever the structure or data flow changes, using the template's styles for new, changed and removed parts.
    - Under "Schema and interface changes", describe each change in its own bullet.
    - List every value or choice you made that the issue left open under "Decisions to review".
-   - Under "## Core paths", list every path in `.agent/core-paths.yml` the work will change.
+   - Under "## Core paths", list every path in `.agent/core-paths.yml` the work will change. A test file such as `state.test.ts` is covered when the file it tests is listed. List it only if that file is not.
 4. Rate risk using `docs/harness/risk-rules.md`.
 5. Write `.agent/plans/issue-<N>/tasks.md` following `upstream-writing-plans.md` in this folder, with these overrides:
    - Save to `tasks.md` as above. Skip its "Execution Handoff" section. Do not ask anyone to review or choose a method.

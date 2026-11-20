@@ -56,8 +56,16 @@ export function declaredCorePaths(brief) {
   return [...section.matchAll(/^\s*-\s+`([^`]+)`/gm)].map((match) => match[1]);
 }
 
+/** `a/b.test.ts` → `a/b.ts`. Null for a file that is not a test. */
+const testedFile = (file) => (/\.test\.[^./]+$/.test(file) ? file.replace(/\.test(\.[^./]+)$/, '$1') : null);
+
+/**
+ * Core paths changed but not declared. A test file counts as declared when the file it tests is,
+ * because the planner cannot know in advance which tests the implementer will touch.
+ */
 export function undeclaredCorePaths(files, corePaths, declared) {
-  return files.filter((file) => matchesAny(file, corePaths) && !matchesAny(file, declared));
+  const isDeclared = (file) => matchesAny(file, declared) || (testedFile(file) !== null && matchesAny(testedFile(file), declared));
+  return files.filter((file) => matchesAny(file, corePaths) && !isDeclared(file));
 }
 
 const LEVELS = ['low', 'medium', 'high'];
