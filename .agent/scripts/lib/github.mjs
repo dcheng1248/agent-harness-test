@@ -84,11 +84,11 @@ export function bumpState(number, field) {
   return updateState(number, { [field]: (state[field] ?? 0) + 1 });
 }
 
-export function pushBranch(branch) {
+export function pushBranch(branch, commit = 'HEAD') {
   const token = process.env.GH_TOKEN;
   const remote = `https://x-access-token:${token}@github.com/${repo()}.git`;
   try {
-    execFileSync('git', ['push', remote, `HEAD:refs/heads/${branch}`], { stdio: 'pipe' });
+    execFileSync('git', ['push', remote, `${commit}:refs/heads/${branch}`], { stdio: 'pipe' });
   } catch {
     throw new Error(`Could not push ${branch}`);
   }

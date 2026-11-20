@@ -130,6 +130,31 @@ describe('routeEvent: final gate', () => {
     expect(review(['stage:implementing'], 'changes_requested')).toEqual([]);
     expect(types(review(['stage:implementing', 'needs-human'], 'approved'))).not.toContain('enableAutoMerge');
   });
+
+  const retry = (progress) =>
+    routeEvent({
+      kind: 'review',
+      actor: 'owner',
+      reviewers,
+      pr: pr(['stage:implementing', 'needs-human'], { progress }),
+      review: { state: 'changes_requested', body: '', commitId: 'head' },
+    });
+
+  it('continues a plan that stopped part way instead of revising code', () => {
+    const actions = retry({ tasksDone: 4, tasksTotal: 6 });
+    expect(actions).toContainEqual({ type: 'runImplement', mode: 'resume' });
+    expect(actions).toContainEqual({ type: 'removeLabel', label: 'needs-human' });
+    expect(types(actions)).not.toContain('bump');
+    expect(actions).not.toContainEqual({ type: 'addLabel', label: 'code-revised' });
+  });
+
+  it('restarts a plan when no task was saved', () => {
+    expect(retry({ tasksDone: 0, tasksTotal: 6 })).toContainEqual({ type: 'runImplement', mode: 'plan' });
+  });
+
+  it('revises code once every task is on the branch', () => {
+    expect(retry({ tasksDone: 6, tasksTotal: 6 })).toContainEqual({ type: 'runImplement', mode: 'human' });
+  });
 });
 
 describe('routeEvent: CI', () => {

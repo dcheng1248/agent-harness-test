@@ -2,7 +2,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { parseReviewers } from './lib/decide.mjs';
-import { api, apiList, repo } from './lib/github.mjs';
+import { api, apiList, getState, repo } from './lib/github.mjs';
 
 const { ISSUE: issueNumber, PR: prNumber, MODE: mode } = process.env;
 const reviewers = parseReviewers(process.env.AGENT_REVIEWERS);
@@ -25,7 +25,12 @@ if (history.length > 0) {
 if (prNumber) {
   const reviews = apiList(`pulls/${prNumber}/reviews`).filter((item) => allowed(item.user) && item.state !== 'PENDING');
   const latest = reviews.filter((item) => item.state === 'CHANGES_REQUESTED' || /^\s*\/replan\b/m.test(item.body ?? '')).at(-1);
-  if (latest && ['revise', 'human'].includes(mode)) {
+  if (mode === 'resume') {
+    const { tasksDone = 0, tasksTotal } = getState(prNumber);
+    const total = tasksTotal ? ` of ${tasksTotal}` : '';
+    parts.push(`## Progress\n\nTasks 1–${tasksDone}${total} are already on this branch and passed their task reviews. Start at Task ${tasksDone + 1}.`);
+  }
+  if (latest && ['revise', 'human', 'resume'].includes(mode)) {
     const inline = apiList(`pulls/${prNumber}/reviews/${latest.id}/comments`);
     parts.push(`## Human review (authoritative)\n\n${latest.body ?? ''}`);
     for (const item of inline) {

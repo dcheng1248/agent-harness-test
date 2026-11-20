@@ -50,7 +50,17 @@ When an agent PR changes `packages/web` or `packages/content`, agent review phot
 Randomness and time are fixed while photographing, so an unchanged screen looks identical on both sides. The images are stored on the public `agent-screenshots` branch.
 
 ## Enforced method
-The implementer must use a fresh helper agent for each task, and a reviewer helper. The code reviewer must use two parallel helpers, one for standards and one for spec. A script counts helpers after each run. If there are too few, the result is not accepted, nothing is pushed, and the PR gets `needs-human`. To retry, request changes on the PR.
+The implementer must use a fresh helper agent for each task, and a reviewer helper. The code reviewer must use two parallel helpers, one for standards and one for spec. A script counts helpers after each run. If there are too few, the result is not accepted and the PR gets `needs-human`. To retry, request changes on the PR.
+
+## Stopped implementations
+When an implementation stops early, for any reason, the tasks that already passed review are still pushed. The script reads the task reviewer helpers' reports from the run log and finds the first task whose latest review did not pass. It then pushes the commit the reviewer of the task before it saw. Anything after that commit is dropped. Before pushing, it checks that the commit is new work on this branch, that it doesn't touch harness files, and that enough helpers ran. It does not run `npm run verify`, because a failing check is often why the run stopped. The PR comment says which tasks are on the branch.
+
+Progress is kept in the PR's bookkeeping comment. Requesting changes then picks the right kind of run:
+- Some tasks are saved: `resume` continues from the next task. It skips the saved tasks and still ends with a whole-branch review.
+- No tasks are saved: `plan` starts the plan again.
+- All tasks are done: `human` revises the code from your review.
+
+A run killed by the job's time limit saves nothing, because the script never runs.
 
 ## Your own PRs
 Harness changes are made by you, and GitHub won't let you approve your own PR. Use the admin merge option. `agent-review` does not run on them.

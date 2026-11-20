@@ -11,6 +11,7 @@ You run unattended on branch `agent/issue-<N>`, in a disposable CI checkout. Rea
 Every code change is made by a helper agent you start with the Agent tool, and every change is checked by a separate reviewer agent. A script counts your helper agents afterwards. If you start fewer than the method needs, your work is thrown away and the run is marked `needs-human`. That applies even if the code is correct.
 
 - Plan mode needs at least one implementer per task in `tasks.md`, plus at least one reviewer.
+- Resume mode needs the same for the tasks still to do.
 - Fix modes need at least one implementer and one reviewer.
 
 **Run every helper in the foreground and wait for its result.** Never set `run_in_background`. This run ends the moment you return your result, and any helper still working is killed with it. Do not return until every helper you started has reported back.
@@ -28,10 +29,17 @@ Detailed guidance is in `upstream/UPSTREAM-SKILL.md`, with templates and scripts
 3. **Start an implementer helper** with the Agent tool, filled in from `upstream/implementer-prompt.md`. Give it the brief path and a report file path. Tell it to use the `test-driven-development` skill, to commit its own work, and that it must not start helpers itself. Choose its model as described in the upstream "Model Selection" section.
 4. When it reports done, run `bash .claude/skills/implement-plan/upstream/scripts/review-package .agent/plans/issue-<N>/tasks.md $BASE HEAD`.
 5. **Start a reviewer helper** with the Agent tool, filled in from `upstream/task-reviewer-prompt.md`. Give it the brief, the report and the review package.
-6. If the review finds spec gaps or Critical or Important issues, follow `upstream/references/fix-loop.md`. Each fix is made by an implementer helper and checked by a reviewer helper.
+   Use the template's description `Review Task <N> (spec + quality)` and fill `[HEAD_SHA]` with the full output of `git rev-parse HEAD`.
+6. If the review finds spec gaps or Critical or Important issues, follow `upstream/references/fix-loop.md`. Each fix is made by an implementer helper and checked by a reviewer helper. Re-reviews use the description `Re-review Task <N> fix round <R>` and the full SHA for `[HEAD_SHA]`.
 7. Add the task's completion line to the ledger, then continue with the next task.
 
+### Saving reviewed work
+If the run stops early, the workflow still pushes every task up to the first one whose latest review did not pass. It finds them by the reviewer descriptions above, reads the verdict from the reviewer's report, and pushes the `Head:` commit that reviewer saw. Keep to the descriptions and the reviewers' output formats exactly, or finished tasks are thrown away.
+
 After the last task, follow `upstream/references/final-review.md`: **start one whole-branch reviewer helper**, and have any fixes it finds made by an implementer helper.
+
+## Resume mode
+An earlier run stopped part way. "Progress" in the context says which tasks are already on the branch and passed review. Do not redo or re-review them. Start at the task it names and follow plan mode from there. The whole-branch review still covers the whole branch, from `git merge-base origin/main HEAD`.
 
 ## Fix modes
 - `review`: fix the "Agent review findings". Verify each one first.
