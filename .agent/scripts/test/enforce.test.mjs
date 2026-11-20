@@ -13,6 +13,11 @@ describe('helper agent rules', () => {
     expect(requiredImplementHelpers('plan', 0)).toBe(2);
   });
 
+  it('needs one implementer per remaining task plus a review in resume mode', () => {
+    expect(requiredImplementHelpers('resume', 6, 4)).toBe(3);
+    expect(requiredImplementHelpers('resume', 6, 6)).toBe(2);
+  });
+
   it('needs an implementer and a reviewer in fix modes', () => {
     for (const mode of ['review', 'ci', 'human']) expect(requiredImplementHelpers(mode, 5)).toBe(2);
   });

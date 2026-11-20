@@ -1,4 +1,5 @@
 // Pure decision logic for the dispatcher and router. No network or file access here.
+import { retryMode } from './progress.mjs';
 
 export const STAGES = [
   'stage:planning',
@@ -90,6 +91,16 @@ function routeReview({ pr, review, actor, reviewers }) {
   if (!atCodeGate) return [];
   if (hasReplan(body) && state !== 'approved') return replan();
   if (state === 'changes_requested') {
+    // A run that stopped before every task passed review continues the plan instead of revising code.
+    const mode = retryMode(pr.progress);
+    if (mode !== 'human') {
+      return [
+        { type: 'clearRounds' },
+        { type: 'removeLabel', label: 'needs-human' },
+        { type: 'setStage', stage: 'stage:implementing' },
+        { type: 'runImplement', mode },
+      ];
+    }
     return [
       { type: 'clearRounds' },
       { type: 'removeLabel', label: 'needs-human' },

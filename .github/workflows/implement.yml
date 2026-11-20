@@ -9,7 +9,7 @@ on:
         required: true
         type: string
       mode:
-        description: plan, review, ci or human
+        description: plan, resume, review, ci or human
         required: true
         type: string
 concurrency:
@@ -65,7 +65,9 @@ jobs:
           STAGE_NAME: implement
           RESULT: ${{ steps.agent.outcome }}
           EXECUTION_FILE: ${{ steps.agent.outputs.execution-file }}
-      - run: node "$HARNESS/scripts/after-implement.mjs"
+      # Also runs when the agent step fails, so tasks that passed review are still saved.
+      - if: always() && steps.agent.outcome != 'skipped'
+        run: node "$HARNESS/scripts/after-implement.mjs"
         env:
           BASE_SHA: ${{ steps.base.outputs.sha }}
           IMPLEMENT_OUTPUT: ${{ steps.agent.outputs.structured-output }}

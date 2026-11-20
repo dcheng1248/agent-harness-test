@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { applyActions } from './lib/actions.mjs';
 import { issueFromBranch, parseReviewers, routeEvent } from './lib/decide.mjs';
-import { api, apiList, labelNames, prForBranch } from './lib/github.mjs';
+import { api, apiList, getState, labelNames, prForBranch } from './lib/github.mjs';
 
 const payload = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
 const reviewers = parseReviewers(process.env.AGENT_REVIEWERS);
@@ -14,6 +14,10 @@ const describePr = (raw) => ({
 
 function run(event, raw) {
   const pr = describePr(raw);
+  if (event.kind === 'review' && pr.isAgent) {
+    const { tasksDone, tasksTotal } = getState(raw.number);
+    pr.progress = { tasksDone, tasksTotal };
+  }
   const actions = routeEvent({ ...event, pr, reviewers });
   applyActions(actions, { issue: issueFromBranch(raw.head.ref), pr: raw.number, labels: pr.labels });
 }
