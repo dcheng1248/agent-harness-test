@@ -12,8 +12,8 @@ graph LR
 ```mermaid
 flowchart LR
   Player -->|choice| web
-  web -->|action, region data at game start| core
-  content -->|text, events and region data| web
+  web -->|action, region data and name pool at game start| core
+  content -->|text, events, region data and name pool| web
   core -->|new state| web
 ```
 
