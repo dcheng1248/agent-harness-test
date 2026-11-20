@@ -8,18 +8,27 @@ export function parseUseCases(markdown) {
   return cases;
 }
 
-export function checkIds(docs, tests) {
+/**
+ * useCaseDocs: the USE_CASES.md files, which define every ID.
+ * structuralDocs: the architecture files, which must not hold use case tables.
+ */
+export function checkIds(useCaseDocs, tests, structuralDocs = []) {
   const cases = new Map();
   const errors = [];
-  for (const doc of docs) {
+  for (const doc of useCaseDocs) {
     for (const [id, status] of parseUseCases(doc)) {
       if (cases.has(id)) errors.push(`${id} is defined more than once`);
       cases.set(id, status);
     }
   }
+  for (const doc of structuralDocs) {
+    for (const id of parseUseCases(doc).keys()) {
+      errors.push(`${id} is listed in an architecture file. Use cases belong in the module's USE_CASES.md`);
+    }
+  }
   const referenced = new Set(tests.flatMap((test) => test.match(ID) ?? []));
   for (const id of referenced) {
-    if (!cases.has(id)) errors.push(`${id} is used in a test but is not in the architecture docs`);
+    if (!cases.has(id)) errors.push(`${id} is used in a test but is not in any USE_CASES.md`);
   }
   for (const [id, status] of cases) {
     if (status === 'implemented' && !referenced.has(id)) errors.push(`${id} is implemented but no test references it`);

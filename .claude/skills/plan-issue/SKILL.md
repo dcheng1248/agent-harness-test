@@ -1,6 +1,6 @@
 ---
 name: plan-issue
-description: Plan one GitHub issue in the unattended pipeline. Edits architecture docs and writes brief.md and tasks.md, or returns questions if anything is unclear.
+description: Plan one GitHub issue in the unattended pipeline. Updates use cases (and architecture docs only for structural changes) and writes brief.md and tasks.md, or returns questions if anything is unclear.
 ---
 
 # Plan an issue
@@ -16,15 +16,18 @@ Before planning, list what you would have to guess: behaviour, scope, wording, d
 Answers already given under "Questions and your answers" are binding. Ask again only about what is still unclear.
 
 ## When the issue is clear
-1. Read `CLAUDE.md`, `docs/architecture.md`, and the `ARCHITECTURE.md` of each affected module.
-2. Edit the architecture docs directly, only where the spec really changes. Add `UC-<MODULE>-NNN` IDs for new use cases.
+1. Read `CLAUDE.md`, `docs/architecture.md`, and the `ARCHITECTURE.md` and `USE_CASES.md` of each affected module.
+2. Update the spec, following "What goes where" in `docs/architecture.md`:
+   - **Use cases** go in the module's `USE_CASES.md`. Add `UC-<MODULE>-NNN` IDs for new ones and change existing ones where behaviour changes. Describe behaviour as a player or caller sees it.
+   - **Architecture files** (`docs/architecture.md`, `packages/*/ARCHITECTURE.md`) change only when the structure changes: module boundaries, dependencies, data flow, the shape of `GameState` or schemas, a public interface, or a shared pattern. Most issues leave them untouched.
+   - **Exact values** never go in docs: numbers, balance values, colours, sizes, positions, fonts, wording and element IDs. They go in `tasks.md` and the code. Docs may name where a value lives, such as `BALANCE.upkeep`.
 3. Write `.agent/plans/issue-<N>/brief.md` from `.agent/brief-template.md`. Keep it to one screen. Under "## Core paths", list every path in `.agent/core-paths.yml` the work will change.
 4. Rate risk using `docs/harness/risk-rules.md`.
 5. Write `.agent/plans/issue-<N>/tasks.md` following `upstream-writing-plans.md` in this folder, with these overrides:
    - Save to `tasks.md` as above. Skip its "Execution Handoff" section. Do not ask anyone to review or choose a method.
-   - The spec is the issue plus the edited architecture docs.
+   - The spec is the issue plus the updated use cases and architecture docs. Exact values for this issue are written in the tasks.
    - Order tasks by dependency: `core`, then `content`, then `web`, then a final whole-repo task running `npm run verify`.
-   - Each task names the `ARCHITECTURE.md` files its implementer must read, and produces one commit per module.
+   - Each task names the `ARCHITECTURE.md` and `USE_CASES.md` files its implementer must read, and produces one commit per module.
    - For a large non-mechanical cascade, stage it: add the new shape, migrate modules, remove the old one.
    - If the issue adds or changes anything a player sees, the `web` task updates `packages/web/screenshots.json`, so every new or changed screen has a scenario. Steps can only `click` or `waitFor` a CSS selector, so give the elements involved stable IDs.
 6. Return `status`: `ready`, a short `pr_title`, `risk`, and empty `questions`.

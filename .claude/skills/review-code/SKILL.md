@@ -14,7 +14,7 @@ Run both in the foreground: never set `run_in_background`. This run ends when yo
 
 1. Pin the fixed point: `origin/main`. Confirm `git diff origin/main...HEAD` is not empty.
 2. **Standards helper.** Give it the diff command, `git log origin/main..HEAD --oneline`, the standards sources (`CLAUDE.md` and each affected `ARCHITECTURE.md`), and the full smell baseline from `upstream-code-review.md`. Use that file's Standards brief.
-3. **Spec helper.** Give it the same diff command and commit list, plus the spec: `.agent-run/context.md`, `.agent/plans/issue-<N>/brief.md`, and the architecture docs. Use that file's Spec brief.
+3. **Spec helper.** Give it the same diff command and commit list, plus the spec: `.agent-run/context.md`, `.agent/plans/issue-<N>/brief.md` and `tasks.md`, the affected `USE_CASES.md` files, and the architecture docs. Use that file's Spec brief.
 4. Wait for both. Turn their reports into findings for the combined verdict.
 
 ## Overrides
