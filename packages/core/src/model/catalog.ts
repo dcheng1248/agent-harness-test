@@ -1,7 +1,7 @@
 import type { ActionPointId } from './calendar';
 import { ACTION_POINTS } from './calendar';
 
-export const PALACE_IDS = ['chongwen', 'hanmo', 'yanwu', 'qingong'] as const;
+export const PALACE_IDS = ['chongwen', 'yuhuayuan', 'yanwu', 'qingong'] as const;
 export type PalaceId = (typeof PALACE_IDS)[number];
 
 export const ACTION_IDS = ['study', 'arts', 'riding', 'rest'] as const;
@@ -14,8 +14,8 @@ export interface Catalog {
 
 export const CATALOG: Catalog = {
   palaces: {
-    chongwen: { actions: ['study'] },
-    hanmo: { actions: ['arts'] },
+    chongwen: { actions: ['study', 'arts'] },
+    yuhuayuan: { actions: [] },
     yanwu: { actions: ['riding'] },
     qingong: { actions: ['rest'] },
   },

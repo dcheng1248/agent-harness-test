@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CATALOG,
+  PALACE_IDS,
   createInitialState,
   enterPalace,
   getAge,
@@ -23,6 +24,18 @@ function act(state: GameState, palace: PalaceId, action: ActionId) {
   return outcome;
 }
 
+describe("palaces", () => {
+  it("UC-CORE-012 palaces in map order; 崇文館 offers study then arts; 御花園 offers nothing", () => {
+    expect(PALACE_IDS).toEqual(["chongwen", "yuhuayuan", "yanwu", "qingong"]);
+    expect(CATALOG.palaces.chongwen.actions).toEqual(["study", "arts"]);
+    expect(CATALOG.palaces.yuhuayuan.actions).toEqual([]);
+    const inGarden = enterPalace(makeState(), "yuhuayuan");
+    expect(inGarden.location).toBe("yuhuayuan");
+    expect(inGarden.actionPoint).toBe(0);
+    expect(returnToMap(inGarden).location).toBe("map");
+  });
+});
+
 describe("moving", () => {
   it("UC-CORE-012 moving between the map and palaces uses no action point", () => {
     const start = makeState();
@@ -32,10 +45,10 @@ describe("moving", () => {
     expect(inPalace.rngState).toBe(start.rngState);
     const back = returnToMap(inPalace);
     expect(back).toEqual(start);
-    expect(enterPalace(inPalace, "hanmo")).toBe(inPalace);
+    expect(enterPalace(inPalace, "yuhuayuan")).toBe(inPalace);
     const dead = makeState({ dead: true });
-    expect(enterPalace(dead, "hanmo")).toBe(dead);
-    const deadIn = makeState({ dead: true, location: "hanmo" });
+    expect(enterPalace(dead, "yuhuayuan")).toBe(dead);
+    const deadIn = makeState({ dead: true, location: "yuhuayuan" });
     expect(returnToMap(deadIn)).toBe(deadIn);
   });
 });
@@ -49,21 +62,22 @@ describe("takeAction", () => {
       state: onMap,
     });
 
-    const wrongPalace = enterPalace(makeState(), "chongwen");
-    expect(takeAction(wrongPalace, "arts")).toEqual({
+    const notOffered = enterPalace(makeState(), "yuhuayuan");
+    expect(takeAction(notOffered, "study")).toEqual({
       ok: false,
       reason: "not-offered",
-      state: wrongPalace,
+      state: notOffered,
     });
 
+    const inChongwen = enterPalace(makeState(), "chongwen");
     const catalog: Catalog = {
       ...CATALOG,
       actions: { ...CATALOG.actions, study: { allowedIn: ["night"] } },
     };
-    expect(takeAction(wrongPalace, "study", catalog)).toEqual({
+    expect(takeAction(inChongwen, "study", catalog)).toEqual({
       ok: false,
       reason: "not-allowed-now",
-      state: wrongPalace,
+      state: inChongwen,
     });
 
     const dead = makeState({ dead: true, location: "chongwen" });
@@ -161,7 +175,7 @@ describe("aging and death", () => {
   it("UC-CORE-013 aging starts at 40 and grows with age", () => {
     const at40 = act(
       makeState({ stats: baseStats, turn: 192, actionPoint: 3 }),
-      "hanmo",
+      "chongwen",
       "arts",
     );
     expect(at40.turnEnd?.aging).toBe(1);
@@ -172,7 +186,7 @@ describe("aging and death", () => {
     expect(at40.state.stats.health).toBe(49);
     const at45 = act(
       makeState({ stats: baseStats, turn: 232, actionPoint: 3 }),
-      "hanmo",
+      "chongwen",
       "arts",
     );
     expect(at45.turnEnd?.aging).toBe(2);
@@ -189,7 +203,7 @@ describe("aging and death", () => {
     expect(out.turnEnd).toBeNull();
     expect(out.state.turn).toBe(0);
     expect(out.state.actionPoint).toBe(0);
-    const later = takeAction(enterPalace(out.state, "hanmo"), "arts");
+    const later = takeAction(enterPalace(out.state, "chongwen"), "arts");
     expect(later.ok).toBe(false);
     if (!later.ok) expect(later.reason).toBe("dead");
   });
@@ -201,7 +215,7 @@ describe("aging and death", () => {
         turn: 192,
         actionPoint: 3,
       }),
-      "hanmo",
+      "chongwen",
       "arts",
     );
     expect(out.state.dead).toBe(true);
