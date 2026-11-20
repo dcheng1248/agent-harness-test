@@ -4,11 +4,12 @@ import { BALANCE } from "./balance";
 import type { PalaceId } from "./catalog";
 import { listPosts } from "./officials";
 import type { NamePool, Official } from "./officials";
+import type { Recommendation } from "./notables";
 import { EMPEROR_STAT_IDS } from "./stats";
 import type { NationStatValues, StatValues } from "./stats";
 import type { RegionData, RegionState } from "./region";
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export type Location = "map" | PalaceId;
 
@@ -25,6 +26,7 @@ export interface GameState {
   nation: NationStatValues;
   regions: RegionState[];
   officials: Official[];
+  recommendation: Recommendation | null;
   dead: boolean;
 }
 
@@ -99,6 +101,7 @@ export function createInitialState(
     nation: { treasury: BALANCE.startingTreasury },
     regions: regionStates,
     officials,
+    recommendation: null,
     dead: false,
   };
 }

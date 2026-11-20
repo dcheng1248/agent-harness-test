@@ -39,6 +39,7 @@ export const BALANCE = {
   bankruptcyMoraleLoss: 3,
   population: { growAtOrAbove: 120, shrinkAtOrBelow: 80, ratePercent: 2 },
   aging: { startAge: 40, baseLoss: 1, yearsPerStep: 5 },
+  recommendation: { notableBase: 0.03, notableBonus: 0.05 },
   officials: {
     startingIdle: 30,
     outlierChance: 0.1,

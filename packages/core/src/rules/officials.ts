@@ -43,7 +43,7 @@ export function drawOfficial(
     rng = given.rngState;
     const name = `${names.surnames[surname.value]}${names.givenNames[given.value]}`;
     if (!taken.has(name) && !names.reserved.includes(name))
-      return { official: { id, name, stats, post: null }, rngState: rng };
+      return { official: { id, name, stats, post: null, notable: null }, rngState: rng };
   }
   throw new Error("official name pool exhausted");
 }
