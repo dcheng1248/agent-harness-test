@@ -1,3 +1,4 @@
+import { notables } from './notables';
 import { officialNames } from './officialNames';
 import { regions } from './regions';
 import type { GameText, UiText } from './schema';
@@ -60,6 +61,12 @@ export const uiText: UiText = {
   appointButton: '任命',
   backToPosts: '返回官位列表',
   backToCourt: '返回宣政殿',
+  recommendHeading: '舉薦人選',
+  notableMark: '名臣',
+  acceptCandidate: '錄用',
+  declineCandidate: '婉拒',
+  recommendUsed: '已舉薦',
+  noCandidate: '此次早朝已無候選人',
 };
 
 export const gameText: GameText = {
@@ -122,4 +129,5 @@ export const gameText: GameText = {
   ],
   regions,
   officialNames,
+  notables,
 };
