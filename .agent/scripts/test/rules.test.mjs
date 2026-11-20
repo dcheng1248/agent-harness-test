@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   classifyRisk,
@@ -36,6 +37,16 @@ describe('path rules', () => {
     expect(declared).toEqual(['docs/architecture.md']);
     expect(undeclaredCorePaths(['docs/architecture.md', 'packages/core/src/index.ts', 'packages/web/src/a.ts'], corePaths, declared))
       .toEqual(['packages/core/src/index.ts']);
+  });
+
+  it('reads core paths folded in a details block at the end of the brief', () => {
+    const brief = '## Rejected alternatives\n- `not/a/path`\n\n<details><summary>Core paths</summary>\n\n## Core paths\n- `docs/architecture.md`\n- `packages/core/src/index.ts`\n\n</details>\n';
+    expect(declaredCorePaths(brief)).toEqual(['docs/architecture.md', 'packages/core/src/index.ts']);
+  });
+
+  it('reads core paths from the brief template layout', () => {
+    const template = readFileSync('.agent/brief-template.md', 'utf8');
+    expect(declaredCorePaths(template)).toEqual(['path']);
   });
 });
 
