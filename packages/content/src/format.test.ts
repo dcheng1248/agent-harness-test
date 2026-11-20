@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { formatAge, formatChanges, formatChineseNumber, formatDate, formatLifespan, formatReign } from './format';
+import {
+  formatAge,
+  formatAmount,
+  formatChanges,
+  formatChineseNumber,
+  formatDate,
+  formatEconomy,
+  formatLifespan,
+  formatReign,
+  formatTaels,
+} from './format';
 import { uiText } from './index';
 
 describe('format', () => {
@@ -20,5 +30,17 @@ describe('format', () => {
     expect(formatAge(16)).toBe('十六歲');
     expect(formatReign(12)).toBe('在位十二年');
     expect(formatLifespan(58)).toBe('享年五十八歲');
+  });
+  it('UC-WEB-006 formats amounts with thousands separators and U+2212', () => {
+    expect([0, 999, 1000, 3000000, -20000].map(formatAmount)).toEqual(['0', '999', '1,000', '3,000,000', '−20,000']);
+    expect(formatChanges([{ stat: 'morale', amount: -3 }, { stat: 'population', amount: 60000 }])).toBe('民心 −3，人口 +60,000');
+  });
+  it('UC-WEB-006 formats taels', () => {
+    expect(formatTaels(500000)).toBe('500,000 兩');
+    expect(formatTaels(-20000)).toBe('−20,000 兩');
+  });
+  it('UC-WEB-006 formats the economy report, hiding zero tax income', () => {
+    expect(formatEconomy({ taxIncome: 547437, upkeep: 120000, regionChanges: [] })).toBe('稅入 +547,437 兩，宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
   });
 });

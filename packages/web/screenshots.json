@@ -436,5 +436,179 @@
         "waitFor": "#ending"
       }
     ]
+  },
+  {
+    "name": "atlas",
+    "description": "輿圖畫面",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#open-atlas"
+      },
+      {
+        "waitFor": "#atlas"
+      }
+    ]
+  },
+  {
+    "name": "turn-summary-tax",
+    "description": "夏下總結：稅入與宮廷用度",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "waitFor": "#summary-treasury"
+      }
+    ]
   }
 ]

@@ -1,0 +1,77 @@
+import { PLAYER_OWNER } from '@emperor/core';
+import type { RegionEntry } from './schema';
+
+export const regions: readonly RegionEntry[] = [
+  {
+    id: 'guanzhong',
+    name: '關中',
+    capital: true,
+    owner: PLAYER_OWNER,
+    adjacent: ['hedong', 'zhongyuan', 'jingchu', 'bashu'],
+    start: { morale: 65, population: 3000000, prosperity: 60 },
+  },
+  {
+    id: 'hedong',
+    name: '河東',
+    capital: false,
+    owner: PLAYER_OWNER,
+    adjacent: ['guanzhong', 'hebei', 'zhongyuan'],
+    start: { morale: 60, population: 2000000, prosperity: 50 },
+  },
+  {
+    id: 'hebei',
+    name: '河北',
+    capital: false,
+    owner: PLAYER_OWNER,
+    adjacent: ['hedong', 'zhongyuan', 'shandong'],
+    start: { morale: 55, population: 4000000, prosperity: 55 },
+  },
+  {
+    id: 'zhongyuan',
+    name: '中原',
+    capital: false,
+    owner: PLAYER_OWNER,
+    adjacent: ['guanzhong', 'hedong', 'hebei', 'shandong', 'jiangnan', 'jingchu'],
+    start: { morale: 60, population: 5000000, prosperity: 60 },
+  },
+  {
+    id: 'shandong',
+    name: '山東',
+    capital: false,
+    owner: PLAYER_OWNER,
+    adjacent: ['hebei', 'zhongyuan', 'jiangnan'],
+    start: { morale: 60, population: 4000000, prosperity: 55 },
+  },
+  {
+    id: 'jiangnan',
+    name: '江南',
+    capital: false,
+    owner: PLAYER_OWNER,
+    adjacent: ['zhongyuan', 'shandong', 'jingchu', 'lingnan'],
+    start: { morale: 65, population: 4500000, prosperity: 75 },
+  },
+  {
+    id: 'jingchu',
+    name: '荊楚',
+    capital: false,
+    owner: PLAYER_OWNER,
+    adjacent: ['guanzhong', 'zhongyuan', 'jiangnan', 'bashu', 'lingnan'],
+    start: { morale: 60, population: 3500000, prosperity: 55 },
+  },
+  {
+    id: 'bashu',
+    name: '巴蜀',
+    capital: false,
+    owner: PLAYER_OWNER,
+    adjacent: ['guanzhong', 'jingchu'],
+    start: { morale: 65, population: 3000000, prosperity: 60 },
+  },
+  {
+    id: 'lingnan',
+    name: '嶺南',
+    capital: false,
+    owner: PLAYER_OWNER,
+    adjacent: ['jiangnan', 'jingchu'],
+    start: { morale: 55, population: 1500000, prosperity: 40 },
+  },
+];

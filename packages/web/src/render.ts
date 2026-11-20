@@ -1,9 +1,18 @@
 import type { GameText, UiText } from '@emperor/content';
-import { formatAge, formatChanges, formatDate, formatLifespan, formatReign } from '@emperor/content';
+import {
+  formatAge,
+  formatAmount,
+  formatChanges,
+  formatDate,
+  formatEconomy,
+  formatLifespan,
+  formatReign,
+  formatTaels,
+} from '@emperor/content';
 import {
   CATALOG,
   PALACE_IDS,
-  STAT_REGISTRY,
+  EMPEROR_STAT_IDS,
   getActionPointId,
   getAge,
   getHalfSeason,
@@ -39,10 +48,10 @@ export function renderEraScreen(screen: Of<'era'>, text: UiText): string {
 
 export function renderHeader(state: GameState, _text: UiText, game: GameText): string {
   const date = formatDate(state.eraName, getReignYear(state), getHalfSeason(state));
-  const stats = STAT_REGISTRY.map(
-    (s) => `<span data-stat="${s.id}">${game.statLabels[s.id]} ${state.stats[s.id]}</span>`,
+  const stats = EMPEROR_STAT_IDS.map(
+    (id) => `<span data-stat="${id}">${game.statLabels[id]} ${state.stats[id]}</span>`,
   ).join('');
-  return `<header id="game-header"><span id="header-date">${escapeHtml(date)}</span><span id="header-action-point">${game.actionPointLabels[getActionPointId(state)]}</span><span id="header-age">${formatAge(getAge(state))}</span><div id="header-stats">${stats}</div></header>`;
+  return `<header id="game-header"><span id="header-date">${escapeHtml(date)}</span><span id="header-action-point">${game.actionPointLabels[getActionPointId(state)]}</span><span id="header-age">${formatAge(getAge(state))}</span><div id="header-stats">${stats}</div><span id="header-treasury">${game.statLabels.treasury} ${formatTaels(state.nation.treasury)}</span></header>`;
 }
 
 export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameText): string {
@@ -52,7 +61,7 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
     const buttons = PALACE_IDS.map(
       (id) => `<button type="button" id="palace-${id}" data-palace="${id}">${game.palaces[id].name}</button>`,
     ).join('');
-    return `${header}<main id="palace-map"><h2>${text.mapHeading}</h2><div id="palace-grid">${buttons}</div></main>`;
+    return `${header}<main id="palace-map"><h2>${text.mapHeading}</h2><div id="palace-grid">${buttons}</div><button type="button" id="open-atlas">${text.atlasButton}</button></main>`;
   }
   const palace = game.palaces[state.location];
   const actions = CATALOG.palaces[state.location].actions
@@ -68,7 +77,29 @@ export function renderResultScreen(screen: Of<'result'>, text: UiText, game: Gam
 export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: GameText): string {
   const ended = game.halfSeasonLabels[screen.endedHalfSeason];
   const next = game.halfSeasonLabels[getHalfSeason(screen.state)];
-  return `${renderHeader(screen.state, text, game)}<main id="turn-summary"><h2>${ended}${text.summarySuffix}</h2><p id="summary-action">${game.actions[screen.actionId].name}：${formatChanges(screen.changes)}</p><p id="summary-totals">${formatChanges(screen.totals)}</p><button type="button" id="next-turn">${text.nextTurnPrefix}${next}</button></main>`;
+  const { regionChanges } = screen.economy;
+  const regionLines =
+    regionChanges.length === 0
+      ? `<li>${text.noChange}</li>`
+      : regionChanges
+          .map((r) => {
+            const name = game.regions.find((g) => g.id === r.region)?.name ?? r.region;
+            return `<li data-region="${escapeHtml(r.region)}">${escapeHtml(name)}：${formatChanges(r.changes)}</li>`;
+          })
+          .join('');
+  return `${renderHeader(screen.state, text, game)}<main id="turn-summary"><h2>${ended}${text.summarySuffix}</h2><p id="summary-action">${game.actions[screen.actionId].name}：${formatChanges(screen.changes)}</p><p id="summary-totals">${formatChanges(screen.totals)}</p><p id="summary-treasury">${formatEconomy(screen.economy)}</p><ul id="summary-regions">${regionLines}</ul><button type="button" id="next-turn">${text.nextTurnPrefix}${next}</button></main>`;
+}
+
+export function renderAtlasScreen(screen: Of<'atlas'>, text: UiText, game: GameText): string {
+  const rows = screen.state.regions
+    .map((r) => {
+      const entry = game.regions.find((g) => g.id === r.id);
+      const name = `${entry?.name ?? r.id}${entry?.capital ? `（${text.capitalMark}）` : ''}`;
+      return `<tr data-region="${escapeHtml(r.id)}"><th scope="row">${escapeHtml(name)}</th><td>${r.stats.morale}</td><td>${formatAmount(r.stats.population)}</td><td>${r.stats.prosperity}</td></tr>`;
+    })
+    .join('');
+  const head = `<tr><th>${text.regionColumn}</th><th>${game.statLabels.morale}</th><th>${game.statLabels.population}</th><th>${game.statLabels.prosperity}</th></tr>`;
+  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2><div id="atlas-scroll"><table id="atlas-table"><thead>${head}</thead><tbody>${rows}</tbody></table></div><button type="button" id="close-atlas">${text.backToMap}</button></main>`;
 }
 
 export function renderEndingScreen(screen: Of<'ending'>, text: UiText, _game?: GameText): string {
@@ -88,6 +119,8 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderResultScreen(screen, text, game);
     case 'summary':
       return renderSummaryScreen(screen, text, game);
+    case 'atlas':
+      return renderAtlasScreen(screen, text, game);
     case 'ending':
       return renderEndingScreen(screen, text, game);
   }

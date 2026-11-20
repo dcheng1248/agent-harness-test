@@ -7,9 +7,11 @@ import {
   returnToMap,
   takeAction,
   type ActionId,
+  type EconomyReport,
   type GameState,
   type HalfSeasonId,
   type PalaceId,
+  type RegionData,
   type StatChange,
 } from '@emperor/core';
 
@@ -25,7 +27,9 @@ export type Screen =
       changes: StatChange[];
       endedHalfSeason: HalfSeasonId;
       totals: StatChange[];
+      economy: EconomyReport;
     }
+  | { screen: 'atlas'; state: GameState }
   | { screen: 'ending'; state: GameState };
 
 export function startGame(seed: number, pool: readonly string[]): Screen {
@@ -38,11 +42,15 @@ export function startGame(seed: number, pool: readonly string[]): Screen {
   };
 }
 
-export function chooseEraName(screen: Screen, input: string): Screen {
+export function chooseEraName(
+  screen: Screen,
+  input: string,
+  regions: readonly RegionData[],
+): Screen {
   if (screen.screen !== 'era') return screen;
   const name = input.trim();
   if (!isValidEraName(name)) return { ...screen, draft: input, error: true };
-  return { screen: 'play', state: createInitialState(screen.seed, name) };
+  return { screen: 'play', state: createInitialState(screen.seed, name, regions) };
 }
 
 export function goToPalace(screen: Screen, palaceId: PalaceId): Screen {
@@ -69,9 +77,20 @@ export function performAction(screen: Screen, actionId: ActionId): Screen {
       changes,
       endedHalfSeason: getHalfSeason(screen.state),
       totals: turnEnd.totals,
+      economy: turnEnd.economy,
     };
   }
   return { screen: 'result', state, actionId, changes };
+}
+
+export function openAtlas(screen: Screen): Screen {
+  if (screen.screen !== 'play' || screen.state.location !== 'map') return screen;
+  return { screen: 'atlas', state: screen.state };
+}
+
+export function closeAtlas(screen: Screen): Screen {
+  if (screen.screen !== 'atlas') return screen;
+  return { screen: 'play', state: screen.state };
 }
 
 export function continueToMap(screen: Screen): Screen {
