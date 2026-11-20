@@ -1,13 +1,17 @@
+import { regions } from './regions';
 import type { GameText, UiText } from './schema';
 
-export type { GameText, UiText } from './schema';
+export type { GameText, RegionEntry, UiText } from './schema';
 export {
   formatAge,
+  formatAmount,
   formatChanges,
   formatChineseNumber,
   formatDate,
+  formatEconomy,
   formatLifespan,
   formatReign,
+  formatTaels,
 } from './format';
 
 export const uiText: UiText = {
@@ -28,10 +32,23 @@ export const uiText: UiText = {
   endingHeading: '駕崩',
   eraLabel: '年號',
   restartButton: '再開新局',
+  atlasButton: '輿圖',
+  atlasHeading: '輿圖',
+  regionColumn: '地域',
+  capitalMark: '京師',
+  taelUnit: '兩',
+  taxIncomeLabel: '稅入',
+  upkeepLabel: '宮廷用度',
 };
 
 export const gameText: GameText = {
-  statLabels: { health: '健康', learning: '學識', arts: '才藝', resolve: '魄力' },
+  statLabels: {
+    health: '健康', learning: '學識', arts: '才藝', resolve: '魄力',
+    treasury: '國庫',
+    morale: '民心',
+    population: '人口',
+    prosperity: '富庶',
+  },
   actionPointLabels: { dawn: '朝', noon: '午', dusk: '夕', night: '夜' },
   halfSeasonLabels: {
     'spring-early': '春上',
@@ -59,4 +76,5 @@ export const gameText: GameText = {
     '承平', '景和', '永綏', '昭寧', '嘉穗', '鴻熙', '安瀾', '崇禧', '德輝', '清晏',
     '隆祚', '熙載', '紹元', '康衢', '泰寧', '明昶', '天祿', '文昭', '靖和', '瑞曦',
   ],
+  regions,
 };

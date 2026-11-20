@@ -1,4 +1,4 @@
-import type { HalfSeasonId, StatChange } from '@emperor/core';
+import type { EconomyReport, HalfSeasonId, StatChange } from '@emperor/core';
 import { gameText, uiText } from './index';
 
 const DIGITS = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
@@ -26,10 +26,26 @@ export function formatAge(age: number): string {
   return `${formatChineseNumber(age)}歲`;
 }
 
+export function formatAmount(n: number): string {
+  const digits = String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return n < 0 ? `−${digits}` : digits;
+}
+
+export function formatTaels(n: number): string {
+  return `${formatAmount(n)} ${uiText.taelUnit}`;
+}
+
+export function formatEconomy(report: EconomyReport): string {
+  const parts: string[] = [];
+  if (report.taxIncome > 0) parts.push(`${uiText.taxIncomeLabel} +${formatTaels(report.taxIncome)}`);
+  parts.push(`${uiText.upkeepLabel} −${formatTaels(report.upkeep)}`);
+  return parts.join('，');
+}
+
 export function formatChanges(changes: readonly StatChange[]): string {
   if (changes.length === 0) return uiText.noChange;
   return changes
-    .map((c) => `${gameText.statLabels[c.stat]} ${c.amount < 0 ? '−' : '+'}${Math.abs(c.amount)}`)
+    .map((c) => `${gameText.statLabels[c.stat]} ${c.amount < 0 ? '−' : '+'}${formatAmount(Math.abs(c.amount))}`)
     .join('，');
 }
 

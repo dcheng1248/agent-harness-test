@@ -40,7 +40,7 @@ Issue #17, the first playable loop, covers UC-CORE-001, UC-CORE-011 to UC-CORE-0
 | UC-CORE-014 | 九州地域：由資料載入地域，各有民心、人口、富庶與歸屬 | implemented |
 | UC-CORE-015 | 國庫：春上與秋上收稅、每半季支付宮廷用度、國庫虧空時各地民心下降 | implemented |
 | UC-CORE-016 | 每年人口隨民心與富庶增減 | implemented |
-| UC-CONTENT-001 | 九州地域資料：名稱、相鄰地域、歸屬與初始數值 | planned |
+| UC-CONTENT-001 | 九州地域資料：名稱、相鄰地域、歸屬與初始數值 | implemented |
 | UC-WEB-001 | 顯示標題畫面 | implemented |
 | UC-WEB-002 | 開始遊戲：登基後進入年號畫面 | implemented |
 | UC-WEB-003 | 年號畫面 | implemented |
