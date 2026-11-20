@@ -12,7 +12,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-006 | 輿圖畫面：自崇文館開啟，列出各地域的民心、人口、富庶，開啟不耗行動點 | implemented |
 | UC-WEB-007 | 宣政殿：只在朝時開放的早朝，圖上內閣與六部按鈕，展開各部選項，退回宮城 | implemented |
 | UC-WEB-008 | 官員任命畫面：按中樞、六部、地方列出官位，選官位後自賦閑官員中任命 | implemented |
-| UC-WEB-009 | 舉薦人選畫面：顯示一名候選人（名臣另示朝代），錄用或婉拒；每次早朝限用一次 | planned |
+| UC-WEB-009 | 舉薦人選畫面：顯示一名候選人（名臣另有標記），錄用或婉拒；每次早朝限用一次 | planned |
 
 ## UC-WEB-001 Title screen
 The palace image fills the viewport width with its aspect ratio kept, never cropped or stretched. A decorative scroll sits over the top centre of the image, with the game title written on it. The scroll and title scale with the image. There is no animation.
@@ -53,7 +53,7 @@ Entered from its button on the palace map, only at 朝 (UC-CORE-003); at other a
 ## UC-WEB-009 舉薦人選
 Opened from 吏部 → 舉薦人選 during 早朝, once per 早朝. Opening it calls `core`'s `recommend`, which draws the candidate; nothing on this screen uses an action point, and the header keeps showing 朝.
 
-- The screen has the header bar, a heading, and one candidate: their name and their 文治, 武功, 野心 and 忠誠. A 名臣 also shows a 名臣 mark and their era. An ordinary candidate shows neither.
+- The screen has the header bar, a heading, and one candidate: their name and their 文治, 武功, 野心 and 忠誠. A 名臣 also shows a 名臣 mark. An ordinary candidate does not.
 - Two buttons: accept and decline. Accepting calls `acceptCandidate`, so the candidate joins as 賦閑 and appears in 官員任命's 賦閑 list. Declining calls `declineCandidate`. Either way the player returns to 宣政殿 with 吏部's options open, where 舉薦人選 now shows as already used.
 - There is no way to leave without deciding. If the state holds no candidate from this half-season, the screen shows only a button back to 宣政殿.
 

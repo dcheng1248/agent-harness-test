@@ -15,7 +15,7 @@ flowchart LR
 
 ## Exports
 - `uiText`: screen labels and fixed lines, keyed by name.
-- `gameText`: text for `core` registries (`statLabels`, `actionPointLabels`, `halfSeasonLabels`, `palaces` with a name, a description (required for every palace except 宣政殿, enforced by the type) and the alt text of the palace's background image (`imageAlt`), `actions` with a name, `departments` with a short `label` for its button and its full `name`, `courtOptions` with a name, `centralPosts`, `ministryRanks` and `regionOffices` with a name), the 年號 pool (`eraNamePool`), the regions (`regions`, `readonly RegionEntry[]`), the official name pool (`officialNames`, a `NamePool`, in `src/officialNames.ts`), and the 名臣 list (`notables`, `readonly NotableEntry[]`, in `src/notables.ts`).
+- `gameText`: text for `core` registries (`statLabels`, `actionPointLabels`, `halfSeasonLabels`, `palaces` with a name, a description (required for every palace except 宣政殿, enforced by the type) and the alt text of the palace's background image (`imageAlt`), `actions` with a name, `departments` with a short `label` for its button and its full `name`, `courtOptions` with a name, `centralPosts`, `ministryRanks` and `regionOffices` with a name), the 年號 pool (`eraNamePool`), the regions (`regions`, `readonly RegionEntry[]`), the official name pool (`officialNames`, a `NamePool`, in `src/officialNames.ts`), and the 名臣 list (`notables`, `readonly NotableData[]`, in `src/notables.ts`).
 - `formatPostName(post: PostInfo)` in `src/format.ts` builds a post's full name from that text.
 - Format functions in `src/format.ts`. They are pure.
 
@@ -32,12 +32,6 @@ interface RegionEntry extends RegionData {
 Adding a region means adding one entry. Region IDs must not equal a 部 ID or a central post ID (see `core`'s "Posts").
 
 ## 名臣
-`src/notables.ts` holds the 名臣 list, one entry per line so it reads as a table. Each entry is a `NotableEntry`: `core`'s `NotableData` plus text.
-
-```ts
-interface NotableEntry extends NotableData {
-  era: string; // flavour text, such as the dynasty
-}
-```
+`src/notables.ts` holds the 名臣 list, one entry per line so it reads as a table. Each entry is a `core` `NotableData` as it is. The name is already Chinese, so no extra text is added.
 
 `src/officialNames.ts` builds `officialNames.reserved` from this list's names, so adding a 名臣 also reserves the name.
