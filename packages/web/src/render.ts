@@ -6,10 +6,12 @@ import {
   formatDate,
   formatEconomy,
   formatLifespan,
+  formatPostName,
   formatReign,
   formatTaels,
 } from '@emperor/content';
 import {
+  canEnterPalace,
   CATALOG,
   DEPARTMENT_IDS,
   DEPARTMENTS,
@@ -19,12 +21,16 @@ import {
   getAge,
   getHalfSeason,
   getReignYear,
+  listPosts,
+  OFFICIAL_STAT_IDS,
   type DepartmentId,
   type GameState,
+  type Official,
   type PalaceId,
+  type PostInfo,
 } from '@emperor/core';
 import { PALACE_ANCHORS } from './palaceMap';
-import { ATLAS_PALACE, COURT_PALACE, type Screen } from './screen';
+import { ATLAS_PALACE, COURT_PALACE, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 
 type Of<K extends Screen['screen']> = Extract<Screen, { screen: K }>;
 
@@ -65,7 +71,7 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
   if (state.location === 'map') {
     const buttons = PALACE_IDS.map((id) => {
       const { x, y } = PALACE_ANCHORS[id];
-      return `<button type="button" id="palace-${id}" data-palace="${id}" style="left:${x}%;top:${y}%">${game.palaces[id].name}</button>`;
+      return `<button type="button" id="palace-${id}" data-palace="${id}" style="left:${x}%;top:${y}%"${canEnterPalace(state, id) ? '' : ' disabled'}>${game.palaces[id].name}</button>`;
     }).join('');
     return `<main id="palace-map"><h2 class="visually-hidden">${text.mapHeading}</h2><div id="map-stage" class="image-stage">${header}<img id="map-image" src="${images.map}" alt="${text.mapImageAlt}">${buttons}</div></main>`;
   }
@@ -88,9 +94,10 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
   const open = screen.department;
   const optionList = (id: DepartmentId): string =>
     `<div id="court-options">${DEPARTMENTS[id].options
-      .map(
-        (option) =>
-          `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.notYetOpen}</span></button>`,
+      .map((option) =>
+        OPEN_COURT_OPTIONS.includes(option)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}">${game.courtOptions[option].name}</button>`
+          : `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.notYetOpen}</span></button>`,
       )
       .join('')}</div>`;
   const buttons = DEPARTMENT_IDS.map((id) => {
@@ -134,6 +141,61 @@ export function renderAtlasScreen(screen: Of<'atlas'>, text: UiText, game: GameT
   return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2><div id="atlas-scroll"><table id="atlas-table"><thead>${head}</thead><tbody>${rows}</tbody></table></div><button type="button" id="close-atlas">${text.closeAtlas}</button></main>`;
 }
 
+const POST_GROUPS = [
+  ['central', 'postGroupCentral'],
+  ['ministry', 'postGroupMinistry'],
+  ['region', 'postGroupRegion'],
+] as const satisfies readonly (readonly [PostInfo['group'], keyof UiText])[];
+
+function statCells(official: Official): string {
+  return OFFICIAL_STAT_IDS.map((stat) => `<td>${official.stats[stat]}</td>`).join('');
+}
+
+function renderPostGroups(state: GameState, text: UiText, game: GameText): string {
+  const posts = listPosts(state);
+  const head = `<tr><th>${text.postColumn}</th><th>${text.holderColumn}</th>${OFFICIAL_STAT_IDS.map((stat) => `<th>${game.statLabels[stat]}</th>`).join('')}</tr>`;
+  const sections = POST_GROUPS.map(([group, heading]) => {
+    const rows = posts
+      .filter((post) => post.group === group)
+      .map((post) => {
+        const holder = state.officials.find((o) => o.post === post.id);
+        const cells = holder
+          ? `<td>${escapeHtml(holder.name)}</td>${statCells(holder)}`
+          : `<td class="vacant">${text.vacant}</td>${'<td></td>'.repeat(OFFICIAL_STAT_IDS.length)}`;
+        return `<tr data-post-row="${escapeHtml(post.id)}"><th scope="row"><button type="button" id="post-${escapeHtml(post.id)}" data-post="${escapeHtml(post.id)}">${escapeHtml(formatPostName(post))}</button></th>${cells}</tr>`;
+      })
+      .join('');
+    return `<section id="post-group-${group}"><h3>${text[heading]}</h3><div class="table-scroll"><table class="post-table"><thead>${head}</thead><tbody>${rows}</tbody></table></div></section>`;
+  }).join('');
+  return `<div id="post-groups">${sections}</div>`;
+}
+
+function renderIdleList(screen: Of<'appoint'>, post: PostInfo, text: UiText, game: GameText): string {
+  const { state, sort } = screen;
+  const holder = state.officials.find((o) => o.post === post.id);
+  const heading = `<h3 id="selected-post">${escapeHtml(formatPostName(post))}　${text.holderColumn}：${holder ? escapeHtml(holder.name) : text.vacant}</h3>`;
+  const idle = idleOfficials(state, sort);
+  const list =
+    idle.length === 0
+      ? `<p id="no-idle">${text.noIdleOfficials}</p>`
+      : `<div class="table-scroll"><table id="idle-list"><thead><tr><th>${text.nameColumn}</th>${OFFICIAL_STAT_IDS.map(
+          (stat) =>
+            `<th><button type="button" id="sort-${stat}" data-sort="${stat}" aria-pressed="${stat === sort}">${game.statLabels[stat]}</button></th>`,
+        ).join('')}<th></th></tr></thead><tbody>${idle
+          .map(
+            (o) =>
+              `<tr><th scope="row">${escapeHtml(o.name)}</th>${statCells(o)}<td><button type="button" id="appoint-${escapeHtml(o.id)}" data-official="${escapeHtml(o.id)}">${text.appointButton}</button></td></tr>`,
+          )
+          .join('')}</tbody></table></div>`;
+  return `${heading}${list}<button type="button" id="back-to-posts">${text.backToPosts}</button>`;
+}
+
+export function renderAppointScreen(screen: Of<'appoint'>, text: UiText, game: GameText): string {
+  const post = screen.post === undefined ? undefined : listPosts(screen.state).find((p) => p.id === screen.post);
+  const body = post ? renderIdleList(screen, post, text, game) : renderPostGroups(screen.state, text, game);
+  return `${renderHeader(screen.state, text, game)}<main id="appoint-screen"><h2>${text.appointHeading}</h2>${body}<button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
 export function renderEndingScreen(screen: Of<'ending'>, text: UiText, _game?: GameText): string {
   const { state } = screen;
   return `<main id="ending"><h1>${text.endingHeading}</h1><p id="ending-era">${text.eraLabel}：${escapeHtml(state.eraName)}</p><p id="ending-reign">${formatReign(getReignYear(state))}</p><p id="ending-age">${formatLifespan(getAge(state))}</p><button type="button" id="restart">${text.restartButton}</button></main>`;
@@ -153,6 +215,8 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderSummaryScreen(screen, text, game);
     case 'atlas':
       return renderAtlasScreen(screen, text, game);
+    case 'appoint':
+      return renderAppointScreen(screen, text, game);
     case 'ending':
       return renderEndingScreen(screen, text, game);
   }

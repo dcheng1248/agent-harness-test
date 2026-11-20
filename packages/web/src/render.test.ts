@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { gameText, uiText } from '@emperor/content';
-import { createInitialState, DEPARTMENT_IDS, DEPARTMENTS, EMPEROR_STAT_IDS, enterPalace, PALACE_IDS } from '@emperor/core';
+import { formatPostName, gameText, uiText } from '@emperor/content';
+import {
+  createInitialState,
+  DEPARTMENT_IDS,
+  DEPARTMENTS,
+  EMPEROR_STAT_IDS,
+  enterPalace,
+  listPosts,
+  OFFICIAL_STAT_IDS,
+  PALACE_IDS,
+  type CourtOptionId,
+  type GameState,
+} from '@emperor/core';
 import {
   escapeHtml,
   renderAtlasScreen,
@@ -14,7 +25,7 @@ import {
   renderTitleScreen,
 } from './render';
 import { PALACE_ANCHORS } from './palaceMap';
-import { COURT_PALACE, type Screen } from './screen';
+import { COURT_PALACE, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 
 const images = { palace: '/img/palace.webp', scroll: '/img/scroll.webp', map: '/img/map.webp',
   backgrounds: {
@@ -43,7 +54,7 @@ describe('start flow', () => {
   });
 });
 
-const state = createInitialState(7, '承平', gameText.regions);
+const state = createInitialState(7, '承平', gameText.regions, gameText.officialNames);
 
 describe('era screen', () => {
   const era: Extract<Screen, { screen: 'era' }> = { screen: 'era', seed: 7, suggestions: ['承平', '景和', '永綏'], draft: '', error: false };
@@ -105,6 +116,15 @@ describe('game screens', () => {
     expect(html).not.toContain('open-atlas');
     expect(html).not.toContain('map-footer');
     expect(html).not.toContain('palace-grid');
+  });
+
+  it('UC-WEB-004 宣政殿 is a disabled map button outside 朝', () => {
+    const noon = renderPlayScreen({ screen: 'play', state: { ...state, actionPoint: 1 } }, uiText, gameText, images);
+    const { x, y } = PALACE_ANCHORS.xuanzheng;
+    expect(noon).toContain(`<button type="button" id="palace-xuanzheng" data-palace="xuanzheng" style="left:${x}%;top:${y}%" disabled>${gameText.palaces.xuanzheng.name}</button>`);
+    expect(noon.match(/data-palace="[^"]+"[^>]* disabled>/g)).toHaveLength(1);
+    const dawn = renderPlayScreen({ screen: 'play', state }, uiText, gameText, images);
+    expect(dawn).not.toContain(' disabled>');
   });
 
   it('UC-WEB-004 palace shows name, description, actions and 返回', () => {
@@ -281,6 +301,10 @@ describe('宣政殿', () => {
   const departmentButton = (id: (typeof DEPARTMENT_IDS)[number], expanded: boolean): string =>
     `<button type="button" id="department-${id}" data-department="${id}" aria-label="${gameText.departments[id].name}"${expanded ? ' class="is-open"' : ''}>${gameText.departments[id].label}</button>`;
   const leave = `<button type="button" id="leave-court" aria-label="${uiText.leaveCourtLabel}">${uiText.leaveCourt}</button>`;
+  const optionButton = (id: CourtOptionId): string =>
+    OPEN_COURT_OPTIONS.includes(id)
+      ? `<button type="button" id="court-option-${id}" data-court-option="${id}">${gameText.courtOptions[id].name}</button>`
+      : `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.notYetOpen}</span></button>`;
 
   it('UC-WEB-007 宣政殿 has the image, banner and court row but no panel', () => {
     const html = renderPlayScreen({ screen: 'play', state: court }, uiText, gameText, images);
@@ -301,15 +325,13 @@ describe('宣政殿', () => {
     expect(html.indexOf(leave)).toBeGreaterThan(last);
   });
 
-  it('UC-WEB-007 an open department is highlighted and lists its disabled options', () => {
+  it('UC-WEB-007 an open department is highlighted and lists its options, only 官員任命 enabled', () => {
     const html = renderPlayScreen({ screen: 'play', state: court, department: 'personnel' }, uiText, gameText, images);
     for (const id of DEPARTMENT_IDS) expect(html).toContain(departmentButton(id, id === 'personnel'));
     expect(html).toContain('<div id="court-options">');
     let last = -1;
     for (const id of DEPARTMENTS.personnel.options) {
-      const at = html.indexOf(
-        `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.notYetOpen}</span></button>`,
-      );
+      const at = html.indexOf(optionButton(id));
       expect(at).toBeGreaterThan(last);
       last = at;
     }
@@ -317,15 +339,13 @@ describe('宣政殿', () => {
       for (const option of DEPARTMENTS[other].options) expect(html).not.toContain(`court-option-${option}"`);
     }
     expect(html.indexOf('id="court-options"')).toBeLessThan(html.indexOf('id="leave-court"'));
+    expect(html).toContain('<button type="button" id="court-option-appoint-officials" data-court-option="appoint-officials">官員任命</button>');
   });
 
   it.each(DEPARTMENT_IDS)('UC-WEB-007 the options of %s are always the last child of the department row, above 工', (open) => {
     const html = renderPlayScreen({ screen: 'play', state: court, department: open }, uiText, gameText, images);
     const options = DEPARTMENTS[open].options
-      .map(
-        (id) =>
-          `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.notYetOpen}</span></button>`,
-      )
+      .map(optionButton)
       .join('');
     const buttons = DEPARTMENT_IDS.map((id) => departmentButton(id, id === open)).join('');
     expect(html).toContain(`<div id="department-row">${buttons}<div id="court-options">${options}</div></div>`);
@@ -336,6 +356,79 @@ describe('宣政殿', () => {
     const html = renderPlayScreen({ screen: 'play', state: court }, uiText, gameText, images);
     expect(html).not.toContain('id="court-options"');
     expect(html).not.toContain('is-open');
+  });
+});
+
+describe('官員任命', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const render = (screen: Screen): string => renderScreen(screen, uiText, gameText, images);
+
+  it('UC-WEB-008 the post list', () => {
+    const html = render({ screen: 'appoint', state: court });
+    expect(html).toContain('id="game-header"');
+    expect(html).toContain('id="appoint-screen"');
+    expect(html).toContain('<h2>官員任命</h2>');
+    const groups = [['central', '中樞'], ['ministry', '六部'], ['region', '地方']] as const;
+    let last = -1;
+    for (const [id, heading] of groups) {
+      const at = html.indexOf(`<section id="post-group-${id}"><h3>${heading}</h3>`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+    }
+    const posts = listPosts(court);
+    expect(posts).toHaveLength(33);
+    expect(html.match(/data-post="/g)).toHaveLength(33);
+    last = -1;
+    for (const post of posts) {
+      const at = html.indexOf(`<button type="button" id="post-${post.id}" data-post="${post.id}">${formatPostName(post)}</button>`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+      const holder = court.officials.find((o) => o.post === post.id)!;
+      const row = html.slice(at, html.indexOf('</tr>', at));
+      expect(row).toContain(`<td>${escapeHtml(holder.name)}</td>`);
+      expect(row).toContain(OFFICIAL_STAT_IDS.map((s) => `<td>${holder.stats[s]}</td>`).join(''));
+    }
+    expect(html).not.toContain('idle-list');
+    expect(html).toContain('id="back-to-court"');
+  });
+
+  it('UC-WEB-008 a vacant post shows 空缺', () => {
+    const vacant: GameState = { ...court, officials: court.officials.map((o) => (o.post === 'chancellor' ? { ...o, post: null } : o)) };
+    const html = render({ screen: 'appoint', state: vacant });
+    const at = html.indexOf('data-post-row="chancellor"');
+    const row = html.slice(at, html.indexOf('</tr>', at));
+    expect(row).toContain('空缺');
+    expect(row).toContain('class="vacant"');
+    expect(html).not.toContain('undefined');
+  });
+
+  it('UC-WEB-008 a selected post lists the idle officials', () => {
+    const html = render({ screen: 'appoint', state: court, post: 'chancellor', sort: 'military' });
+    const holder = court.officials.find((o) => o.post === 'chancellor')!;
+    const headStart = html.indexOf('<h3 id="selected-post">');
+    expect(headStart).toBeGreaterThan(-1);
+    const heading = html.slice(headStart, html.indexOf('</h3>', headStart));
+    expect(heading).toContain('丞相');
+    expect(heading).toContain(escapeHtml(holder.name));
+    const tableStart = html.indexOf('<table id="idle-list">');
+    expect(tableStart).toBeGreaterThan(-1);
+    const table = html.slice(tableStart, html.indexOf('</table>', tableStart));
+    const ids = [...table.matchAll(/data-official="([^"]+)">任命</g)].map((m) => m[1]);
+    expect(ids).toHaveLength(30);
+    expect(ids).toEqual(idleOfficials(court, 'military').map((o) => o.id));
+    for (const stat of OFFICIAL_STAT_IDS) {
+      expect(html).toContain(`id="sort-${stat}" data-sort="${stat}" aria-pressed="${stat === 'military'}"`);
+    }
+    expect(html).toContain('id="back-to-posts"');
+    expect(html).toContain('id="back-to-court"');
+    expect(html).not.toContain('post-group-central');
+  });
+
+  it('UC-WEB-008 no idle officials', () => {
+    const none: GameState = { ...court, officials: court.officials.filter((o) => o.post !== null) };
+    const html = render({ screen: 'appoint', state: none, post: 'chancellor' });
+    expect(html).toContain('<p id="no-idle">並無賦閑官員</p>');
+    expect(html).not.toContain('idle-list');
   });
 });
 
