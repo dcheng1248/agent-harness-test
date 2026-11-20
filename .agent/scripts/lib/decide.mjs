@@ -143,6 +143,36 @@ function routeCi({ pr, sha, conclusion, failedJobs }) {
   return failedRound(pr.labels, 'ci');
 }
 
+const hasResume = (body = '') => /^\s*\/resume\b/.test(body);
+
+/**
+ * `/resume` on a PR paused with `needs-human` in `stage:agent-review`, after you fixed the cause.
+ * `headCi` is the latest CI run on the PR's head commit: { status, conclusion, failedJobs }, or null.
+ */
+function routeResume({ pr, actor, body, reviewers, headCi }) {
+  if (!pr.isAgent || !hasResume(body) || !isReviewer(actor, reviewers)) return [];
+  if (!pr.labels.includes('needs-human') || stageOf(pr.labels) !== 'stage:agent-review') {
+    return [{
+      type: 'comment',
+      body: '`/resume` only continues a PR paused with `needs-human` at `stage:agent-review`. Nothing was changed.',
+    }];
+  }
+  if (!headCi || headCi.status !== 'completed') {
+    return [
+      { type: 'removeLabel', label: 'needs-human' },
+      { type: 'comment', body: 'Resumed. The agent review starts when CI passes on the latest commit.' },
+    ];
+  }
+  if (headCi.conclusion === 'success') {
+    return [{ type: 'removeLabel', label: 'needs-human' }, { type: 'runReview' }];
+  }
+  const jobs = headCi.failedJobs.length ? headCi.failedJobs.join(', ') : headCi.conclusion;
+  return [{
+    type: 'comment',
+    body: `CI on the latest commit did not pass (${jobs}), so the PR stays paused. Fix it, then comment \`/resume\` again.`,
+  }];
+}
+
 export function routeEvent(event) {
   const { kind, actor, reviewers } = event;
   if (kind === 'answer') {
@@ -157,6 +187,7 @@ export function routeEvent(event) {
       : [];
   }
   if (kind === 'review') return routeReview(event);
+  if (kind === 'resume') return routeResume(event);
   if (kind === 'label') {
     const { pr, label } = event;
     const allowed =
