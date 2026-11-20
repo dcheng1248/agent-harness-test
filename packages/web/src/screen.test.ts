@@ -142,7 +142,7 @@ describe('palace loop', () => {
     expect(goToMap(title)).toBe(title);
     expect(performAction(title, 'study')).toBe(title);
     expect(continueToMap(title)).toBe(title);
-    expect(goToPalace(inChongwen(), 'hanmo')).toEqual(inChongwen());
+    expect(goToPalace(inChongwen(), 'yuhuayuan')).toEqual(inChongwen());
   });
 });
 

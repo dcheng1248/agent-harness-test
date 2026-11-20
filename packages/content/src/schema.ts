@@ -10,7 +10,9 @@ export interface UiText {
   eraConfirm: string;
   eraError: string;
   mapHeading: string;
+  mapImageAlt: string;
   backToMap: string;
+  noActions: string;
   continueButton: string;
   summarySuffix: string;
   nextTurnPrefix: string;

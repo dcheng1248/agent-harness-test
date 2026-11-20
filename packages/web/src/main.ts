@@ -1,6 +1,7 @@
 import { gameText, uiText } from '@emperor/content';
 import type { ActionId, PalaceId } from '@emperor/core';
 import titleImage from './assets/title-forbidden-city.webp';
+import mapImage from './assets/map-forbidden-city.webp';
 import scrollImage from './assets/title-scroll.webp';
 import { renderScreen } from './render';
 import {
@@ -22,7 +23,7 @@ const root = document.querySelector<HTMLElement>('#app');
 if (root) {
   let current: Screen = { screen: 'title' };
   const draw = (): void => {
-    root.innerHTML = renderScreen(current, uiText, gameText, { palace: titleImage, scroll: scrollImage });
+    root.innerHTML = renderScreen(current, uiText, gameText, { palace: titleImage, scroll: scrollImage, map: mapImage });
   };
   const confirmTyped = (): void => {
     const input = root.querySelector<HTMLInputElement>('#era-input');

@@ -20,6 +20,14 @@ describe('content', () => {
     for (const name of gameText.eraNamePool) expect(isValidEraName(name)).toBe(true);
   });
 
+  it('UC-WEB-004 palace text for 崇文館 and 御花園, map alt and empty-palace line', () => {
+    expect(gameText.palaces.chongwen).toEqual({ name: '崇文館', description: '藏經史典籍之所，學士在此侍講，亦可揮毫撫琴。' });
+    expect(gameText.palaces.yuhuayuan).toEqual({ name: '御花園', description: '奇石古木、花徑曲池，四時景致各異。' });
+    expect(Object.keys(gameText.palaces)).toEqual([...PALACE_IDS]);
+    expect(uiText.mapImageAlt).toBe('宮城俯瞰全圖');
+    expect(uiText.noActions).toBe('此處暫無可行之事。');
+  });
+
   it('labels every stat, palace and action in Chinese', () => {
     for (const id of STAT_IDS) expect(gameText.statLabels[id]).toMatch(han);
     for (const id of ACTION_POINTS) expect(gameText.actionPointLabels[id]).toMatch(han);
