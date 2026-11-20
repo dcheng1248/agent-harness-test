@@ -24,7 +24,7 @@ Issue #17, the first playable loop, covers UC-CORE-001, UC-CORE-011 to UC-CORE-0
 
 | ID | Use case | Status |
 |---|---|---|
-| UC-CORE-001 | 皇帝培養個人屬性：健康、學識、才藝、魄力 | planned |
+| UC-CORE-001 | 皇帝培養個人屬性：健康、學識、才藝、魄力 | implemented |
 | UC-CORE-002 | 與皇后互動 | planned |
 | UC-CORE-003 | 舉行早朝 | planned |
 | UC-CORE-004 | 任命官員 | planned |
@@ -34,7 +34,7 @@ Issue #17, the first playable loop, covers UC-CORE-001, UC-CORE-011 to UC-CORE-0
 | UC-CORE-008 | 選妃，或經由事件納妃 | planned |
 | UC-CORE-009 | 誕育子嗣 | planned |
 | UC-CORE-010 | 教導皇子女 | planned |
-| UC-CORE-011 | 選定年號：候選年號與自訂年號驗證 | planned |
+| UC-CORE-011 | 選定年號：候選年號與自訂年號驗證 | implemented |
 | UC-CORE-012 | 半季回合：在宮殿以行動點執行行動 | planned |
 | UC-CORE-013 | 年老衰弱與駕崩 | planned |
 | UC-WEB-001 | 顯示標題畫面 | implemented |
