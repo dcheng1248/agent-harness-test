@@ -40,7 +40,11 @@ Draw the module or class structure after the change as a Mermaid diagram, then w
 ## Data flow
 Draw it in the same format as Architecture, or write "No change".
 
-Diagrams use these styles. Write the legend line under each diagram. Mark a new or changed edge by adding `(new)` or `(changed)` to its label.
+Diagrams use these styles. Write the legend line under each diagram. Mark a new or changed edge by adding `(new)` or `(changed)` to its label. Always put edge labels and node text in double quotes, or brackets, parentheses and `%` break the diagram:
+```
+A -->|"PalaceId (changed)"| B
+N["renderPlayScreen(screen, text)"]:::changed
+```
 ```
 classDef added fill:#d8f5d8,stroke:#2e7d32
 classDef changed fill:#fff1c2,stroke:#b7791f
