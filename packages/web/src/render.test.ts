@@ -268,10 +268,18 @@ describe('game screens', () => {
   });
 });
 
+describe('palace panel without a description', () => {
+  it('UC-WEB-004 never emits an empty description paragraph', () => {
+    const noText = { ...gameText, palaces: { ...gameText.palaces, chongwen: { ...gameText.palaces.chongwen, description: undefined as unknown as string } } };
+    const html = renderPlayScreen({ screen: 'play', state: enterPalace(state, 'chongwen') }, uiText, noText, images);
+    expect(html).not.toContain('palace-description');
+  });
+});
+
 describe('宣政殿', () => {
   const court = enterPalace(state, 'xuanzheng');
   const departmentButton = (id: (typeof DEPARTMENT_IDS)[number], expanded: boolean): string =>
-    `<button type="button" id="department-${id}" data-department="${id}" aria-label="${gameText.departments[id].name}" aria-expanded="${expanded}">${gameText.departments[id].label}</button>`;
+    `<button type="button" id="department-${id}" data-department="${id}" aria-label="${gameText.departments[id].name}"${expanded ? ' class="is-open"' : ''}>${gameText.departments[id].label}</button>`;
   const leave = `<button type="button" id="leave-court" aria-label="${uiText.leaveCourtLabel}">${uiText.leaveCourt}</button>`;
 
   it('UC-WEB-007 宣政殿 has the image, banner and court row but no panel', () => {
@@ -296,7 +304,7 @@ describe('宣政殿', () => {
   it('UC-WEB-007 an open department is highlighted and lists its disabled options', () => {
     const html = renderPlayScreen({ screen: 'play', state: court, department: 'personnel' }, uiText, gameText, images);
     for (const id of DEPARTMENT_IDS) expect(html).toContain(departmentButton(id, id === 'personnel'));
-    expect(html).toContain('<div id="court-options" role="group" aria-label="吏部">');
+    expect(html).toContain('<div id="court-options">');
     let last = -1;
     for (const id of DEPARTMENTS.personnel.options) {
       const at = html.indexOf(
@@ -311,7 +319,7 @@ describe('宣政殿', () => {
     expect(html.indexOf('id="court-options"')).toBeLessThan(html.indexOf('id="leave-court"'));
   });
 
-  it.each(DEPARTMENT_IDS)('UC-WEB-007 the options of %s sit in its own wrapper, right after its button', (open) => {
+  it.each(DEPARTMENT_IDS)('UC-WEB-007 the options of %s are always the last child of the department row, above 工', (open) => {
     const html = renderPlayScreen({ screen: 'play', state: court, department: open }, uiText, gameText, images);
     const options = DEPARTMENTS[open].options
       .map(
@@ -319,13 +327,15 @@ describe('宣政殿', () => {
           `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.notYetOpen}</span></button>`,
       )
       .join('');
-    expect(html).toContain(
-      `<div class="department-slot">${departmentButton(open, true)}<div id="court-options" role="group" aria-label="${gameText.departments[open].name}">${options}</div></div>`,
-    );
+    const buttons = DEPARTMENT_IDS.map((id) => departmentButton(id, id === open)).join('');
+    expect(html).toContain(`<div id="department-row">${buttons}<div id="court-options">${options}</div></div>`);
     expect(html.split('id="court-options"').length).toBe(2);
-    for (const other of DEPARTMENT_IDS.filter((d) => d !== open)) {
-      expect(html).toContain(`<div class="department-slot">${departmentButton(other, false)}</div>`);
-    }
+  });
+
+  it('UC-WEB-007 no department is open, no options list is rendered', () => {
+    const html = renderPlayScreen({ screen: 'play', state: court }, uiText, gameText, images);
+    expect(html).not.toContain('id="court-options"');
+    expect(html).not.toContain('is-open');
   });
 });
 

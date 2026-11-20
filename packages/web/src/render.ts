@@ -80,23 +80,24 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
           .join('')}</div>`;
   const atlasButton =
     state.location === ATLAS_PALACE ? `<button type="button" id="open-atlas">${text.atlasButton}</button>` : '';
-  return `<main id="palace-view"><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[state.location]}" alt="${palace.imageAlt}"></div><div id="palace-panel"><h2>${palace.name}</h2><p id="palace-description">${palace.description ?? ''}</p>${actions}<div id="palace-nav">${atlasButton}<button type="button" id="back-to-map">${text.backToMap}</button></div></div></main>`;
+  return `<main id="palace-view"><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[state.location]}" alt="${palace.imageAlt}"></div><div id="palace-panel"><h2>${palace.name}</h2>${palace.description ? `<p id="palace-description">${palace.description}</p>` : ''}${actions}<div id="palace-nav">${atlasButton}<button type="button" id="back-to-map">${text.backToMap}</button></div></div></main>`;
 }
 
 function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game: GameText, images: ScreenImages): string {
   const palace = game.palaces[COURT_PALACE];
   const open = screen.department;
   const optionList = (id: DepartmentId): string =>
-    `<div id="court-options" role="group" aria-label="${game.departments[id].name}">${DEPARTMENTS[id].options
+    `<div id="court-options">${DEPARTMENTS[id].options
       .map(
         (option) =>
           `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.notYetOpen}</span></button>`,
       )
       .join('')}</div>`;
-  const departments = DEPARTMENT_IDS.map((id) => {
+  const buttons = DEPARTMENT_IDS.map((id) => {
     const { label, name } = game.departments[id];
-    return `<div class="department-slot"><button type="button" id="department-${id}" data-department="${id}" aria-label="${name}" aria-expanded="${id === open}">${label}</button>${id === open ? optionList(id) : ''}</div>`;
+    return `<button type="button" id="department-${id}" data-department="${id}" aria-label="${name}"${id === open ? ' class="is-open"' : ''}>${label}</button>`;
   }).join('');
+  const departments = buttons + (open ? optionList(open) : '');
   const leave = `<button type="button" id="leave-court" aria-label="${text.leaveCourtLabel}">${text.leaveCourt}</button>`;
   return `<main id="palace-view" class="court-view"><h2 class="visually-hidden">${palace.name}</h2><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[COURT_PALACE]}" alt="${palace.imageAlt}"><div id="court-row"><div id="department-row">${departments}</div>${leave}</div></div></main>`;
 }

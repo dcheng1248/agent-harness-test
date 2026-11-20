@@ -34,19 +34,19 @@ Opened from 崇文館 only. Opening and closing it use no action point and do no
 
 `openAtlas(screen)` goes from `play` in 崇文館 to `atlas`, keeping the same `state` object. From anywhere else (the map, another palace, or any other screen) it returns the screen unchanged. `closeAtlas(screen)` goes from `atlas` back to `play` with the same `state`, so the player is back in 崇文館.
 
+## UC-WEB-005 Ending
+Shown as soon as the emperor dies, after an action or after aging: a heading, the 年號, the reign length (the reign year of death, 元年 counting as 1), the age at death, and a button that returns to the title screen. There is no verdict or 諡號 yet.
+
 ## UC-WEB-007 宣政殿
 Entered from its button on the palace map like any palace, at any action point. It shows its background image and the header banner like the other palace views, but no palace panel. Its name stays in the markup as a heading for screen readers but is visually hidden.
 
 - Over the lower right of the image sits one horizontal row of buttons that scales with the image: 內閣 and the six 部 in `core` registry order (`DEPARTMENT_IDS`), then 退. Each department button shows its short name and is announced by its full name, both from `content`. 退 is set apart from the departments by a gap and a different style.
 - 退 works like 返回宮城: back to the map, no action point used.
-- Clicking a department highlights it and opens its options, in registry order, as a vertical list that sits directly above the clicked department's button and is centred on it (the list of the rightmost department is right-aligned with its button so it stays inside the image). Clicking another department switches the list to that department. Clicking the open department closes the list. Leaving 宣政殿 closes it, so it is closed on the next visit.
+- Clicking a department highlights it and opens its options, in registry order, as a vertical list that is always right-aligned with the 工 button and sits directly above it, whichever department was clicked. Clicking another department switches the list to that department. Clicking the open department closes the list. Leaving 宣政殿 closes it, so it is closed on the next visit.
 - Each option is a disabled button with its name and a small "not yet open" tag. Clicking it does nothing.
 - Which department is open is `web` screen state only. Opening, switching and closing keep the same `GameState` object and use no action point.
 
 `toggleDepartment(screen, departmentId)` applies only to `play` in 宣政殿 (`COURT_PALACE`). From anywhere else, or with an ID that is not a department, it returns the screen unchanged.
-
-## UC-WEB-005 Ending
-Shown as soon as the emperor dies, after an action or after aging: a heading, the 年號, the reign length (the reign year of death, 元年 counting as 1), the age at death, and a button that returns to the title screen. There is no verdict or 諡號 yet.
 
 ## Screen flow
 ```mermaid

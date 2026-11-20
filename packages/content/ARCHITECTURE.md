@@ -15,7 +15,7 @@ flowchart LR
 
 ## Exports
 - `uiText`: screen labels and fixed lines, keyed by name.
-- `gameText`: text for `core` registries (`statLabels`, `actionPointLabels`, `halfSeasonLabels`, `palaces` with a name, an optional description and the alt text of the palace's background image (`imageAlt`), `actions` with a name, `departments` with a short `label` for its button and its full `name`, `courtOptions` with a name), the 年號 pool (`eraNamePool`), and the regions (`regions`, `readonly RegionEntry[]`).
+- `gameText`: text for `core` registries (`statLabels`, `actionPointLabels`, `halfSeasonLabels`, `palaces` with a name, a description (required for every palace except 宣政殿, enforced by the type) and the alt text of the palace's background image (`imageAlt`), `actions` with a name, `departments` with a short `label` for its button and its full `name`, `courtOptions` with a name), the 年號 pool (`eraNamePool`), and the regions (`regions`, `readonly RegionEntry[]`).
 - Format functions in `src/format.ts`. They are pure.
 
 ## Regions

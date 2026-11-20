@@ -38,11 +38,17 @@ export interface RegionEntry extends RegionData {
   capital: boolean;
 }
 
+/** 宣政殿 has no panel, so it alone may lack a description. */
+interface PalaceText {
+  name: string;
+  imageAlt: string;
+}
+
 export interface GameText {
   statLabels: Record<StatId, string>;
   actionPointLabels: Record<ActionPointId, string>;
   halfSeasonLabels: Record<HalfSeasonId, string>;
-  palaces: Record<PalaceId, { name: string; description?: string; imageAlt: string }>;
+  palaces: { [K in PalaceId]: PalaceText & (K extends 'xuanzheng' ? { description?: string } : { description: string }) };
   actions: Record<ActionId, { name: string }>;
   departments: Record<DepartmentId, { label: string; name: string }>;
   courtOptions: Record<CourtOptionId, { name: string }>;
