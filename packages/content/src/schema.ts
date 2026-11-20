@@ -22,6 +22,7 @@ export interface UiText {
   restartButton: string;
   atlasButton: string;
   atlasHeading: string;
+  closeAtlas: string;
   regionColumn: string;
   capitalMark: string;
   taelUnit: string;
@@ -38,7 +39,7 @@ export interface GameText {
   statLabels: Record<StatId, string>;
   actionPointLabels: Record<ActionPointId, string>;
   halfSeasonLabels: Record<HalfSeasonId, string>;
-  palaces: Record<PalaceId, { name: string; description: string }>;
+  palaces: Record<PalaceId, { name: string; description: string; imageAlt: string }>;
   actions: Record<ActionId, { name: string }>;
   eraNamePool: readonly string[];
   regions: readonly RegionEntry[];
