@@ -11,3 +11,4 @@ All art is original and was generated for this project.
 | `background-yuhuayuan.jpg` | Generated with Leonardo.AI for this project | 2026-11-20 |
 | `background-yanwu.jpg` | Generated with Leonardo.AI for this project | 2026-11-20 |
 | `background-yangxin.jpg` | Generated with Leonardo.AI for this project | 2026-11-20 |
+| `background-xuanzheng.jpg` | Generated with Gemini for this project | 2026-11-20 |
