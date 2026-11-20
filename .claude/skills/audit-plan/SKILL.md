@@ -14,9 +14,16 @@ Fail the audit if any of these is true:
 4. The plan misses a requirement in the issue or adds work nobody asked for.
 5. The risk rating is lower than `docs/harness/risk-rules.md` allows.
 6. Tasks are out of dependency order, or a task does not name the `ARCHITECTURE.md` and `USE_CASES.md` files to read.
-7. The brief is longer than about one screen.
+7. The brief's top part (title to "What you'll see") is longer than about one screen, or a section further down is long-winded.
 8. The work breaks the originality rule in `CLAUDE.md`, or names an existing game.
 9. An architecture file (`docs/architecture.md` or a `packages/*/ARCHITECTURE.md`) changes although the structure does not: module boundaries, dependencies, data flow, the shape of `GameState` or schemas, a public interface, or a shared pattern. Behaviour belongs in `USE_CASES.md`.
 10. A doc change adds exact values, such as numbers, balance values, colours, sizes, positions, fonts, wording or element IDs. Those belong in `tasks.md` and the code. Naming where a value lives, such as `BALANCE.upkeep`, is fine.
+11. The brief does not follow `.agent/brief-template.md`. In particular, fail it if:
+   - a section is missing,
+   - an added use case is listed without its rules,
+   - a changed use case has no "before → after",
+   - the structure or data flow changes but its section has no diagram,
+   - a schema or interface change has no bullet of its own,
+   - a value or choice the issue left open is missing from "Decisions to review".
 
 Return `pass` and a list of specific `problems`. An empty list means `pass` is true.
