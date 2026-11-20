@@ -27,3 +27,8 @@ export const CATALOG: Catalog = {
     rest: { allowedIn: ACTION_POINTS },
   },
 };
+
+/** The palace that holds 早朝. */
+export const COURT_PALACE_ID: PalaceId = 'xuanzheng';
+/** The only action point 早朝 is open in. */
+export const COURT_ACTION_POINT: ActionPointId = 'dawn';

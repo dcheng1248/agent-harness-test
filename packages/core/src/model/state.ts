@@ -1,11 +1,14 @@
 import { nextRandom } from "../rng";
+import { drawOfficial } from "../rules/officials";
 import { BALANCE } from "./balance";
 import type { PalaceId } from "./catalog";
+import { listPosts } from "./officials";
+import type { NamePool, Official } from "./officials";
 import { EMPEROR_STAT_IDS } from "./stats";
 import type { NationStatValues, StatValues } from "./stats";
 import type { RegionData, RegionState } from "./region";
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export type Location = "map" | PalaceId;
 
@@ -21,6 +24,7 @@ export interface GameState {
   turnDeltas: StatValues;
   nation: NationStatValues;
   regions: RegionState[];
+  officials: Official[];
   dead: boolean;
 }
 
@@ -32,6 +36,7 @@ export function createInitialState(
   seed: number,
   eraName: string,
   regions: readonly RegionData[],
+  names: NamePool,
 ): GameState {
   const { budget, min, max } = BALANCE.startingStats;
   let rngState = seed >>> 0;
@@ -64,6 +69,23 @@ export function createInitialState(
     }
   }
 
+  const regionStates: RegionState[] = regions.map((r) => ({
+    id: r.id,
+    owner: r.owner,
+    stats: { ...r.start },
+  }));
+
+  const officials: Official[] = [];
+  const taken = new Set<string>();
+  const addOfficial = (post: string | null) => {
+    const draw = drawOfficial(rngState, `official-${officials.length + 1}`, names, taken);
+    rngState = draw.rngState;
+    taken.add(draw.official.name);
+    officials.push({ ...draw.official, post });
+  };
+  for (const post of listPosts({ regions: regionStates })) addOfficial(post.id);
+  for (let i = 0; i < BALANCE.officials.startingIdle; i += 1) addOfficial(null);
+
   return {
     schemaVersion: SCHEMA_VERSION,
     seed,
@@ -75,11 +97,8 @@ export function createInitialState(
     stats,
     turnDeltas: zeroStats(),
     nation: { treasury: BALANCE.startingTreasury },
-    regions: regions.map((r) => ({
-      id: r.id,
-      owner: r.owner,
-      stats: { ...r.start },
-    })),
+    regions: regionStates,
+    officials,
     dead: false,
   };
 }

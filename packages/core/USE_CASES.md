@@ -6,8 +6,8 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 |---|---|---|
 | UC-CORE-001 | 皇帝培養個人屬性：健康、學識、才藝、魄力 | implemented |
 | UC-CORE-002 | 與皇后互動 | planned |
-| UC-CORE-003 | 舉行早朝：只在朝時進入宣政殿，耗用該行動點 | planned |
-| UC-CORE-004 | 任命官員：官員、官位、賦閑，早朝時將賦閑官員任命至官位 | planned |
+| UC-CORE-003 | 舉行早朝：只在朝時進入宣政殿，耗用該行動點 | implemented |
+| UC-CORE-004 | 任命官員：官員、官位、賦閑，早朝時將賦閑官員任命至官位 | implemented |
 | UC-CORE-005 | 處理政事 | planned |
 | UC-CORE-006 | 發生並處理戰爭 | planned |
 | UC-CORE-007 | 觸發特殊事件 | planned |

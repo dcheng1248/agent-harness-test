@@ -1,7 +1,7 @@
 import { BALANCE } from "../model/balance";
 import type { StatChange } from "../model/balance";
-import { HALF_SEASONS, getActionPointId, getAge, type HalfSeasonId } from "../model/calendar";
-import { CATALOG, PALACE_IDS } from "../model/catalog";
+import { ACTION_POINTS, HALF_SEASONS, getActionPointId, getAge, type HalfSeasonId } from "../model/calendar";
+import { CATALOG, COURT_ACTION_POINT, COURT_PALACE_ID, PALACE_IDS } from "../model/catalog";
 import type { ActionId, Catalog, PalaceId } from "../model/catalog";
 import type { GameState } from "../model/state";
 import { EMPEROR_STAT_IDS, STAT_REGISTRY } from "../model/stats";
@@ -26,18 +26,36 @@ export type ActionOutcome =
       turnEnd: TurnEnd | null;
     };
 
+/** Alive, on the map, a known palace, and open now (宣政殿 only at 朝). */
+export function canEnterPalace(state: GameState, palaceId: PalaceId): boolean {
+  if (state.dead || state.location !== "map" || !PALACE_IDS.includes(palaceId))
+    return false;
+  return palaceId !== COURT_PALACE_ID || getActionPointId(state) === COURT_ACTION_POINT;
+}
+
+/** 早朝: alive and in 宣政殿. */
+export function isMorningCourt(state: GameState): boolean {
+  return !state.dead && state.location === COURT_PALACE_ID;
+}
+
 export function enterPalace(
   state: GameState,
   palaceId: PalaceId,
   _catalog: Catalog = CATALOG,
 ): GameState {
-  if (state.dead || state.location !== "map" || !PALACE_IDS.includes(palaceId))
-    return state;
+  if (!canEnterPalace(state, palaceId)) return state;
   return { ...state, location: palaceId };
 }
 
+/** Leaving 宣政殿 spends 朝 and puts the clock on the next action point. */
 export function returnToMap(state: GameState): GameState {
   if (state.dead) return state;
+  if (state.location === COURT_PALACE_ID)
+    return {
+      ...state,
+      location: "map",
+      actionPoint: ACTION_POINTS.indexOf(COURT_ACTION_POINT) + 1,
+    };
   return { ...state, location: "map" };
 }
 

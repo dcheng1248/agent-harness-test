@@ -2,18 +2,21 @@ import { describe, expect, it } from "vitest";
 import {
   CATALOG,
   PALACE_IDS,
+  canEnterPalace,
   createInitialState,
   enterPalace,
   getAge,
   getHalfSeason,
   getReignYear,
+  isMorningCourt,
   returnToMap,
   takeAction,
 } from "../index";
 import type { ActionId, Catalog, GameState, PalaceId } from "../index";
+import { TEST_NAMES } from "../testNames";
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
-  return { ...createInitialState(1, "承平", []), ...overrides };
+  return { ...createInitialState(1, "承平", [], TEST_NAMES), ...overrides };
 }
 
 const baseStats = { health: 50, learning: 30, arts: 30, resolve: 30 };
@@ -39,14 +42,30 @@ describe("palaces", () => {
 });
 
 describe("宣政殿", () => {
-  it("UC-CORE-012 宣政殿 can be entered and left at any action point without using one", () => {
-    for (const actionPoint of [0, 1, 2, 3]) {
-      const inside = enterPalace(makeState({ actionPoint }), "xuanzheng");
-      expect(inside.location).toBe("xuanzheng");
-      expect(inside.actionPoint).toBe(actionPoint);
-      expect(takeAction(inside, "study")).toMatchObject({ ok: false, reason: "not-offered" });
-      expect(returnToMap(inside).actionPoint).toBe(actionPoint);
+  it("UC-CORE-003 宣政殿 opens only at 朝; leaving moves the clock to 午", () => {
+    const dawn = makeState();
+    expect(canEnterPalace(dawn, "xuanzheng")).toBe(true);
+    const inside = enterPalace(dawn, "xuanzheng");
+    expect([inside.location, inside.actionPoint, isMorningCourt(inside)]).toEqual(["xuanzheng", 0, true]);
+    expect(takeAction(inside, "study")).toMatchObject({ ok: false, reason: "not-offered" });
+    const out = returnToMap(inside);
+    expect([out.location, out.actionPoint, out.turn, out.rngState]).toEqual(["map", 1, 0, dawn.rngState]);
+    expect(isMorningCourt(out)).toBe(false);
+    expect(enterPalace(out, "xuanzheng")).toBe(out); // no second 早朝 this half-season
+    for (const actionPoint of [1, 2, 3]) {
+      const s = makeState({ actionPoint });
+      expect(canEnterPalace(s, "xuanzheng")).toBe(false);
+      expect(enterPalace(s, "xuanzheng")).toBe(s);
     }
+  });
+  it("UC-CORE-012 other palaces open at every action point; canEnterPalace refuses when dead, off the map or unknown", () => {
+    for (const actionPoint of [0, 1, 2, 3])
+      for (const p of ["chongwen", "yuhuayuan", "yanwu", "yangxin"] as const)
+        expect(canEnterPalace(makeState({ actionPoint }), p)).toBe(true);
+    expect(canEnterPalace(makeState({ dead: true }), "chongwen")).toBe(false);
+    expect(canEnterPalace(makeState({ location: "chongwen" }), "yanwu")).toBe(false);
+    expect(canEnterPalace(makeState(), "nope" as PalaceId)).toBe(false);
+    expect(isMorningCourt(makeState({ dead: true, location: "xuanzheng" }))).toBe(false);
   });
 });
 
@@ -249,7 +268,7 @@ describe("economy at turn end", () => {
   ];
 
   it("UC-CORE-015 the 4th action settles the economy into the next half-season", () => {
-    let state = createInitialState(1, "承平", FIXTURE);
+    let state = createInitialState(1, "承平", FIXTURE, TEST_NAMES);
     let last = act(state, "yangxin", "rest");
     state = last.state;
     for (let i = 0; i < 3; i += 1) {
@@ -262,7 +281,7 @@ describe("economy at turn end", () => {
   });
 
   it("UC-CORE-015 the summary of 夏下 reports the 秋上 tax", () => {
-    let state = createInitialState(1, "承平", FIXTURE);
+    let state = createInitialState(1, "承平", FIXTURE, TEST_NAMES);
     let last = act(state, "yangxin", "rest");
     state = last.state;
     for (let i = 1; i < 16; i += 1) {
@@ -275,7 +294,7 @@ describe("economy at turn end", () => {
 
   it("UC-CORE-013 dying of age skips the economy", () => {
     const state = makeState({
-      ...createInitialState(1, "承平", FIXTURE),
+      ...createInitialState(1, "承平", FIXTURE, TEST_NAMES),
       stats: { ...baseStats, health: 1 },
       turn: 399,
       actionPoint: 3,
