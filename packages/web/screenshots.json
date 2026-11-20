@@ -37,7 +37,7 @@
   },
   {
     "name": "palace-map",
-    "description": "宮城地圖：頂端半透明橫幅、宮城圖上的宮殿按鈕，圖下無輿圖按鈕",
+    "description": "宮城地圖：頂端半透明橫幅、宮城圖上的五座宮殿按鈕（含宣政殿），圖下無輿圖按鈕",
     "steps": [
       {
         "click": "#start"
@@ -665,6 +665,45 @@
       },
       {
         "waitFor": "#summary-treasury"
+      }
+    ]
+  },
+  {
+    "name": "palace-xuanzheng",
+    "description": "宣政殿畫面：背景圖與頂端橫幅，無面板，右下角一列內閣、六部與退",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "waitFor": "#court-row"
+      }
+    ]
+  },
+  {
+    "name": "palace-xuanzheng-personnel",
+    "description": "宣政殿畫面：展開吏部，選項列於工字上方，皆尚未開放",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "waitFor": "#court-options"
       }
     ]
   }

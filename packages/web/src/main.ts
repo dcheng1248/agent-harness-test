@@ -1,5 +1,5 @@
 import { gameText, uiText } from '@emperor/content';
-import type { ActionId, PalaceId } from '@emperor/core';
+import type { ActionId, DepartmentId, PalaceId } from '@emperor/core';
 import titleImage from './assets/title-forbidden-city.webp';
 import mapImage from './assets/map-forbidden-city.webp';
 import scrollImage from './assets/title-scroll.webp';
@@ -15,6 +15,7 @@ import {
   performAction,
   restart,
   startGame,
+  toggleDepartment,
   type Screen,
 } from './screen';
 import './style.css';
@@ -49,6 +50,10 @@ if (root) {
       current = chooseEraName(current, hit('[data-era]')?.dataset.era ?? '', gameText.regions);
     } else if (hit('[data-palace]')) {
       current = goToPalace(current, hit('[data-palace]')?.dataset.palace as PalaceId);
+    } else if (hit('[data-department]')) {
+      current = toggleDepartment(current, hit('[data-department]')?.dataset.department as DepartmentId);
+    } else if (hit('#leave-court')) {
+      current = goToMap(current);
     } else if (hit('[data-action]')) {
       current = performAction(current, hit('[data-action]')?.dataset.action as ActionId);
     } else if (hit('#open-atlas')) {

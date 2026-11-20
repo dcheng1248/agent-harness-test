@@ -1,5 +1,6 @@
 import {
   createInitialState,
+  DEPARTMENT_IDS,
   drawEraNameSuggestions,
   enterPalace,
   getHalfSeason,
@@ -7,6 +8,7 @@ import {
   returnToMap,
   takeAction,
   type ActionId,
+  type DepartmentId,
   type EconomyReport,
   type GameState,
   type HalfSeasonId,
@@ -18,7 +20,7 @@ import {
 export type Screen =
   | { screen: 'title' }
   | { screen: 'era'; seed: number; suggestions: string[]; draft: string; error: boolean }
-  | { screen: 'play'; state: GameState }
+  | { screen: 'play'; state: GameState; department?: DepartmentId }
   | { screen: 'result'; state: GameState; actionId: ActionId; changes: StatChange[] }
   | {
       screen: 'summary';
@@ -34,6 +36,9 @@ export type Screen =
 
 /** The palace that offers the 輿圖. */
 export const ATLAS_PALACE: PalaceId = 'chongwen';
+
+/** The palace that holds court: 內閣 and the six 部. */
+export const COURT_PALACE: PalaceId = 'xuanzheng';
 
 export function startGame(seed: number, pool: readonly string[]): Screen {
   return {
@@ -64,6 +69,14 @@ export function goToPalace(screen: Screen, palaceId: PalaceId): Screen {
 export function goToMap(screen: Screen): Screen {
   if (screen.screen !== 'play') return screen;
   return { screen: 'play', state: returnToMap(screen.state) };
+}
+
+export function toggleDepartment(screen: Screen, departmentId: DepartmentId): Screen {
+  if (screen.screen !== 'play' || screen.state.location !== COURT_PALACE) return screen;
+  if (!(DEPARTMENT_IDS as readonly string[]).includes(departmentId)) return screen;
+  const { state } = screen;
+  if (screen.department === departmentId) return { screen: 'play', state };
+  return { screen: 'play', state, department: departmentId };
 }
 
 export function performAction(screen: Screen, actionId: ActionId): Screen {
