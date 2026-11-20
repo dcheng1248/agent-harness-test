@@ -141,6 +141,7 @@ Migration: there are no saves, so nothing migrates.
 - `packages/core/src/model/balance.ts`
 - `packages/core/src/model/catalog.ts`
 - `packages/core/src/model/state.ts`
+- `packages/core/src/model/state.test.ts`
 - `packages/core/src/model/officials.ts`
 - `packages/core/src/index.ts`
 - `packages/content/src/schema.ts`
