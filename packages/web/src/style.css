@@ -67,3 +67,93 @@ button#start {
 button#start:hover {
   background: #922424;
 }
+
+#era-screen,
+#palace-map,
+#palace-view,
+#action-result,
+#turn-summary,
+#ending {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1rem;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+#game-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #c9a227;
+}
+
+#header-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+#palace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+#era-suggestions,
+#action-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+#era-screen label {
+  display: block;
+  margin-top: 1rem;
+}
+
+#era-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.4em 0.6em;
+  font-size: 1.125rem;
+}
+
+#era-error {
+  color: #8b0000;
+}
+
+#era-screen button,
+#palace-grid button,
+#action-list button,
+#back-to-map,
+#continue,
+#next-turn,
+#restart {
+  min-width: 44px;
+  min-height: 44px;
+  margin-top: 0.5rem;
+  padding: 0.4em 1em;
+  font-size: 1.125rem;
+  color: #f0d78c;
+  background: #7a1c1c;
+  border: 2px solid #c9a227;
+  border-radius: 0.5em;
+  cursor: pointer;
+}
+
+#era-screen button:hover,
+#palace-grid button:hover,
+#action-list button:hover,
+#back-to-map:hover,
+#continue:hover,
+#next-turn:hover,
+#restart:hover {
+  background: #922424;
+}

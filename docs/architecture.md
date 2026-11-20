@@ -39,6 +39,6 @@ Issue #17, the first playable loop, covers UC-CORE-001, UC-CORE-011 to UC-CORE-0
 | UC-CORE-013 | 年老衰弱與駕崩 | implemented |
 | UC-WEB-001 | 顯示標題畫面 | implemented |
 | UC-WEB-002 | 開始遊戲：登基後進入年號畫面 | implemented |
-| UC-WEB-003 | 年號畫面 | planned |
-| UC-WEB-004 | 宮殿地圖、宮殿、行動結果與半季總結畫面 | planned |
-| UC-WEB-005 | 駕崩結局與再開新局 | planned |
+| UC-WEB-003 | 年號畫面 | implemented |
+| UC-WEB-004 | 宮殿地圖、宮殿、行動結果與半季總結畫面 | implemented |
+| UC-WEB-005 | 駕崩結局與再開新局 | implemented |
