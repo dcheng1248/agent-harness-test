@@ -73,6 +73,7 @@ button#start:hover {
 #palace-view,
 #action-result,
 #turn-summary,
+#atlas,
 #ending {
   max-width: 32rem;
   margin: 0 auto;
@@ -133,6 +134,8 @@ button#start:hover {
 #palace-grid button,
 #action-list button,
 #back-to-map,
+#open-atlas,
+#close-atlas,
 #continue,
 #next-turn,
 #restart {
@@ -152,8 +155,31 @@ button#start:hover {
 #palace-grid button:hover,
 #action-list button:hover,
 #back-to-map:hover,
+#open-atlas:hover,
+#close-atlas:hover,
 #continue:hover,
 #next-turn:hover,
 #restart:hover {
   background: #922424;
+}
+
+#atlas-scroll {
+  overflow-x: auto;
+}
+
+#atlas-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#atlas-table th,
+#atlas-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #c9a227;
+  text-align: right;
+  white-space: nowrap;
+}
+
+#atlas-table th:first-child {
+  text-align: left;
 }

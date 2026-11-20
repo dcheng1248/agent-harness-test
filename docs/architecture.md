@@ -46,4 +46,4 @@ Issue #17, the first playable loop, covers UC-CORE-001, UC-CORE-011 to UC-CORE-0
 | UC-WEB-003 | 年號畫面 | implemented |
 | UC-WEB-004 | 宮殿地圖、宮殿、行動結果與半季總結畫面（含國庫、稅入、用度與地域變化） | implemented |
 | UC-WEB-005 | 駕崩結局與再開新局 | implemented |
-| UC-WEB-006 | 輿圖畫面：列出各地域的民心、人口、富庶，開啟不耗行動點 | planned |
+| UC-WEB-006 | 輿圖畫面：列出各地域的民心、人口、富庶，開啟不耗行動點 | implemented |

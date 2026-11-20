@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { gameText, uiText } from '@emperor/content';
-import { createInitialState, enterPalace, STAT_REGISTRY } from '@emperor/core';
+import { createInitialState, EMPEROR_STAT_IDS, enterPalace } from '@emperor/core';
 import {
   escapeHtml,
+  renderAtlasScreen,
   renderEndingScreen,
   renderEraScreen,
   renderHeader,
@@ -33,7 +34,7 @@ describe('start flow', () => {
   });
 });
 
-const state = createInitialState(7, '承平');
+const state = createInitialState(7, '承平', gameText.regions);
 
 describe('era screen', () => {
   const era: Extract<Screen, { screen: 'era' }> = { screen: 'era', seed: 7, suggestions: ['承平', '景和', '永綏'], draft: '', error: false };
@@ -71,8 +72,8 @@ describe('game screens', () => {
     expect(html).toContain('朝');
     expect(html).toContain('十六歲');
     let last = -1;
-    for (const s of STAT_REGISTRY) {
-      const at = html.indexOf(`data-stat="${s.id}">${gameText.statLabels[s.id]} ${state.stats[s.id]}<`);
+    for (const id of EMPEROR_STAT_IDS) {
+      const at = html.indexOf(`data-stat="${id}">${gameText.statLabels[id]} ${state.stats[id]}<`);
       expect(at).toBeGreaterThan(last);
       last = at;
     }
@@ -123,6 +124,7 @@ describe('game screens', () => {
         changes: [{ stat: 'learning', amount: 3 }],
         endedHalfSeason: 'spring-early',
         totals: [{ stat: 'learning', amount: 9 }, { stat: 'health', amount: -2 }],
+        economy: { taxIncome: 0, upkeep: 120000, regionChanges: [] },
       },
       uiText,
       gameText,
@@ -135,6 +137,63 @@ describe('game screens', () => {
     expect(html).toContain('學識 +9，健康 −2');
     expect(html).toContain('id="next-turn"');
     expect(html).toContain('進入春下');
+  });
+
+  it('UC-WEB-004 the header shows only emperor stats and 國庫', () => {
+    const html = renderHeader(state, uiText, gameText);
+    expect(html.match(/data-stat="/g)).toHaveLength(4);
+    expect(html).toMatch(/id="header-treasury">國庫 500,000 兩</);
+    const poor = { ...state, nation: { ...state.nation, treasury: -20000 } };
+    expect(renderHeader(poor, uiText, gameText)).toContain('國庫 −20,000 兩');
+  });
+
+  it('UC-WEB-004 the palace map has the 輿圖 entry', () => {
+    const html = renderPlayScreen({ screen: 'play', state }, uiText, gameText);
+    expect(html).toMatch(/id="open-atlas"[^>]*>輿圖</);
+  });
+
+  it('UC-WEB-004 the summary shows tax, upkeep and region changes', () => {
+    const base = {
+      screen: 'summary' as const,
+      state: { ...state, turn: 1 },
+      actionId: 'study' as const,
+      changes: [],
+      endedHalfSeason: 'spring-early' as const,
+      totals: [],
+    };
+    const html = renderSummaryScreen(
+      {
+        ...base,
+        economy: {
+          taxIncome: 547437,
+          upkeep: 120000,
+          regionChanges: [{ region: 'guanzhong', changes: [{ stat: 'morale', amount: -3 }] }],
+        },
+      },
+      uiText,
+      gameText,
+    );
+    expect(html).toMatch(/id="summary-treasury">稅入 \+547,437 兩，宮廷用度 −120,000 兩</);
+    expect(html).toMatch(/<li data-region="guanzhong">關中：民心 −3<\/li>/);
+    const empty = renderSummaryScreen(
+      { ...base, economy: { taxIncome: 0, upkeep: 120000, regionChanges: [] } },
+      uiText,
+      gameText,
+    );
+    expect(empty.match(/<li/g)).toHaveLength(1);
+    expect(empty).toContain('諸項無變化');
+  });
+
+  it('UC-WEB-006 輿圖 lists every region with 民心, 人口 and 富庶', () => {
+    const html = renderAtlasScreen({ screen: 'atlas', state }, uiText, gameText);
+    expect(html).toContain('id="atlas"');
+    expect(html).toContain('<h2>輿圖</h2>');
+    expect(html).toContain('id="atlas-table"');
+    expect(html.match(/<tr data-region=/g)).toHaveLength(9);
+    const row = html.match(/<tr data-region="guanzhong">.*?<\/tr>/)?.[0] ?? '';
+    for (const t of ['關中（京師）', '65', '3,000,000', '60']) expect(row).toContain(t);
+    expect(html).toMatch(/id="close-atlas"[^>]*>返回</);
+    expect(renderScreen({ screen: 'atlas', state }, uiText, gameText, images)).toContain('id="atlas"');
   });
 
   it('UC-WEB-004 renderScreen dispatches every screen kind', () => {

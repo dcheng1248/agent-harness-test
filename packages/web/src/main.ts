@@ -5,9 +5,11 @@ import scrollImage from './assets/title-scroll.webp';
 import { renderScreen } from './render';
 import {
   chooseEraName,
+  closeAtlas,
   continueToMap,
   goToMap,
   goToPalace,
+  openAtlas,
   performAction,
   restart,
   startGame,
@@ -24,7 +26,7 @@ if (root) {
   };
   const confirmTyped = (): void => {
     const input = root.querySelector<HTMLInputElement>('#era-input');
-    current = chooseEraName(current, input?.value ?? '');
+    current = chooseEraName(current, input?.value ?? '', gameText.regions);
     draw();
     if (current.screen === 'era') root.querySelector<HTMLInputElement>('#era-input')?.focus();
   };
@@ -39,11 +41,15 @@ if (root) {
       confirmTyped();
       return;
     } else if (hit('[data-era]')) {
-      current = chooseEraName(current, hit('[data-era]')?.dataset.era ?? '');
+      current = chooseEraName(current, hit('[data-era]')?.dataset.era ?? '', gameText.regions);
     } else if (hit('[data-palace]')) {
       current = goToPalace(current, hit('[data-palace]')?.dataset.palace as PalaceId);
     } else if (hit('[data-action]')) {
       current = performAction(current, hit('[data-action]')?.dataset.action as ActionId);
+    } else if (hit('#open-atlas')) {
+      current = openAtlas(current);
+    } else if (hit('#close-atlas')) {
+      current = closeAtlas(current);
     } else if (hit('#back-to-map')) {
       current = goToMap(current);
     } else if (hit('#continue') || hit('#next-turn')) {
