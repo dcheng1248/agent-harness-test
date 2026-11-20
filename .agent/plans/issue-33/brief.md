@@ -8,7 +8,7 @@ A fifth palace, 宣政殿, joins the palace map on the great hall above the whit
 - 宣政殿 shows its own background picture with the header banner on top and no panel. Its name is a hidden heading for screen readers.
 - A row of buttons over the lower right of the picture, scaling with it: 內閣 吏 戶 禮 兵 刑 工, a gap, then 退. Screen readers hear 內閣, 吏部, 戶部 and so on.
 - 退 goes back to the map like 返回宮城.
-- Clicking a department highlights it and opens its options as a vertical list just above the row, right-aligned with the 工 button. Clicking another department switches the list. Clicking the open one closes it. Leaving 宣政殿 closes it.
+- Clicking a department highlights it and opens its options as a vertical list directly above the clicked department's button. Clicking another department switches the list. Clicking the open one closes it. Leaving 宣政殿 closes it.
 - Each option is a greyed-out, disabled button with a small 「尚未開放」 tag. Nothing happens on click.
 
 ## Risk
@@ -25,7 +25,7 @@ A fifth palace, 宣政殿, joins the palace map on the great hall above the whit
 ## What you'll see
 - `palace-map` (changed): a fifth button, 宣政殿, on the hall above the white stairs, below 養心殿.
 - `palace-xuanzheng` (new): the throne-hall picture with the banner, no panel, and the row 內閣 吏 戶 禮 兵 刑 工 | 退 at the lower right.
-- `palace-xuanzheng-personnel` (new): the same with 吏 filled gold and a list above the row, right-aligned with 工: 舉薦人選, 官員任命, 開科取士, each greyed with 「尚未開放」.
+- `palace-xuanzheng-personnel` (new): the same with 吏 filled gold and a list directly above the 吏 button: 舉薦人選, 官員任命, 開科取士, each greyed with 「尚未開放」.
 
 ## Use cases
 **Added `UC-WEB-007` 宣政殿**

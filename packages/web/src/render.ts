@@ -19,6 +19,7 @@ import {
   getAge,
   getHalfSeason,
   getReignYear,
+  type DepartmentId,
   type GameState,
   type PalaceId,
 } from '@emperor/core';
@@ -85,20 +86,19 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
 function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game: GameText, images: ScreenImages): string {
   const palace = game.palaces[COURT_PALACE];
   const open = screen.department;
+  const optionList = (id: DepartmentId): string =>
+    `<div id="court-options" role="group" aria-label="${game.departments[id].name}">${DEPARTMENTS[id].options
+      .map(
+        (option) =>
+          `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.notYetOpen}</span></button>`,
+      )
+      .join('')}</div>`;
   const departments = DEPARTMENT_IDS.map((id) => {
     const { label, name } = game.departments[id];
-    return `<button type="button" id="department-${id}" data-department="${id}" aria-label="${name}" aria-expanded="${id === open}">${label}</button>`;
+    return `<div class="department-slot"><button type="button" id="department-${id}" data-department="${id}" aria-label="${name}" aria-expanded="${id === open}">${label}</button>${id === open ? optionList(id) : ''}</div>`;
   }).join('');
-  const options = open
-    ? `<div id="court-options" role="group" aria-label="${game.departments[open].name}">${DEPARTMENTS[open].options
-        .map(
-          (id) =>
-            `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${game.courtOptions[id].name}<span class="court-option-tag">${text.notYetOpen}</span></button>`,
-        )
-        .join('')}</div>`
-    : '';
   const leave = `<button type="button" id="leave-court" aria-label="${text.leaveCourtLabel}">${text.leaveCourt}</button>`;
-  return `<main id="palace-view" class="court-view"><h2 class="visually-hidden">${palace.name}</h2><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[COURT_PALACE]}" alt="${palace.imageAlt}"><div id="court-row"><div id="department-row">${departments}${options}</div>${leave}</div></div></main>`;
+  return `<main id="palace-view" class="court-view"><h2 class="visually-hidden">${palace.name}</h2><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[COURT_PALACE]}" alt="${palace.imageAlt}"><div id="court-row"><div id="department-row">${departments}</div>${leave}</div></div></main>`;
 }
 
 export function renderResultScreen(screen: Of<'result'>, text: UiText, game: GameText): string {

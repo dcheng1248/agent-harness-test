@@ -39,7 +39,7 @@ Entered from its button on the palace map like any palace, at any action point. 
 
 - Over the lower right of the image sits one horizontal row of buttons that scales with the image: 內閣 and the six 部 in `core` registry order (`DEPARTMENT_IDS`), then 退. Each department button shows its short name and is announced by its full name, both from `content`. 退 is set apart from the departments by a gap and a different style.
 - 退 works like 返回宮城: back to the map, no action point used.
-- Clicking a department highlights it and opens its options, in registry order, as a vertical list whose right edge lines up with the last department button and which sits just above the row, whichever department was clicked. Clicking another department switches the list to that department. Clicking the open department closes the list. Leaving 宣政殿 closes it, so it is closed on the next visit.
+- Clicking a department highlights it and opens its options, in registry order, as a vertical list that sits directly above the clicked department's button and is centred on it (the list of the rightmost department is right-aligned with its button so it stays inside the image). Clicking another department switches the list to that department. Clicking the open department closes the list. Leaving 宣政殿 closes it, so it is closed on the next visit.
 - Each option is a disabled button with its name and a small "not yet open" tag. Clicking it does nothing.
 - Which department is open is `web` screen state only. Opening, switching and closing keep the same `GameState` object and use no action point.
 

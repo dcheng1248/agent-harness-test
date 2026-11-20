@@ -308,8 +308,24 @@ describe('宣政殿', () => {
     for (const other of DEPARTMENT_IDS.filter((d) => d !== 'personnel')) {
       for (const option of DEPARTMENTS[other].options) expect(html).not.toContain(`court-option-${option}"`);
     }
-    expect(html.indexOf('id="court-options"')).toBeGreaterThan(html.indexOf('id="department-works"'));
     expect(html.indexOf('id="court-options"')).toBeLessThan(html.indexOf('id="leave-court"'));
+  });
+
+  it.each(DEPARTMENT_IDS)('UC-WEB-007 the options of %s sit in its own wrapper, right after its button', (open) => {
+    const html = renderPlayScreen({ screen: 'play', state: court, department: open }, uiText, gameText, images);
+    const options = DEPARTMENTS[open].options
+      .map(
+        (id) =>
+          `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.notYetOpen}</span></button>`,
+      )
+      .join('');
+    expect(html).toContain(
+      `<div class="department-slot">${departmentButton(open, true)}<div id="court-options" role="group" aria-label="${gameText.departments[open].name}">${options}</div></div>`,
+    );
+    expect(html.split('id="court-options"').length).toBe(2);
+    for (const other of DEPARTMENT_IDS.filter((d) => d !== open)) {
+      expect(html).toContain(`<div class="department-slot">${departmentButton(other, false)}</div>`);
+    }
   });
 });
 

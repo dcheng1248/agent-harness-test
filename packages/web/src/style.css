@@ -327,7 +327,11 @@ button#start:hover {
   gap: 0.4em;
 }
 
-#department-row > button[data-department],
+#department-row > .department-slot {
+  position: relative;
+}
+
+#department-row button[data-department],
 #leave-court {
   margin: 0;
   min-width: 44px;
@@ -341,16 +345,16 @@ button#start:hover {
   cursor: pointer;
 }
 
-#department-row > button[data-department] {
+#department-row button[data-department] {
   color: #f0d78c;
   background: #7a1c1c;
 }
 
-#department-row > button[data-department]:hover {
+#department-row button[data-department]:hover {
   background: #922424;
 }
 
-#department-row > button[data-department][aria-expanded="true"] {
+#department-row button[data-department][aria-expanded="true"] {
   color: #24140a;
   background: #c9a227;
 }
@@ -368,8 +372,9 @@ button#start:hover {
 
 #court-options {
   position: absolute;
-  right: 0;
+  left: 50%;
   bottom: calc(100% + 0.5em);
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -379,6 +384,13 @@ button#start:hover {
   background: rgba(24, 14, 8, 0.85);
   border: 2px solid #c9a227;
   border-radius: 0.5em;
+}
+
+/* The rightmost department sits near the image edge: align the list to its right edge. */
+#department-row > .department-slot:last-child #court-options {
+  left: auto;
+  right: 0;
+  transform: none;
 }
 
 #court-options button {

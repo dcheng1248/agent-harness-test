@@ -192,10 +192,10 @@ Read: `packages/web/ARCHITECTURE.md`, `packages/web/USE_CASES.md` (UC-WEB-004, U
     - `.court-option-tag`: `font-size: 0.7em; padding: 0.1em 0.5em; color: #f0d78c; background: rgba(201, 162, 39, 0.25); border-radius: 1em;`
   - `screenshots.json`: change the `palace-map` description to mention the 宣政殿 button (「宮城地圖：頂端半透明橫幅、宮城圖上的五座宮殿按鈕（含宣政殿），圖下無輿圖按鈕」). Append:
     - `palace-xuanzheng`, 「宣政殿畫面：背景圖與頂端橫幅，無面板，右下角一列內閣、六部與退」: click `#start`, `#era-suggestion-0`, `#palace-xuanzheng`; waitFor `#court-row`.
-    - `palace-xuanzheng-personnel`, 「宣政殿畫面：展開吏部，選項列於工字上方，皆尚未開放」: same, then click `#department-personnel`; waitFor `#court-options`.
+    - `palace-xuanzheng-personnel`, 「宣政殿畫面：展開吏部，選項列於吏字上方，皆尚未開放」: same, then click `#department-personnel`; waitFor `#court-options`.
   - Mark UC-WEB-007 `implemented` in `packages/web/USE_CASES.md`.
 
-- [ ] **Step 4: Run** `npx vitest run packages/web`. Expected: PASS. Then `npm run dev` and check by eye at 1280px: the 宣政殿 map button sits on the hall above the white stairs and clears 養心殿; the row sits over the lower right of the picture; the 吏部 list is right-aligned above 工 and stays inside the image.
+- [ ] **Step 4: Run** `npx vitest run packages/web`. Expected: PASS. Then `npm run dev` and check by eye at 1280px: the 宣政殿 map button sits on the hall above the white stairs and clears 養心殿; the row sits over the lower right of the picture; the 吏部 list is centred directly above 吏 and stays inside the image (check 工 too: right-aligned).
 
 - [ ] **Step 5: Commit** `feat(web): add 宣政殿 view with department row and placeholder options`.
 

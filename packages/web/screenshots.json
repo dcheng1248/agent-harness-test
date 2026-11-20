@@ -688,7 +688,7 @@
   },
   {
     "name": "palace-xuanzheng-personnel",
-    "description": "宣政殿畫面：展開吏部，選項列於工字上方，皆尚未開放",
+    "description": "宣政殿畫面：展開吏部，選項列於吏字上方，皆尚未開放",
     "steps": [
       {
         "click": "#start"
