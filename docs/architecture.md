@@ -35,8 +35,8 @@ Issue #17, the first playable loop, covers UC-CORE-001, UC-CORE-011 to UC-CORE-0
 | UC-CORE-009 | 誕育子嗣 | planned |
 | UC-CORE-010 | 教導皇子女 | planned |
 | UC-CORE-011 | 選定年號：候選年號與自訂年號驗證 | implemented |
-| UC-CORE-012 | 半季回合：在宮殿以行動點執行行動 | planned |
-| UC-CORE-013 | 年老衰弱與駕崩 | planned |
+| UC-CORE-012 | 半季回合：在宮殿以行動點執行行動 | implemented |
+| UC-CORE-013 | 年老衰弱與駕崩 | implemented |
 | UC-WEB-001 | 顯示標題畫面 | implemented |
 | UC-WEB-002 | 開始遊戲：登基後進入年號畫面 | implemented |
 | UC-WEB-003 | 年號畫面 | planned |

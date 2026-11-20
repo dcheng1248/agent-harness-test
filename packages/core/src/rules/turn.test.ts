@@ -1,0 +1,161 @@
+import { describe, expect, it } from 'vitest';
+import {
+  CATALOG,
+  createInitialState,
+  enterPalace,
+  getAge,
+  getHalfSeason,
+  getReignYear,
+  returnToMap,
+  takeAction,
+} from '../index';
+import type { ActionId, Catalog, GameState, PalaceId } from '../index';
+
+function makeState(overrides: Partial<GameState> = {}): GameState {
+  return { ...createInitialState(1, '承平'), ...overrides };
+}
+
+const baseStats = { health: 50, learning: 30, arts: 30, resolve: 30 };
+
+function act(state: GameState, palace: PalaceId, action: ActionId) {
+  const outcome = takeAction(enterPalace(state, palace), action);
+  if (!outcome.ok) throw new Error(`rejected: ${outcome.reason}`);
+  return outcome;
+}
+
+describe('moving', () => {
+  it('UC-CORE-012 moving between the map and palaces uses no action point', () => {
+    const start = makeState();
+    const inPalace = enterPalace(start, 'chongwen');
+    expect(inPalace.location).toBe('chongwen');
+    expect(inPalace.actionPoint).toBe(0);
+    expect(inPalace.rngState).toBe(start.rngState);
+    const back = returnToMap(inPalace);
+    expect(back).toEqual(start);
+    expect(enterPalace(inPalace, 'hanmo')).toBe(inPalace);
+    const dead = makeState({ dead: true });
+    expect(enterPalace(dead, 'hanmo')).toBe(dead);
+    const deadIn = makeState({ dead: true, location: 'hanmo' });
+    expect(returnToMap(deadIn)).toBe(deadIn);
+  });
+});
+
+describe('takeAction', () => {
+  it('UC-CORE-012 rejects actions on the map, not offered, not allowed now, or when dead', () => {
+    const onMap = makeState();
+    expect(takeAction(onMap, 'study')).toEqual({ ok: false, reason: 'not-in-palace', state: onMap });
+
+    const wrongPalace = enterPalace(makeState(), 'chongwen');
+    expect(takeAction(wrongPalace, 'arts')).toEqual({ ok: false, reason: 'not-offered', state: wrongPalace });
+
+    const catalog: Catalog = {
+      ...CATALOG,
+      actions: { ...CATALOG.actions, study: { allowedIn: ['night'] } },
+    };
+    expect(takeAction(wrongPalace, 'study', catalog)).toEqual({
+      ok: false,
+      reason: 'not-allowed-now',
+      state: wrongPalace,
+    });
+
+    const dead = makeState({ dead: true, location: 'chongwen' });
+    expect(takeAction(dead, 'study')).toEqual({ ok: false, reason: 'dead', state: dead });
+  });
+
+  it('UC-CORE-012 an action applies its effect with variance, returns to the map and uses the action point', () => {
+    const start = makeState({ stats: baseStats });
+    const outcome = act(start, 'chongwen', 'study');
+    const learning = outcome.changes.find((c) => c.stat === 'learning');
+    expect(learning?.amount).toBeGreaterThanOrEqual(2);
+    expect(learning?.amount).toBeLessThanOrEqual(4);
+    expect(outcome.changes.find((c) => c.stat === 'health')?.amount).toBe(-1);
+    expect(outcome.state.location).toBe('map');
+    expect(outcome.state.actionPoint).toBe(1);
+    expect(outcome.state.turnDeltas.learning).toBe(learning?.amount);
+    expect(outcome.state.turnDeltas.health).toBe(-1);
+    expect(outcome.state.stats.learning).toBe(30 + (learning?.amount ?? 0));
+    expect(outcome.turnEnd).toBeNull();
+  });
+
+  it('UC-CORE-012 the same state and action give the same result', () => {
+    const state = enterPalace(makeState({ stats: baseStats }), 'chongwen');
+    expect(takeAction(state, 'study')).toEqual(takeAction(state, 'study'));
+  });
+
+  it('UC-CORE-012 stats are clamped and the applied change is reported', () => {
+    const high = act(makeState({ stats: { ...baseStats, learning: 99 } }), 'chongwen', 'study');
+    expect(high.state.stats.learning).toBe(100);
+    expect(high.changes.find((c) => c.stat === 'learning')?.amount).toBe(1);
+
+    const full = act(makeState({ stats: { ...baseStats, health: 100 } }), 'qingong', 'rest');
+    expect(full.state.stats.health).toBe(100);
+    expect(full.changes.find((c) => c.stat === 'health')).toBeUndefined();
+  });
+
+  it('UC-CORE-012 the 4th action ends the turn', () => {
+    let state = makeState({ stats: baseStats });
+    const summed = { health: 0, learning: 0, arts: 0, resolve: 0 };
+    let last = act(state, 'chongwen', 'study');
+    for (let i = 0; i < 4; i += 1) {
+      last = act(state, 'chongwen', 'study');
+      for (const c of last.changes) summed[c.stat] += c.amount;
+      state = last.state;
+    }
+    expect(state.turn).toBe(1);
+    expect(state.actionPoint).toBe(0);
+    expect(getHalfSeason(state)).toBe('spring-late');
+    expect(state.turnDeltas).toEqual({ health: 0, learning: 0, arts: 0, resolve: 0 });
+    expect(last.turnEnd?.aging).toBe(0);
+    const expected = (['health', 'learning', 'arts', 'resolve'] as const)
+      .filter((s) => summed[s] !== 0)
+      .map((s) => ({ stat: s, amount: summed[s] }));
+    expect(last.turnEnd?.totals).toEqual(expected);
+  });
+
+  it('UC-CORE-012 8 turns move the year and age forward', () => {
+    let state = makeState({ stats: baseStats });
+    for (let i = 0; i < 32; i += 1) state = act(state, 'qingong', 'rest').state;
+    expect(state.turn).toBe(8);
+    expect(getReignYear(state)).toBe(2);
+    expect(getAge(state)).toBe(17);
+    expect(getHalfSeason(state)).toBe('spring-early');
+  });
+});
+
+describe('aging and death', () => {
+  it('UC-CORE-013 no aging before 40', () => {
+    const out = act(makeState({ stats: baseStats, turn: 191, actionPoint: 3 }), 'qingong', 'rest');
+    expect(out.turnEnd?.aging).toBe(0);
+  });
+
+  it('UC-CORE-013 aging starts at 40 and grows with age', () => {
+    const at40 = act(makeState({ stats: baseStats, turn: 192, actionPoint: 3 }), 'hanmo', 'arts');
+    expect(at40.turnEnd?.aging).toBe(1);
+    expect(at40.turnEnd?.totals).toEqual([
+      { stat: 'health', amount: -1 },
+      { stat: 'arts', amount: expect.any(Number) },
+    ]);
+    expect(at40.state.stats.health).toBe(49);
+    const at45 = act(makeState({ stats: baseStats, turn: 232, actionPoint: 3 }), 'hanmo', 'arts');
+    expect(at45.turnEnd?.aging).toBe(2);
+  });
+
+  it('UC-CORE-013 death when 健康 reaches 0 after an action', () => {
+    const out = act(makeState({ stats: { ...baseStats, health: 1 } }), 'chongwen', 'study');
+    expect(out.state.stats.health).toBe(0);
+    expect(out.state.dead).toBe(true);
+    expect(out.turnEnd).toBeNull();
+    expect(out.state.turn).toBe(0);
+    expect(out.state.actionPoint).toBe(0);
+    const later = takeAction(enterPalace(out.state, 'hanmo'), 'arts');
+    expect(later.ok).toBe(false);
+    if (!later.ok) expect(later.reason).toBe('dead');
+  });
+
+  it('UC-CORE-013 death from aging at the end of a turn', () => {
+    const out = act(makeState({ stats: { ...baseStats, health: 1 }, turn: 192, actionPoint: 3 }), 'hanmo', 'arts');
+    expect(out.state.dead).toBe(true);
+    expect(out.turnEnd?.aging).toBe(1);
+    expect(out.state.turn).toBe(192);
+  });
+});

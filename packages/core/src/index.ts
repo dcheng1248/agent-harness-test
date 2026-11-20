@@ -9,5 +9,7 @@ export type { PalaceId, ActionId, Catalog } from './model/catalog';
 export { BALANCE } from './model/balance';
 export type { StatChange } from './model/balance';
 export { isValidEraName, drawEraNameSuggestions } from './rules/eraName';
+export { enterPalace, returnToMap, takeAction } from './rules/turn';
+export type { ActionRejection, TurnEnd, ActionOutcome } from './rules/turn';
 export { nextRandom } from './rng';
 export type { RandomResult } from './rng';
