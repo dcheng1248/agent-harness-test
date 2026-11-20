@@ -26,9 +26,10 @@ function act(state: GameState, palace: PalaceId, action: ActionId) {
 
 describe("palaces", () => {
   it("UC-CORE-012 palaces in map order; 崇文館 offers study then arts; 御花園 offers nothing", () => {
-    expect(PALACE_IDS).toEqual(["chongwen", "yuhuayuan", "yanwu", "qingong"]);
+    expect(PALACE_IDS).toEqual(["chongwen", "yuhuayuan", "yanwu", "yangxin"]);
     expect(CATALOG.palaces.chongwen.actions).toEqual(["study", "arts"]);
     expect(CATALOG.palaces.yuhuayuan.actions).toEqual([]);
+    expect(CATALOG.palaces.yangxin.actions).toEqual(["rest"]);
     const inGarden = enterPalace(makeState(), "yuhuayuan");
     expect(inGarden.location).toBe("yuhuayuan");
     expect(inGarden.actionPoint).toBe(0);
@@ -119,7 +120,7 @@ describe("takeAction", () => {
 
     const full = act(
       makeState({ stats: { ...baseStats, health: 100 } }),
-      "qingong",
+      "yangxin",
       "rest",
     );
     expect(full.state.stats.health).toBe(100);
@@ -154,7 +155,7 @@ describe("takeAction", () => {
 
   it("UC-CORE-012 8 turns move the year and age forward", () => {
     let state = makeState({ stats: baseStats });
-    for (let i = 0; i < 32; i += 1) state = act(state, "qingong", "rest").state;
+    for (let i = 0; i < 32; i += 1) state = act(state, "yangxin", "rest").state;
     expect(state.turn).toBe(8);
     expect(getReignYear(state)).toBe(2);
     expect(getAge(state)).toBe(17);
@@ -166,7 +167,7 @@ describe("aging and death", () => {
   it("UC-CORE-013 no aging before 40", () => {
     const out = act(
       makeState({ stats: baseStats, turn: 191, actionPoint: 3 }),
-      "qingong",
+      "yangxin",
       "rest",
     );
     expect(out.turnEnd?.aging).toBe(0);
@@ -236,10 +237,10 @@ describe("economy at turn end", () => {
 
   it("UC-CORE-015 the 4th action settles the economy into the next half-season", () => {
     let state = createInitialState(1, "承平", FIXTURE);
-    let last = act(state, "qingong", "rest");
+    let last = act(state, "yangxin", "rest");
     state = last.state;
     for (let i = 0; i < 3; i += 1) {
-      last = act(state, "qingong", "rest");
+      last = act(state, "yangxin", "rest");
       state = last.state;
     }
     expect(last.turnEnd?.economy.upkeep).toBe(120000);
@@ -249,10 +250,10 @@ describe("economy at turn end", () => {
 
   it("UC-CORE-015 the summary of 夏下 reports the 秋上 tax", () => {
     let state = createInitialState(1, "承平", FIXTURE);
-    let last = act(state, "qingong", "rest");
+    let last = act(state, "yangxin", "rest");
     state = last.state;
     for (let i = 1; i < 16; i += 1) {
-      last = act(state, "qingong", "rest");
+      last = act(state, "yangxin", "rest");
       state = last.state;
     }
     expect(getHalfSeason(state)).toBe("autumn-early");
