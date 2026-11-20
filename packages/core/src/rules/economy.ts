@@ -67,9 +67,11 @@ export function settleEconomy(
 
   const regionChanges: RegionChange[] = [];
   next.forEach((r, i) => {
+    const before = regions[i];
+    if (!before) return;
     const changes: StatChange[] = [];
     for (const stat of REGION_STAT_IDS) {
-      const amount = r.stats[stat] - regions[i].stats[stat];
+      const amount = r.stats[stat] - before.stats[stat];
       if (amount !== 0) changes.push({ stat, amount });
     }
     if (changes.length > 0) regionChanges.push({ region: r.id, changes });

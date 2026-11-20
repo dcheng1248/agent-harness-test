@@ -1,6 +1,6 @@
 import { BALANCE } from "../model/balance";
 import type { StatChange } from "../model/balance";
-import { HALF_SEASONS, getActionPointId, getAge } from "../model/calendar";
+import { HALF_SEASONS, getActionPointId, getAge, type HalfSeasonId } from "../model/calendar";
 import { CATALOG, PALACE_IDS } from "../model/catalog";
 import type { ActionId, Catalog, PalaceId } from "../model/catalog";
 import type { GameState } from "../model/state";
@@ -144,7 +144,7 @@ export function takeAction(
   const settled = settleEconomy(
     state.nation,
     state.regions,
-    HALF_SEASONS[(state.turn + 1) % BALANCE.turnsPerYear],
+    HALF_SEASONS[(state.turn + 1) % BALANCE.turnsPerYear] as HalfSeasonId,
   );
   const turnEnd: TurnEnd = { aging, totals, economy: settled.report };
   const zero = { health: 0, learning: 0, arts: 0, resolve: 0 };

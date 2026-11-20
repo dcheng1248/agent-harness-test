@@ -83,7 +83,7 @@ describe("settleEconomy taxes and upkeep", () => {
       "autumn-early",
     );
     expect(nation.treasury).toBeGreaterThanOrEqual(0);
-    expect(regions[0].stats.morale).toBe(80);
+    expect(regions[0]?.stats.morale).toBe(80);
     expect(report.regionChanges).toEqual([]);
   });
 
