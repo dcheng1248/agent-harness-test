@@ -36,5 +36,7 @@ export type { StatChange } from "./model/balance";
 export { isValidEraName, drawEraNameSuggestions } from "./rules/eraName";
 export { enterPalace, returnToMap, takeAction } from "./rules/turn";
 export type { ActionRejection, TurnEnd, ActionOutcome } from "./rules/turn";
+export { regionTax, settleEconomy } from "./rules/economy";
+export type { RegionChange, EconomyReport } from "./rules/economy";
 export { nextRandom } from "./rng";
 export type { RandomResult } from "./rng";

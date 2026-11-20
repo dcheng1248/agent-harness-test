@@ -209,3 +209,57 @@ describe("aging and death", () => {
     expect(out.state.turn).toBe(192);
   });
 });
+
+describe("economy at turn end", () => {
+  const FIXTURE = [
+    {
+      id: "a",
+      owner: "player",
+      adjacent: [],
+      start: { morale: 60, population: 5000000, prosperity: 60 },
+    },
+  ];
+
+  it("UC-CORE-015 the 4th action settles the economy into the next half-season", () => {
+    let state = createInitialState(1, "承平", FIXTURE);
+    let last = act(state, "qingong", "rest");
+    state = last.state;
+    for (let i = 0; i < 3; i += 1) {
+      last = act(state, "qingong", "rest");
+      state = last.state;
+    }
+    expect(last.turnEnd?.economy.upkeep).toBe(120000);
+    expect(last.turnEnd?.economy.taxIncome).toBe(0);
+    expect(state.nation.treasury).toBe(380000);
+  });
+
+  it("UC-CORE-015 the summary of 夏下 reports the 秋上 tax", () => {
+    let state = createInitialState(1, "承平", FIXTURE);
+    let last = act(state, "qingong", "rest");
+    state = last.state;
+    for (let i = 1; i < 16; i += 1) {
+      last = act(state, "qingong", "rest");
+      state = last.state;
+    }
+    expect(getHalfSeason(state)).toBe("autumn-early");
+    expect(last.turnEnd?.economy.taxIncome).toBeGreaterThan(0);
+  });
+
+  it("UC-CORE-013 dying of age skips the economy", () => {
+    const state = makeState({
+      ...createInitialState(1, "承平", FIXTURE),
+      stats: { ...baseStats, health: 1 },
+      turn: 399,
+      actionPoint: 3,
+    });
+    const out = act(state, "yanwu", "riding");
+    expect(out.state.dead).toBe(true);
+    expect(out.turnEnd?.economy).toEqual({
+      taxIncome: 0,
+      upkeep: 0,
+      regionChanges: [],
+    });
+    expect(out.state.nation).toEqual(state.nation);
+    expect(out.state.regions).toEqual(state.regions);
+  });
+});

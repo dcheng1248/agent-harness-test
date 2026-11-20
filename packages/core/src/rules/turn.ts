@@ -1,11 +1,13 @@
 import { BALANCE } from "../model/balance";
 import type { StatChange } from "../model/balance";
-import { getActionPointId, getAge } from "../model/calendar";
+import { HALF_SEASONS, getActionPointId, getAge } from "../model/calendar";
 import { CATALOG, PALACE_IDS } from "../model/catalog";
 import type { ActionId, Catalog, PalaceId } from "../model/catalog";
 import type { GameState } from "../model/state";
 import { EMPEROR_STAT_IDS, STAT_REGISTRY } from "../model/stats";
 import type { StatId, StatValues } from "../model/stats";
+import { settleEconomy } from "./economy";
+import type { EconomyReport } from "./economy";
 import { randomInt } from "./random";
 
 export type ActionRejection =
@@ -13,6 +15,7 @@ export type ActionRejection =
 export interface TurnEnd {
   aging: number;
   totals: StatChange[];
+  economy: EconomyReport;
 }
 export type ActionOutcome =
   | { ok: false; reason: ActionRejection; state: GameState }
@@ -119,8 +122,13 @@ export function takeAction(
     ...turnDeltas,
     health: turnDeltas.health + (agedStats.health - stats.health),
   };
-  const turnEnd: TurnEnd = { aging, totals: nonZeroChanges(totalsRaw) };
+  const totals = nonZeroChanges(totalsRaw);
   if (agedStats.health <= 0) {
+    const turnEnd: TurnEnd = {
+      aging,
+      totals,
+      economy: { taxIncome: 0, upkeep: 0, regionChanges: [] },
+    };
     return {
       ok: true,
       state: {
@@ -133,12 +141,20 @@ export function takeAction(
       turnEnd,
     };
   }
+  const settled = settleEconomy(
+    state.nation,
+    state.regions,
+    HALF_SEASONS[(state.turn + 1) % BALANCE.turnsPerYear],
+  );
+  const turnEnd: TurnEnd = { aging, totals, economy: settled.report };
   const zero = { health: 0, learning: 0, arts: 0, resolve: 0 };
   return {
     ok: true,
     state: {
       ...used,
       stats: agedStats,
+      nation: settled.nation,
+      regions: settled.regions,
       turn: state.turn + 1,
       actionPoint: 0,
       turnDeltas: zero,

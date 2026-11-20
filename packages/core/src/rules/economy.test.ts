@@ -1,0 +1,159 @@
+import { describe, expect, it } from "vitest";
+import { HALF_SEASONS, regionTax, settleEconomy } from "../index";
+import type { HalfSeasonId, RegionState, RegionStatValues } from "../index";
+
+function region(
+  id: string,
+  stats: RegionStatValues,
+  owner = "player",
+): RegionState {
+  return { id, owner, stats };
+}
+
+const A = region("a", { morale: 60, population: 5000000, prosperity: 60 });
+
+function afterPopulation(r: RegionState, next: HalfSeasonId): RegionStatValues {
+  // A has 民心 + 富庶 = 120, so it grows by 2% when entering 春上
+  return next === "spring-early"
+    ? { ...r.stats, population: r.stats.population * 1.02 }
+    : r.stats;
+}
+
+describe("regionTax", () => {
+  it("UC-CORE-015 regionTax follows the formula", () => {
+    expect(
+      regionTax({ morale: 60, population: 5000000, prosperity: 60 }),
+    ).toBe(90000);
+    expect(
+      regionTax({ morale: 65, population: 4500000, prosperity: 75 }),
+    ).toBe(109687);
+  });
+});
+
+describe("settleEconomy taxes and upkeep", () => {
+  it("UC-CORE-015 taxes arrive only when entering 春上 and 秋上", () => {
+    for (const next of HALF_SEASONS) {
+      const { report, nation } = settleEconomy(
+        { treasury: 1000000 },
+        [A],
+        next,
+      );
+      const taxed = next === "spring-early" || next === "autumn-early";
+      expect(report.taxIncome).toBe(
+        taxed ? regionTax(afterPopulation(A, next)) : 0,
+      );
+      expect(nation.treasury).toBe(1000000 - 120000 + report.taxIncome);
+    }
+  });
+
+  it("UC-CORE-015 upkeep is paid every turn, and 國庫 can go below 0", () => {
+    const { nation, report } = settleEconomy(
+      { treasury: 50000 },
+      [A],
+      "spring-late",
+    );
+    expect(report.upkeep).toBe(120000);
+    expect(nation.treasury).toBe(-70000);
+  });
+
+  it("UC-CORE-015 a negative 國庫 lowers 民心 by 3 in every player region, stopping at 0", () => {
+    const LOW = region("low", { morale: 1, population: 1000, prosperity: 50 });
+    const ZERO = region("zero", { morale: 0, population: 1000, prosperity: 50 });
+    const { regions, report } = settleEconomy(
+      { treasury: 0 },
+      [A, LOW, ZERO],
+      "spring-late",
+    );
+    expect(regions.map((r) => r.stats.morale)).toEqual([57, 0, 0]);
+    expect(report.regionChanges).toEqual([
+      { region: "a", changes: [{ stat: "morale", amount: -3 }] },
+      { region: "low", changes: [{ stat: "morale", amount: -1 }] },
+    ]);
+  });
+
+  it("UC-CORE-015 no penalty when that turn's tax brings 國庫 back to 0 or above", () => {
+    const rich = region("rich", {
+      morale: 80,
+      population: 5000000,
+      prosperity: 80,
+    });
+    const { nation, regions, report } = settleEconomy(
+      { treasury: 0 },
+      [rich],
+      "autumn-early",
+    );
+    expect(nation.treasury).toBeGreaterThanOrEqual(0);
+    expect(regions[0].stats.morale).toBe(80);
+    expect(report.regionChanges).toEqual([]);
+  });
+
+  it("UC-CORE-015 a foreign region pays no tax and does not change", () => {
+    const foreign = region(
+      "f",
+      { morale: 70, population: 5000000, prosperity: 70 },
+      "foreign",
+    );
+    const { nation, regions, report } = settleEconomy(
+      { treasury: 0 },
+      [foreign],
+      "spring-early",
+    );
+    expect(report.taxIncome).toBe(0);
+    expect(nation.treasury).toBe(-120000);
+    expect(regions).toEqual([foreign]);
+    expect(report.regionChanges).toEqual([]);
+  });
+
+  it("UC-CORE-015 does not mutate its inputs", () => {
+    const nation = { treasury: 0 };
+    const input = [region("a", { morale: 60, population: 1000, prosperity: 60 })];
+    const copy = JSON.parse(JSON.stringify(input));
+    settleEconomy(nation, input, "spring-early");
+    expect(nation).toEqual({ treasury: 0 });
+    expect(input).toEqual(copy);
+  });
+});
+
+describe("settleEconomy population", () => {
+  const HIGH = region("high", { morale: 70, population: 1000000, prosperity: 60 });
+  const LOWPOP = region("lowpop", { morale: 40, population: 1000000, prosperity: 40 });
+  const MID = region("mid", { morale: 60, population: 1000000, prosperity: 50 });
+
+  it("UC-CORE-016 population changes only when entering 春上", () => {
+    for (const next of HALF_SEASONS) {
+      const { regions } = settleEconomy(
+        { treasury: 1000000 },
+        [HIGH, LOWPOP, MID],
+        next,
+      );
+      const pops = regions.map((r) => r.stats.population);
+      expect(pops).toEqual(
+        next === "spring-early"
+          ? [1020000, 980000, 1000000]
+          : [1000000, 1000000, 1000000],
+      );
+    }
+  });
+
+  it("UC-CORE-016 boundaries 120 grows and 80 shrinks", () => {
+    const grow = region("g", { morale: 70, population: 1000000, prosperity: 50 });
+    const shrink = region("s", { morale: 40, population: 1000000, prosperity: 40 });
+    const { regions, report } = settleEconomy(
+      { treasury: 1000000 },
+      [grow, shrink],
+      "spring-early",
+    );
+    expect(regions.map((r) => r.stats.population)).toEqual([1020000, 980000]);
+    expect(report.regionChanges).toEqual([
+      { region: "g", changes: [{ stat: "population", amount: 20000 }] },
+      { region: "s", changes: [{ stat: "population", amount: -20000 }] },
+    ]);
+  });
+
+  it("UC-CORE-016 tax on 春上 uses the population after growth", () => {
+    const { report } = settleEconomy({ treasury: 0 }, [HIGH], "spring-early");
+    expect(report.taxIncome).toBe(
+      regionTax({ morale: 70, population: 1020000, prosperity: 60 }),
+    );
+  });
+});
