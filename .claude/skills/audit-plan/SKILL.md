@@ -23,6 +23,7 @@ Fail the audit if any of these is true:
    - an added use case is listed without its rules,
    - a changed use case has no "before → after",
    - the structure or data flow changes but its section has no diagram,
+   - a diagram has an edge label or node text that is not in double quotes (Mermaid fails on brackets, parentheses or `%` outside quotes),
    - a schema or interface change has no bullet of its own,
    - a value or choice the issue left open is missing from "Decisions to review".
 
