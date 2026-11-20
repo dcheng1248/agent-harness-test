@@ -2,11 +2,439 @@
   {
     "name": "title",
     "description": "標題畫面：卷軸標題與登基按鈕在宮殿圖內",
-    "steps": [{ "waitFor": "#title-palace" }]
+    "steps": [
+      {
+        "waitFor": "#title-palace"
+      }
+    ]
   },
   {
-    "name": "game",
-    "description": "按下登基後的遊戲畫面",
-    "steps": [{ "click": "#start" }]
+    "name": "era-name",
+    "description": "年號畫面",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "waitFor": "#era-screen"
+      }
+    ]
+  },
+  {
+    "name": "era-name-error",
+    "description": "年號錯誤提示",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-confirm"
+      },
+      {
+        "waitFor": "#era-error"
+      }
+    ]
+  },
+  {
+    "name": "palace-map",
+    "description": "宮城地圖",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "waitFor": "#palace-map"
+      }
+    ]
+  },
+  {
+    "name": "palace",
+    "description": "崇文館畫面",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "waitFor": "#palace-view"
+      }
+    ]
+  },
+  {
+    "name": "action-result",
+    "description": "行動結果畫面",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "waitFor": "#action-result"
+      }
+    ]
+  },
+  {
+    "name": "turn-summary",
+    "description": "半季總結畫面",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-qingong"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "waitFor": "#turn-summary"
+      }
+    ]
+  },
+  {
+    "name": "ending",
+    "description": "駕崩結局畫面",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#action-study"
+      },
+      {
+        "waitFor": "#ending"
+      }
+    ]
   }
 ]

@@ -1,11 +1,69 @@
-export const SCHEMA_VERSION = 1;
+import { nextRandom } from '../rng';
+import { BALANCE } from './balance';
+import type { PalaceId } from './catalog';
+import { STAT_IDS } from './stats';
+import type { StatValues } from './stats';
+
+export const SCHEMA_VERSION = 2;
+
+export type Location = 'map' | PalaceId;
 
 export interface GameState {
   schemaVersion: number;
   seed: number;
   rngState: number;
+  eraName: string;
+  turn: number;
+  actionPoint: number;
+  location: Location;
+  stats: StatValues;
+  turnDeltas: StatValues;
+  dead: boolean;
 }
 
-export function createInitialState(seed: number): GameState {
-  return { schemaVersion: SCHEMA_VERSION, seed, rngState: seed >>> 0 };
+function zeroStats(): StatValues {
+  return { health: 0, learning: 0, arts: 0, resolve: 0 };
+}
+
+export function createInitialState(seed: number, eraName: string): GameState {
+  const { budget, min, max } = BALANCE.startingStats;
+  let rngState = seed >>> 0;
+  const weights = STAT_IDS.map(() => {
+    const draw = nextRandom(rngState);
+    rngState = draw.rngState;
+    return draw.value;
+  });
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  const normalized = total > 0 ? weights : weights.map(() => 1);
+  const normalizedTotal = total > 0 ? total : normalized.length;
+
+  const extra = budget - min * STAT_IDS.length;
+  const stats = zeroStats();
+  let remaining = extra;
+  STAT_IDS.forEach((id, i) => {
+    const share = Math.min(Math.floor((extra * (normalized[i] ?? 0)) / normalizedTotal), max - min);
+    stats[id] = min + share;
+    remaining -= share;
+  });
+  while (remaining > 0) {
+    for (const id of STAT_IDS) {
+      if (remaining > 0 && stats[id] < max) {
+        stats[id] += 1;
+        remaining -= 1;
+      }
+    }
+  }
+
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    seed,
+    rngState,
+    eraName,
+    turn: 0,
+    actionPoint: 0,
+    location: 'map',
+    stats,
+    turnDeltas: zeroStats(),
+    dead: false,
+  };
 }
