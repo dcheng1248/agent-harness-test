@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gameText, uiText } from '@emperor/content';
-import { createInitialState, EMPEROR_STAT_IDS, enterPalace, PALACE_IDS } from '@emperor/core';
+import { createInitialState, DEPARTMENT_IDS, DEPARTMENTS, EMPEROR_STAT_IDS, enterPalace, PALACE_IDS } from '@emperor/core';
 import {
   escapeHtml,
   renderAtlasScreen,
@@ -14,7 +14,7 @@ import {
   renderTitleScreen,
 } from './render';
 import { PALACE_ANCHORS } from './palaceMap';
-import type { Screen } from './screen';
+import { COURT_PALACE, type Screen } from './screen';
 
 const images = { palace: '/img/palace.webp', scroll: '/img/scroll.webp', map: '/img/map.webp',
   backgrounds: {
@@ -22,6 +22,7 @@ const images = { palace: '/img/palace.webp', scroll: '/img/scroll.webp', map: '/
     yuhuayuan: '/img/bg-yuhuayuan.jpg',
     yanwu: '/img/bg-yanwu.jpg',
     yangxin: '/img/bg-yangxin.jpg',
+    xuanzheng: '/img/bg-xuanzheng.jpg',
   },
 };
 
@@ -121,7 +122,7 @@ describe('game screens', () => {
   });
 
   it('UC-WEB-004 each palace shows its background with the header as a banner and a text panel', () => {
-    for (const id of PALACE_IDS) {
+    for (const id of PALACE_IDS.filter((p) => p !== COURT_PALACE)) {
       const html = renderPlayScreen({ screen: 'play', state: enterPalace(state, id) }, uiText, gameText, images);
       expect(html.startsWith('<main id="palace-view">')).toBe(true);
       expect(html).toContain(`<img id="palace-image" src="/img/bg-${id}.jpg" alt="${gameText.palaces[id].imageAlt}">`);
@@ -264,6 +265,77 @@ describe('game screens', () => {
     const screens: Screen[] = [{ screen: 'title' }, { screen: 'play', state }];
     expect(renderScreen(screens[0] as Screen, uiText, gameText, images)).toContain('id="start"');
     expect(renderScreen(screens[1] as Screen, uiText, gameText, images)).toContain('id="palace-map"');
+  });
+});
+
+describe('palace panel without a description', () => {
+  it('UC-WEB-004 never emits an empty description paragraph', () => {
+    const noText = { ...gameText, palaces: { ...gameText.palaces, chongwen: { ...gameText.palaces.chongwen, description: undefined as unknown as string } } };
+    const html = renderPlayScreen({ screen: 'play', state: enterPalace(state, 'chongwen') }, uiText, noText, images);
+    expect(html).not.toContain('palace-description');
+  });
+});
+
+describe('宣政殿', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const departmentButton = (id: (typeof DEPARTMENT_IDS)[number], expanded: boolean): string =>
+    `<button type="button" id="department-${id}" data-department="${id}" aria-label="${gameText.departments[id].name}"${expanded ? ' class="is-open"' : ''}>${gameText.departments[id].label}</button>`;
+  const leave = `<button type="button" id="leave-court" aria-label="${uiText.leaveCourtLabel}">${uiText.leaveCourt}</button>`;
+
+  it('UC-WEB-007 宣政殿 has the image, banner and court row but no panel', () => {
+    const html = renderPlayScreen({ screen: 'play', state: court }, uiText, gameText, images);
+    expect(html.startsWith('<main id="palace-view" class="court-view">')).toBe(true);
+    expect(html).toContain(`<h2 class="visually-hidden">${gameText.palaces.xuanzheng.name}</h2>`);
+    expect(html).toContain(`<img id="palace-image" src="/img/bg-xuanzheng.jpg" alt="${gameText.palaces.xuanzheng.imageAlt}">`);
+    expect(html.indexOf('<header id="game-header"')).toBeGreaterThan(-1);
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('id="palace-image"'));
+    for (const absent of ['palace-panel', 'palace-description', 'back-to-map', 'court-options']) {
+      expect(html).not.toContain(absent);
+    }
+    let last = -1;
+    for (const id of DEPARTMENT_IDS) {
+      const at = html.indexOf(departmentButton(id, false));
+      expect(at).toBeGreaterThan(last);
+      last = at;
+    }
+    expect(html.indexOf(leave)).toBeGreaterThan(last);
+  });
+
+  it('UC-WEB-007 an open department is highlighted and lists its disabled options', () => {
+    const html = renderPlayScreen({ screen: 'play', state: court, department: 'personnel' }, uiText, gameText, images);
+    for (const id of DEPARTMENT_IDS) expect(html).toContain(departmentButton(id, id === 'personnel'));
+    expect(html).toContain('<div id="court-options">');
+    let last = -1;
+    for (const id of DEPARTMENTS.personnel.options) {
+      const at = html.indexOf(
+        `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.notYetOpen}</span></button>`,
+      );
+      expect(at).toBeGreaterThan(last);
+      last = at;
+    }
+    for (const other of DEPARTMENT_IDS.filter((d) => d !== 'personnel')) {
+      for (const option of DEPARTMENTS[other].options) expect(html).not.toContain(`court-option-${option}"`);
+    }
+    expect(html.indexOf('id="court-options"')).toBeLessThan(html.indexOf('id="leave-court"'));
+  });
+
+  it.each(DEPARTMENT_IDS)('UC-WEB-007 the options of %s are always the last child of the department row, above 工', (open) => {
+    const html = renderPlayScreen({ screen: 'play', state: court, department: open }, uiText, gameText, images);
+    const options = DEPARTMENTS[open].options
+      .map(
+        (id) =>
+          `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.notYetOpen}</span></button>`,
+      )
+      .join('');
+    const buttons = DEPARTMENT_IDS.map((id) => departmentButton(id, id === open)).join('');
+    expect(html).toContain(`<div id="department-row">${buttons}<div id="court-options">${options}</div></div>`);
+    expect(html.split('id="court-options"').length).toBe(2);
+  });
+
+  it('UC-WEB-007 no department is open, no options list is rendered', () => {
+    const html = renderPlayScreen({ screen: 'play', state: court }, uiText, gameText, images);
+    expect(html).not.toContain('id="court-options"');
+    expect(html).not.toContain('is-open');
   });
 });
 

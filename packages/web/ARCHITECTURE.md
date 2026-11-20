@@ -22,14 +22,14 @@ Positions on an image that tests must check live in TypeScript, not `src/style.c
 type Screen =
   | { screen: 'title' }
   | { screen: 'era'; seed: number; suggestions: string[]; draft: string; error: boolean }
-  | { screen: 'play'; state: GameState }
+  | { screen: 'play'; state: GameState; department?: DepartmentId }
   | { screen: 'result'; state: GameState; actionId: ActionId; changes: StatChange[] }
   | { screen: 'summary'; state: GameState; actionId: ActionId; changes: StatChange[]; endedHalfSeason: HalfSeasonId; totals: StatChange[]; economy: EconomyReport }
   | { screen: 'atlas'; state: GameState }
   | { screen: 'ending'; state: GameState };
 ```
 
-`play` renders the map or the palace from `state.location`. A rejected action leaves the screen unchanged. Render functions take a `Screen` and the `content` text and return markup. Only `main.ts` touches the DOM: one click listener finds the element by ID or `data-*` attribute, calls a transition, and redraws.
+`play` renders the map or the palace from `state.location`. `department` is the department whose options are open in 宣政殿 (`COURT_PALACE` in `src/screen.ts`). It is UI state only, absent everywhere else, and dropped by every transition that leaves the palace. A rejected action leaves the screen unchanged. Render functions take a `Screen` and the `content` text and return markup. Only `main.ts` touches the DOM: one click listener finds the element by ID or `data-*` attribute, calls a transition, and redraws.
 
 Interactive elements get stable IDs, or `data-*` attributes for repeated items, so tests and `screenshots.json` scenarios can find them.
 

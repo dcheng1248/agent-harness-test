@@ -40,3 +40,5 @@ export { regionTax, settleEconomy } from "./rules/economy";
 export type { RegionChange, EconomyReport } from "./rules/economy";
 export { nextRandom } from "./rng";
 export type { RandomResult } from "./rng";
+export { DEPARTMENT_IDS, COURT_OPTION_IDS, DEPARTMENTS } from "./model/court";
+export type { DepartmentId, CourtOptionId } from "./model/court";

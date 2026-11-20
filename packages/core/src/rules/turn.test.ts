@@ -26,7 +26,8 @@ function act(state: GameState, palace: PalaceId, action: ActionId) {
 
 describe("palaces", () => {
   it("UC-CORE-012 palaces in map order; 崇文館 offers study then arts; 御花園 offers nothing", () => {
-    expect(PALACE_IDS).toEqual(["chongwen", "yuhuayuan", "yanwu", "yangxin"]);
+    expect(PALACE_IDS).toEqual(["chongwen", "yuhuayuan", "yanwu", "yangxin", "xuanzheng"]);
+    expect(CATALOG.palaces.xuanzheng.actions).toEqual([]);
     expect(CATALOG.palaces.chongwen.actions).toEqual(["study", "arts"]);
     expect(CATALOG.palaces.yuhuayuan.actions).toEqual([]);
     expect(CATALOG.palaces.yangxin.actions).toEqual(["rest"]);
@@ -34,6 +35,18 @@ describe("palaces", () => {
     expect(inGarden.location).toBe("yuhuayuan");
     expect(inGarden.actionPoint).toBe(0);
     expect(returnToMap(inGarden).location).toBe("map");
+  });
+});
+
+describe("宣政殿", () => {
+  it("UC-CORE-012 宣政殿 can be entered and left at any action point without using one", () => {
+    for (const actionPoint of [0, 1, 2, 3]) {
+      const inside = enterPalace(makeState({ actionPoint }), "xuanzheng");
+      expect(inside.location).toBe("xuanzheng");
+      expect(inside.actionPoint).toBe(actionPoint);
+      expect(takeAction(inside, "study")).toMatchObject({ ok: false, reason: "not-offered" });
+      expect(returnToMap(inside).actionPoint).toBe(actionPoint);
+    }
   });
 });
 

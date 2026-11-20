@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTION_IDS, ACTION_POINTS, HALF_SEASONS, PALACE_IDS, STAT_IDS, isValidEraName } from '@emperor/core';
+import { ACTION_IDS, ACTION_POINTS, COURT_OPTION_IDS, DEPARTMENT_IDS, HALF_SEASONS, PALACE_IDS, STAT_IDS, isValidEraName } from '@emperor/core';
 import { gameText, uiText } from './index';
 
 const han = /\p{Script=Han}/u;
@@ -38,9 +38,41 @@ describe('content', () => {
     for (const id of HALF_SEASONS) expect(gameText.halfSeasonLabels[id]).toMatch(han);
     for (const id of PALACE_IDS) {
       expect(gameText.palaces[id].name).toMatch(han);
-      expect(gameText.palaces[id].description).toMatch(han);
+      if (id === 'xuanzheng') expect(gameText.palaces[id].description).toBeUndefined(); else expect(gameText.palaces[id].description).toMatch(han);
       expect(gameText.palaces[id].imageAlt).toMatch(han);
     }
     for (const id of ACTION_IDS) expect(gameText.actions[id].name).toMatch(han);
+    for (const id of DEPARTMENT_IDS) {
+      expect(gameText.departments[id].label).toMatch(han);
+      expect(gameText.departments[id].name).toMatch(han);
+    }
+    for (const id of COURT_OPTION_IDS) expect(gameText.courtOptions[id].name).toMatch(han);
+  });
+
+  it('UC-WEB-007 宣政殿, department and option text', () => {
+    expect(gameText.palaces.xuanzheng).toEqual({ name: '宣政殿', imageAlt: '宣政殿內蟠龍金柱林立，百官分列兩側，朝向御座' });
+    expect(gameText.departments).toEqual({
+      cabinet: { label: '內閣', name: '內閣' },
+      personnel: { label: '吏', name: '吏部' },
+      revenue: { label: '戶', name: '戶部' },
+      rites: { label: '禮', name: '禮部' },
+      war: { label: '兵', name: '兵部' },
+      justice: { label: '刑', name: '刑部' },
+      works: { label: '工', name: '工部' },
+    });
+    expect(gameText.courtOptions).toEqual({
+      'name-heir': { name: '冊立太子' }, 'change-era': { name: '改元' },
+      'recommend-officials': { name: '舉薦人選' }, 'appoint-officials': { name: '官員任命' }, 'hold-exams': { name: '開科取士' },
+      'take-census': { name: '戶口普查' }, 'adjust-taxes': { name: '調整賦稅' }, 'relieve-disaster': { name: '賑濟災民' },
+      'hold-sacrifice': { name: '祭祀' }, 'conduct-diplomacy': { name: '外交' },
+      'conscript-soldiers': { name: '徵召士兵' }, 'drill-troops': { name: '操練軍隊' },
+      'grant-amnesty': { name: '大赦天下' }, 'try-major-case': { name: '審理要案' },
+      build: { name: '建造' }, 'forge-weapons': { name: '打造兵器' },
+    });
+    expect(Object.keys(gameText.departments)).toEqual([...DEPARTMENT_IDS]);
+    expect(Object.keys(gameText.courtOptions).sort()).toEqual([...COURT_OPTION_IDS].sort());
+    expect(uiText.leaveCourt).toBe('退');
+    expect(uiText.leaveCourtLabel).toBe('退出宣政殿');
+    expect(uiText.notYetOpen).toBe('尚未開放');
   });
 });

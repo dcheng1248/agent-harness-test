@@ -12,6 +12,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 
 ## Text rules
 - Every `core` registry entry has text, enforced by the types.
+- Every palace has a description except 宣政殿, which has no panel to show one.
 - `eraNamePool` entries are original, and each passes `isValidEraName`.
 
 ## Formatting

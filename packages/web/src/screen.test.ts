@@ -5,6 +5,7 @@ import {
   drawEraNameSuggestions,
   enterPalace,
   takeAction,
+  type DepartmentId,
   type GameState,
 } from '@emperor/core';
 import {
@@ -17,6 +18,7 @@ import {
   performAction,
   restart,
   startGame,
+  toggleDepartment,
   type Screen,
 } from './screen';
 
@@ -211,5 +213,45 @@ describe('ending', () => {
 
   it('UC-WEB-005 restart returns to the title screen', () => {
     expect(restart()).toEqual({ screen: 'title' });
+  });
+});
+
+describe('宣政殿', () => {
+  function inCourt(): Screen {
+    return goToPalace(play(newState()), 'xuanzheng');
+  }
+
+  it('UC-WEB-007 toggling departments in 宣政殿 opens, switches and closes without changing the state', () => {
+    const court = inCourt();
+    if (court.screen !== 'play') throw new Error('unexpected');
+    const ap = court.state.actionPoint;
+    const opened = toggleDepartment(court, 'personnel');
+    if (opened.screen !== 'play') throw new Error('unexpected');
+    expect(opened.department).toBe('personnel');
+    expect(opened.state).toBe(court.state);
+    const switched = toggleDepartment(opened, 'war');
+    if (switched.screen !== 'play') throw new Error('unexpected');
+    expect(switched.department).toBe('war');
+    expect(switched.state).toBe(court.state);
+    const closed = toggleDepartment(switched, 'war');
+    if (closed.screen !== 'play') throw new Error('unexpected');
+    expect(closed.screen).toBe('play');
+    expect(closed.department).toBeUndefined();
+    expect(closed.state).toBe(court.state);
+    for (const s of [opened, switched, closed]) expect(s.state.actionPoint).toBe(ap);
+  });
+
+  it('UC-WEB-007 leaving 宣政殿 closes the list', () => {
+    const back = goToPalace(goToMap(toggleDepartment(inCourt(), 'personnel')), 'xuanzheng');
+    if (back.screen !== 'play') throw new Error('unexpected');
+    expect(back.state.location).toBe('xuanzheng');
+    expect(back.department).toBeUndefined();
+  });
+
+  it('UC-WEB-007 toggleDepartment elsewhere or with an unknown ID is unchanged', () => {
+    const screens: Screen[] = [play(newState()), inChongwen(), { screen: 'title' }];
+    for (const x of screens) expect(toggleDepartment(x, 'personnel')).toBe(x);
+    const court = inCourt();
+    expect(toggleDepartment(court, 'nope' as DepartmentId)).toBe(court);
   });
 });

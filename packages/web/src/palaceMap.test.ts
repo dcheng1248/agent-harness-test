@@ -13,4 +13,16 @@ describe('palace map anchors', () => {
       }
     }
   });
+
+  it('UC-WEB-004 palace buttons do not overlap', () => {
+    expect(PALACE_ANCHORS.xuanzheng).toEqual({ x: 50, y: 50 });
+    for (const a of PALACE_IDS) {
+      for (const b of PALACE_IDS) {
+        if (a === b) continue;
+        const pa = PALACE_ANCHORS[a];
+        const pb = PALACE_ANCHORS[b];
+        expect(Math.abs(pa.x - pb.x) >= 10 || Math.abs(pa.y - pb.y) >= 10, `${a} vs ${b}`).toBe(true);
+      }
+    }
+  });
 });

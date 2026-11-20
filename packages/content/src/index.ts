@@ -42,6 +42,9 @@ export const uiText: UiText = {
   taelUnit: '兩',
   taxIncomeLabel: '稅入',
   upkeepLabel: '宮廷用度',
+  leaveCourt: '退',
+  leaveCourtLabel: '退出宣政殿',
+  notYetOpen: '尚未開放',
 };
 
 export const gameText: GameText = {
@@ -68,12 +71,31 @@ export const gameText: GameText = {
     yuhuayuan: { name: '御花園', description: '奇石古木、花徑曲池，四時景致各異。', imageAlt: '御花園中曲池映橋，石燈佇立，桃花盛開' },
     yanwu: { name: '演武場', description: '校場開闊，可馳馬挽弓，砥礪筋骨。', imageAlt: '演武場上廊柱環立，武人持槍演練' },
     yangxin: { name: '養心殿', description: '天子起居理政之所，可閉目調息，養護龍體。', imageAlt: '養心殿內帷幔低垂，床榻靜置，燈火柔和' },
+    xuanzheng: { name: '宣政殿', imageAlt: '宣政殿內蟠龍金柱林立，百官分列兩側，朝向御座' },
   },
   actions: {
     study: { name: '讀經史' },
     arts: { name: '習書畫琴棋' },
     riding: { name: '騎射' },
     rest: { name: '靜養' },
+  },
+  departments: {
+    cabinet: { label: '內閣', name: '內閣' },
+    personnel: { label: '吏', name: '吏部' },
+    revenue: { label: '戶', name: '戶部' },
+    rites: { label: '禮', name: '禮部' },
+    war: { label: '兵', name: '兵部' },
+    justice: { label: '刑', name: '刑部' },
+    works: { label: '工', name: '工部' },
+  },
+  courtOptions: {
+    'name-heir': { name: '冊立太子' }, 'change-era': { name: '改元' },
+    'recommend-officials': { name: '舉薦人選' }, 'appoint-officials': { name: '官員任命' }, 'hold-exams': { name: '開科取士' },
+    'take-census': { name: '戶口普查' }, 'adjust-taxes': { name: '調整賦稅' }, 'relieve-disaster': { name: '賑濟災民' },
+    'hold-sacrifice': { name: '祭祀' }, 'conduct-diplomacy': { name: '外交' },
+    'conscript-soldiers': { name: '徵召士兵' }, 'drill-troops': { name: '操練軍隊' },
+    'grant-amnesty': { name: '大赦天下' }, 'try-major-case': { name: '審理要案' },
+    build: { name: '建造' }, 'forge-weapons': { name: '打造兵器' },
   },
   eraNamePool: [
     '承平', '景和', '永綏', '昭寧', '嘉穗', '鴻熙', '安瀾', '崇禧', '德輝', '清晏',

@@ -11,17 +11,20 @@ import {
 } from '@emperor/content';
 import {
   CATALOG,
+  DEPARTMENT_IDS,
+  DEPARTMENTS,
   PALACE_IDS,
   EMPEROR_STAT_IDS,
   getActionPointId,
   getAge,
   getHalfSeason,
   getReignYear,
+  type DepartmentId,
   type GameState,
   type PalaceId,
 } from '@emperor/core';
 import { PALACE_ANCHORS } from './palaceMap';
-import { ATLAS_PALACE, type Screen } from './screen';
+import { ATLAS_PALACE, COURT_PALACE, type Screen } from './screen';
 
 type Of<K extends Screen['screen']> = Extract<Screen, { screen: K }>;
 
@@ -66,6 +69,7 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
     }).join('');
     return `<main id="palace-map"><h2 class="visually-hidden">${text.mapHeading}</h2><div id="map-stage" class="image-stage">${header}<img id="map-image" src="${images.map}" alt="${text.mapImageAlt}">${buttons}</div></main>`;
   }
+  if (state.location === COURT_PALACE) return renderCourtView(screen, header, text, game, images);
   const palace = game.palaces[state.location];
   const ids = CATALOG.palaces[state.location].actions;
   const actions =
@@ -76,7 +80,26 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
           .join('')}</div>`;
   const atlasButton =
     state.location === ATLAS_PALACE ? `<button type="button" id="open-atlas">${text.atlasButton}</button>` : '';
-  return `<main id="palace-view"><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[state.location]}" alt="${palace.imageAlt}"></div><div id="palace-panel"><h2>${palace.name}</h2><p id="palace-description">${palace.description}</p>${actions}<div id="palace-nav">${atlasButton}<button type="button" id="back-to-map">${text.backToMap}</button></div></div></main>`;
+  return `<main id="palace-view"><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[state.location]}" alt="${palace.imageAlt}"></div><div id="palace-panel"><h2>${palace.name}</h2>${palace.description ? `<p id="palace-description">${palace.description}</p>` : ''}${actions}<div id="palace-nav">${atlasButton}<button type="button" id="back-to-map">${text.backToMap}</button></div></div></main>`;
+}
+
+function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game: GameText, images: ScreenImages): string {
+  const palace = game.palaces[COURT_PALACE];
+  const open = screen.department;
+  const optionList = (id: DepartmentId): string =>
+    `<div id="court-options">${DEPARTMENTS[id].options
+      .map(
+        (option) =>
+          `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.notYetOpen}</span></button>`,
+      )
+      .join('')}</div>`;
+  const buttons = DEPARTMENT_IDS.map((id) => {
+    const { label, name } = game.departments[id];
+    return `<button type="button" id="department-${id}" data-department="${id}" aria-label="${name}"${id === open ? ' class="is-open"' : ''}>${label}</button>`;
+  }).join('');
+  const departments = buttons + (open ? optionList(open) : '');
+  const leave = `<button type="button" id="leave-court" aria-label="${text.leaveCourtLabel}">${text.leaveCourt}</button>`;
+  return `<main id="palace-view" class="court-view"><h2 class="visually-hidden">${palace.name}</h2><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[COURT_PALACE]}" alt="${palace.imageAlt}"><div id="court-row"><div id="department-row">${departments}</div>${leave}</div></div></main>`;
 }
 
 export function renderResultScreen(screen: Of<'result'>, text: UiText, game: GameText): string {
