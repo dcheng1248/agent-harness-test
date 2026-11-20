@@ -1,4 +1,4 @@
-import type { ActionId, ActionPointId, HalfSeasonId, PalaceId, RegionData, StatId } from '@emperor/core';
+import type { ActionId, ActionPointId, CourtOptionId, DepartmentId, HalfSeasonId, PalaceId, RegionData, StatId } from '@emperor/core';
 
 export interface UiText {
   gameTitle: string;
@@ -28,6 +28,9 @@ export interface UiText {
   taelUnit: string;
   taxIncomeLabel: string;
   upkeepLabel: string;
+  leaveCourt: string;
+  leaveCourtLabel: string;
+  notYetOpen: string;
 }
 
 export interface RegionEntry extends RegionData {
@@ -39,8 +42,10 @@ export interface GameText {
   statLabels: Record<StatId, string>;
   actionPointLabels: Record<ActionPointId, string>;
   halfSeasonLabels: Record<HalfSeasonId, string>;
-  palaces: Record<PalaceId, { name: string; description: string; imageAlt: string }>;
+  palaces: Record<PalaceId, { name: string; description?: string; imageAlt: string }>;
   actions: Record<ActionId, { name: string }>;
+  departments: Record<DepartmentId, { label: string; name: string }>;
+  courtOptions: Record<CourtOptionId, { name: string }>;
   eraNamePool: readonly string[];
   regions: readonly RegionEntry[];
 }
