@@ -5,7 +5,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | ID | Use case | Status |
 |---|---|---|
 | UC-CONTENT-001 | 九州地域資料：名稱、相鄰地域、歸屬與初始數值 | implemented |
-| UC-CONTENT-002 | 官員姓名庫與官位名稱 | planned |
+| UC-CONTENT-002 | 官員姓名庫與官位名稱 | implemented |
 
 ## UC-CONTENT-001 Regions
 - The nine home regions of 九州, each with a Chinese name, its adjacent regions, owner `PLAYER_OWNER`, and starting 民心, 人口 and 富庶. 關中 is the capital. Later slices add foreign regions with other owners.

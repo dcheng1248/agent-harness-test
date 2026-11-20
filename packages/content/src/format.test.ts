@@ -7,6 +7,7 @@ import {
   formatDate,
   formatEconomy,
   formatLifespan,
+  formatPostName,
   formatReign,
   formatTaels,
 } from './format';
@@ -42,5 +43,13 @@ describe('format', () => {
   it('UC-WEB-006 formats the economy report, hiding zero tax income', () => {
     expect(formatEconomy({ taxIncome: 547437, upkeep: 120000, regionChanges: [] })).toBe('稅入 +547,437 兩，宮廷用度 −120,000 兩');
     expect(formatEconomy({ taxIncome: 0, upkeep: 120000, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
+  });
+  it('UC-CONTENT-002 formatPostName', () => {
+    expect(formatPostName({ id: 'chancellor', group: 'central', office: 'chancellor' })).toBe('丞相');
+    expect(formatPostName({ id: 'grand-general', group: 'central', office: 'grand-general' })).toBe('大將軍');
+    expect(formatPostName({ id: 'personnel-minister', group: 'ministry', department: 'personnel', rank: 'minister' })).toBe('吏部尚書');
+    expect(formatPostName({ id: 'works-vice-minister', group: 'ministry', department: 'works', rank: 'vice-minister' })).toBe('工部侍郎');
+    expect(formatPostName({ id: 'guanzhong-governor', group: 'region', region: 'guanzhong', office: 'governor' })).toBe('關中知州');
+    expect(formatPostName({ id: 'guanzhong-commander', group: 'region', region: 'guanzhong', office: 'commander' })).toBe('關中總兵');
   });
 });

@@ -1,3 +1,4 @@
+import { officialNames } from './officialNames';
 import { regions } from './regions';
 import type { GameText, UiText } from './schema';
 
@@ -10,6 +11,7 @@ export {
   formatDate,
   formatEconomy,
   formatLifespan,
+  formatPostName,
   formatReign,
   formatTaels,
 } from './format';
@@ -45,6 +47,19 @@ export const uiText: UiText = {
   leaveCourt: '退',
   leaveCourtLabel: '退出宣政殿',
   notYetOpen: '尚未開放',
+  appointHeading: '官員任命',
+  postGroupCentral: '中樞',
+  postGroupMinistry: '六部',
+  postGroupRegion: '地方',
+  postColumn: '官位',
+  holderColumn: '在任',
+  nameColumn: '姓名',
+  vacant: '空缺',
+  idleHeading: '賦閑官員',
+  noIdleOfficials: '並無賦閑官員',
+  appointButton: '任命',
+  backToPosts: '返回官位列表',
+  backToCourt: '返回宣政殿',
 };
 
 export const gameText: GameText = {
@@ -54,6 +69,7 @@ export const gameText: GameText = {
     morale: '民心',
     population: '人口',
     prosperity: '富庶',
+    administration: '文治', military: '武功', ambition: '野心', loyalty: '忠誠',
   },
   actionPointLabels: { dawn: '朝', noon: '午', dusk: '夕', night: '夜' },
   halfSeasonLabels: {
@@ -97,9 +113,13 @@ export const gameText: GameText = {
     'grant-amnesty': { name: '大赦天下' }, 'try-major-case': { name: '審理要案' },
     build: { name: '建造' }, 'forge-weapons': { name: '打造兵器' },
   },
+  centralPosts: { chancellor: { name: '丞相' }, 'grand-general': { name: '大將軍' }, 'grand-tutor': { name: '太傅' } },
+  ministryRanks: { minister: { name: '尚書' }, 'vice-minister': { name: '侍郎' } },
+  regionOffices: { governor: { name: '知州' }, commander: { name: '總兵' } },
   eraNamePool: [
     '承平', '景和', '永綏', '昭寧', '嘉穗', '鴻熙', '安瀾', '崇禧', '德輝', '清晏',
     '隆祚', '熙載', '紹元', '康衢', '泰寧', '明昶', '天祿', '文昭', '靖和', '瑞曦',
   ],
   regions,
+  officialNames,
 };

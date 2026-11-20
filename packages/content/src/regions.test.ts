@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PLAYER_OWNER, regionTax } from '@emperor/core';
+import { CENTRAL_POST_IDS, MINISTRY_DEPARTMENT_IDS, PLAYER_OWNER, regionTax } from '@emperor/core';
 import { gameText } from './index';
 
 describe('regions', () => {
@@ -33,5 +33,9 @@ describe('regions', () => {
   });
   it('UC-CONTENT-001 the starting regions yield 547437 taels per collection', () => {
     expect(gameText.regions.reduce((sum, r) => sum + regionTax(r.start), 0)).toBe(547437);
+  });
+  it('UC-CONTENT-002 region IDs never equal a 部 or central post ID', () => {
+    const reserved: readonly string[] = [...MINISTRY_DEPARTMENT_IDS, ...CENTRAL_POST_IDS];
+    for (const r of gameText.regions) expect(reserved).not.toContain(r.id);
   });
 });
