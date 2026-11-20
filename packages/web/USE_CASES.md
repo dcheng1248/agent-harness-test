@@ -22,8 +22,8 @@ A heading and prompt, three suggested 年號 buttons, a labelled text input, and
 
 ## UC-WEB-004 Game screens
 Every game screen has a header with the date, the action point, the emperor's age, the four emperor stats in registry order (emperor-owned stats only), and 國庫 in taels.
-- Palace map: a grid of buttons, one per palace in catalog order, and a 輿圖 button after it.
-- Palace: the palace name and description, one button per action it offers, and a button back to the map. Entering and leaving use no action point.
+- Palace map: the illustrated palace map, laid out like the title screen: it fills the viewport width, is never upscaled past its native width, keeps its aspect ratio, and is never cropped. The header stays above it. The 宮城 heading stays in the markup for screen readers but is visually hidden. Each palace, in catalog order, is a button placed on the image and centred on that palace's anchor, so the button is also the label for its place and stays on it at any size. The buttons scale with the image and keep a comfortable tap target. Every palace in the catalog has an anchor inside the image. The 輿圖 button follows the map.
+- Palace: the palace name and description, one button per action it offers, and a button back to the map. A palace that offers no actions shows a "nothing to do here" line instead of the action list. Entering and leaving use no action point.
 - Action result: the action name, its changes, and a button to continue to the map.
 - Turn summary, shown instead of the action result after the last action of a turn: a heading naming the half-season that ended, the last action's changes, the half-season totals including aging, the treasury line (tax income when there was any, and upkeep), one line per region that changed (or a single "no change" line), and a button into the next half-season. The header then shows the new turn, with 國庫 after taxes and upkeep.
 

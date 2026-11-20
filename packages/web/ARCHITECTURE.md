@@ -13,6 +13,8 @@ The entry point (`main.ts`) imports each asset and passes its URL to the render 
 
 Purely decorative images use `alt=""` and get no text from `content`.
 
+Positions on an image that tests must check live in TypeScript, not `src/style.css`. The palace anchors on the map are `PALACE_ANCHORS` in `src/palaceMap.ts`, a `Record<PalaceId, { x: number; y: number }>` in percent of the image, so the type check catches a palace without an anchor. The render code writes each anchor as inline `left` and `top` styles.
+
 ## Screen state
 `web` tracks the current screen. `core` tracks map or palace in `GameState.location`. `src/screen.ts` holds the pure transitions.
 
