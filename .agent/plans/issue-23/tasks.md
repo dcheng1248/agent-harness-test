@@ -23,7 +23,7 @@
 - Entering 御花園 and trying any action (for example `study`). Expected: rejected as `'not-offered'`, with the state unchanged. Tested in Task 1.
 - A palace with no actions rendered. Expected: no empty `#action-list` div, `#no-actions` shown, and `#back-to-map` still present. Tested in Task 3.
 - A new `PalaceId` added later without an anchor. Expected: the type check fails (`Record<PalaceId, …>`) and the anchor test fails. Tested in Task 3.
-- A narrow window (about 390px). Expected: the buttons keep `min-height: 44px` and stay centred on their anchors. 御花園 and 寢宮 are the closest pair (15% of the image height apart), so check that they do not overlap in the `palace-map` screenshot. Checked in Task 3, Step 7.
+- A narrow window (about 390px). Expected: the buttons keep `min-height: 44px` and stay centred on their anchors. 御花園 and 寢宮 are the closest pair (22% of the image height apart), so check that they do not overlap in the `palace-map` screenshot. Checked in Task 3, Step 7.
 - A window wider than 1376px. Expected: the image stops at 1376px, centred, with no upscaling, and the font stops growing at its `clamp` maximum. Covered by the CSS in Task 3.
 
 ---
@@ -112,7 +112,7 @@ Read first: `docs/architecture.md`, `packages/web/ARCHITECTURE.md`, `packages/we
 **Interfaces:**
 - Consumes: Task 1's `PALACE_IDS` and `PalaceId`, and Task 2's `uiText.mapImageAlt` and `uiText.noActions`.
 - Produces:
-  - `export const PALACE_ANCHORS: Record<PalaceId, { x: number; y: number }>` in `palaceMap.ts`, set to `{ chongwen: { x: 22, y: 15 }, yuhuayuan: { x: 50, y: 13 }, yanwu: { x: 18, y: 70 }, qingong: { x: 50, y: 28 } }`.
+  - `export const PALACE_ANCHORS: Record<PalaceId, { x: number; y: number }>` in `palaceMap.ts`, set to `{ chongwen: { x: 22, y: 15 }, yuhuayuan: { x: 50, y: 11 }, yanwu: { x: 18, y: 70 }, qingong: { x: 50, y: 33 } }`.
   - `export type ScreenImages = { palace: string; scroll: string; map: string }`, which replaces `TitleImages`. `renderTitleScreen(text, images: ScreenImages)` and `renderScreen(screen, text, game, images: ScreenImages)` keep the rest of their signatures.
   - `renderPlayScreen(screen, text, game, mapImage: string): string`.
 

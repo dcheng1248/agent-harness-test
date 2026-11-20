@@ -17,6 +17,7 @@ The palace map becomes the illustrated palace map, with each palace name as a re
 - 輿圖 sits centred below the image. The issue did not place it.
 - Palace button font is `clamp(0.875rem, 1.6vw, 1.375rem)`, so it stops growing when the image does.
 - The empty-palace line is `<p id="no-actions">`, shown instead of `#action-list`.
+- The 御花園 and 寢宮 anchors were moved from the issue's (50%,13%) and (50%,28%) to (50%,11%) and (50%,33%) so the two buttons don't overlap at 390px wide (44px tap target). Labels still sit on their places.
 
 ## What you'll see
 - `palace-map` (changed): the palace illustration below the header, with four red-and-gold name buttons on their buildings and 輿圖 below the image.
