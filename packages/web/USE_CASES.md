@@ -12,6 +12,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-006 | 輿圖畫面：自崇文館開啟，列出各地域的民心、人口、富庶，開啟不耗行動點 | implemented |
 | UC-WEB-007 | 宣政殿：只在朝時開放的早朝，圖上內閣與六部按鈕，展開各部選項，退回宮城 | implemented |
 | UC-WEB-008 | 官員任命畫面：按中樞、六部、地方列出官位，選官位後自賦閑官員中任命 | implemented |
+| UC-WEB-009 | 舉薦人選畫面：顯示一名候選人（名臣另示朝代），錄用或婉拒；每次早朝限用一次 | planned |
 
 ## UC-WEB-001 Title screen
 The palace image fills the viewport width with its aspect ratio kept, never cropped or stretched. A decorative scroll sits over the top centre of the image, with the game title written on it. The scroll and title scale with the image. There is no animation.
@@ -24,7 +25,7 @@ A heading and prompt, three suggested 年號 buttons, a labelled text input, and
 
 ## UC-WEB-004 Game screens
 Every game screen has a header with the date, the action point, the emperor's age, the four emperor stats in registry order (emperor-owned stats only), and 國庫 in taels.
-- Header placement: on the screens built on an image (the palace map and the palace views), the header is a banner over the top edge of the image: a semi-transparent dark band with gold text that takes no space above the image. Its contents and order do not change. On the screens without an image (action result, turn summary, 輿圖, 官員任命) the header is a bar above the content, as before.
+- Header placement: on the screens built on an image (the palace map and the palace views), the header is a banner over the top edge of the image: a semi-transparent dark band with gold text that takes no space above the image. Its contents and order do not change. On the screens without an image (action result, turn summary, 輿圖, 官員任命, 舉薦人選) the header is a bar above the content, as before.
 - Palace map: the illustrated palace map, laid out like the title screen: it fills the viewport width, is never upscaled past its native width, keeps its aspect ratio, and is never cropped. The 宮城 heading stays in the markup for screen readers but is visually hidden. Each palace, in catalog order, is a button placed on the image and centred on that palace's anchor, so the button is also the label for its place and stays on it at any size. The buttons scale with the image, keep a comfortable tap target, and stay above the header banner where the two meet. Every palace in the catalog has an anchor inside the image. A palace that `canEnterPalace` refuses right now (宣政殿 at any action point but 朝) keeps its place but is a disabled button, visibly dimmed, and clicking it does nothing. The map has no 輿圖 button and nothing below the image.
 - Palace: each palace shows its own background image, laid out like the map (full viewport width, never upscaled past its native width, aspect ratio kept, never cropped), with alt text from `content`. Every palace in the catalog has a background. A semi-transparent panel over the lower part of the image holds the palace name and description, one button per action it offers, and a button back to the map; text stays readable on every background. A palace that offers no actions shows a "nothing to do here" line instead of the action list. 崇文館 also shows the 輿圖 button (UC-WEB-006), styled and placed apart from the action buttons because it is not an action. When the viewport is too narrow for the banner and the panel to both fit over the image, the banner stays over the image and the panel moves below it. Entering and leaving use no action point. 宣政殿 is the exception: it is open only at 朝, uses that action point, and has the same image and banner but no panel (UC-WEB-007).
 - Action result: the action name, its changes, and a button to continue to the map.
@@ -44,10 +45,19 @@ Entered from its button on the palace map, only at 朝 (UC-CORE-003); at other a
 - Over the lower right of the image sits one horizontal row of buttons that scales with the image: 內閣 and the six 部 in `core` registry order (`DEPARTMENT_IDS`), then 退. Each department button shows its short name and is announced by its full name, both from `content`. 退 is set apart from the departments by a gap and a different style.
 - 退 returns to the map, and the 朝 action point is now spent: the map shows 午.
 - Clicking a department highlights it and opens its options, in registry order, as a vertical list that is always right-aligned with the 工 button and sits directly above it, whichever department was clicked. Clicking another department switches the list to that department. Clicking the open department closes the list. Leaving 宣政殿 closes it, so it is closed on the next visit.
-- Open options (`OPEN_COURT_OPTIONS` in `src/screen.ts`; for now only 吏部's 官員任命) are enabled buttons with their name and no tag. Clicking one opens its screen (UC-WEB-008). Every other option is a disabled button with its name and a small "not yet open" tag; clicking it does nothing.
+- Open options (`OPEN_COURT_OPTIONS` in `src/screen.ts`; for now 吏部's 舉薦人選 and 官員任命) are enabled buttons with their name and no tag. Clicking one opens its screen (UC-WEB-009, UC-WEB-008). Once 舉薦 has been used this 早朝 (`canRecommend` is false), 舉薦人選 is a disabled button with its name and a small "already recommended" tag, styled like the "not yet open" tag, until the next 早朝. Every other option is a disabled button with its name and a small "not yet open" tag; clicking a disabled option does nothing.
 - Which department is open is `web` screen state only. Opening, switching and closing keep the same `GameState` object and use no action point.
 
-`toggleDepartment(screen, departmentId)` applies only to `play` in 宣政殿 (`COURT_PALACE`). From anywhere else, or with an ID that is not a department, it returns the screen unchanged. `chooseCourtOption(screen, optionId)` applies only to `play` in 宣政殿 with an open option; otherwise it returns the screen unchanged.
+`toggleDepartment(screen, departmentId)` applies only to `play` in 宣政殿 (`COURT_PALACE`). From anywhere else, or with an ID that is not a department, it returns the screen unchanged. `chooseCourtOption(screen, optionId, notables, names)` applies only to `play` in 宣政殿 with an open option; for 舉薦人選 it also needs `canRecommend`. Otherwise it returns the screen unchanged.
+
+## UC-WEB-009 舉薦人選
+Opened from 吏部 → 舉薦人選 during 早朝, once per 早朝. Opening it calls `core`'s `recommend`, which draws the candidate; nothing on this screen uses an action point, and the header keeps showing 朝.
+
+- The screen has the header bar, a heading, and one candidate: their name and their 文治, 武功, 野心 and 忠誠. A 名臣 also shows a 名臣 mark and their era. An ordinary candidate shows neither.
+- Two buttons: accept and decline. Accepting calls `acceptCandidate`, so the candidate joins as 賦閑 and appears in 官員任命's 賦閑 list. Declining calls `declineCandidate`. Either way the player returns to 宣政殿 with 吏部's options open, where 舉薦人選 now shows as already used.
+- There is no way to leave without deciding. If the state holds no candidate from this half-season, the screen shows only a button back to 宣政殿.
+
+`acceptRecommendation(screen)` and `declineRecommendation(screen)` apply only to `recommend`; a rejection by `core`, or a call from another screen, returns the screen unchanged. `backToCourt(screen)` also returns from `recommend` to `play` in 宣政殿 with 吏部 open.
 
 ## UC-WEB-008 官員任命
 Opened from 吏部 → 官員任命 during 早朝. Nothing on this screen uses an action point; the header keeps showing 朝.
@@ -74,6 +84,8 @@ stateDiagram-v2
   play --> appoint: 官員任命, in 宣政殿
   appoint --> appoint: select post, sort, appoint, back to posts
   appoint --> play: back to 宣政殿
+  play --> recommend: 舉薦人選, in 宣政殿, once per 早朝
+  recommend --> play: accept or decline, back to 宣政殿
   play --> atlas: 輿圖, in 崇文館
   atlas --> play: back to 崇文館
   play --> result: not the last action of the turn

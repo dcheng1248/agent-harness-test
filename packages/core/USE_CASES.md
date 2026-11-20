@@ -20,6 +20,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-014 | 九州地域：由資料載入地域，各有民心、人口、富庶與歸屬 | implemented |
 | UC-CORE-015 | 國庫：春上與秋上收稅、每半季支付宮廷用度、國庫虧空時各地民心下降 | implemented |
 | UC-CORE-016 | 每年人口隨民心與富庶增減 | implemented |
+| UC-CORE-017 | 舉薦人選：每次早朝一次，舉薦一名候選人（一般官員或名臣），錄用或婉拒 | planned |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.
@@ -44,14 +45,14 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - So there is at most one 早朝 per half-season. Nothing inside 宣政殿 draws random numbers or uses another action point.
 
 ## UC-CORE-004 Officials and appointments
-**Officials.** `GameState.officials` lists every official. Each has an ID, a name, four stats from the stat registry (文治, 武功, 野心 and 忠誠, owner `official`, each within its `STAT_REGISTRY` bounds), and either exactly one post or none (賦閑). Stats never change for now, and they have no effect on play yet.
+**Officials.** `GameState.officials` lists every official. Each has an ID, a name, four stats from the stat registry (文治, 武功, 野心 and 忠誠, owner `official`, each within its `STAT_REGISTRY` bounds), either exactly one post or none (賦閑), and `notable`: the 名臣 ID for a 名臣, or `null` for an ordinary official. Stats never change for now, and they have no effect on play yet.
 
 **Posts.** `listPosts(state)` gives the posts that exist now, in display order:
 1. 中樞: 丞相, 大將軍, 太傅 (`CENTRAL_POST_IDS`).
 2. 六部: for each of 吏、戶、禮、兵、刑、工 in `MINISTRY_DEPARTMENT_IDS` order, its 尚書 then its 侍郎 (`MINISTRY_RANKS`).
 3. 地方: for each region in `state.regions` order that the player owns, its 知州 then its 總兵 (`REGION_OFFICES`). A region has these posts only while the player owns it.
 
-**Starting court.** `createInitialState(seed, eraName, regions, names)` generates officials from the game's random stream, after the emperor stats. One ordinary official is generated for each post in `listPosts` order and holds it, then `BALANCE.officials.startingIdle` more are generated as 賦閑. Each ordinary official is an outlier with chance `BALANCE.officials.outlierChance`; each stat is then drawn uniformly, both ends included, from that stat's range in `BALANCE.officials.ordinary` or `BALANCE.officials.outlier`. 名臣 are a separate kind (a later issue) and are never generated here.
+**Starting court.** `createInitialState(seed, eraName, regions, names)` generates officials from the game's random stream, after the emperor stats. One ordinary official is generated for each post in `listPosts` order and holds it, then `BALANCE.officials.startingIdle` more are generated as 賦閑. Each ordinary official is an outlier with chance `BALANCE.officials.outlierChance`; each stat is then drawn uniformly, both ends included, from that stat's range in `BALANCE.officials.ordinary` or `BALANCE.officials.outlier`. Every starting official is ordinary (`notable: null`). 名臣 join only through 舉薦 (UC-CORE-017).
 
 **Names.** A name is a surname plus a given name, both drawn from the pool passed in `names` (from `content`). No two officials in a game share a name, and a name in `names.reserved` is never generated. If a draw repeats a taken or reserved name, it draws again. If the pool cannot supply a free name, `createInitialState` throws.
 
@@ -63,6 +64,20 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - the official already holds a post, including this one (`'not-idle'`).
 
 The checks run in that order. There is no dismissal (罷免) yet.
+
+## UC-CORE-017 舉薦人選
+**名臣.** `content` passes the 名臣 list as `NotableData` (see `ARCHITECTURE.md`, "名臣 data"). Each 名臣 has an ID, a name, a type (文 `civil`, 武 `military` or 文武 `both`), four fixed official stats, and an entry gate: a minimum on one emperor stat. A 名臣 is *eligible* when the emperor's stat meets the gate (at or above the minimum) and no official in `state.officials` has that 名臣's ID as `notable`.
+
+**Once per 早朝.** `canRecommend(state)` is true during 早朝 when 舉薦 has not been used this half-season, that is, when `state.recommendation` is `null` or its `turn` is not `state.turn`. Since there is at most one 早朝 per half-season, 舉薦 can be used once per 早朝, and it is open again at the next one.
+
+**Drawing.** `recommend(state, notables, names)` draws one candidate from the game's random stream and stores it in `state.recommendation`, stamped with the current turn. It uses no action point. It is rejected, with the state unchanged, when it is not 早朝, including when the emperor is dead (`'not-in-court'`), or when 舉薦 was already used this half-season (`'already-used'`). Otherwise, in order:
+1. One draw decides whether a 名臣 comes forward. The chance is `BALANCE.recommendation.notableBase` plus `BALANCE.recommendation.notableBonus` × (學識 + 魄力) / 200, so it grows with the emperor's 學識 and 魄力.
+2. On a hit, one more draw picks a 名臣 from the eligible ones, weighted by the emperor's 學識 for 文, 魄力 for 武, and the average of the two for 文武. Every other 名臣 has weight 0.
+3. On a miss, or when no 名臣 is eligible, or when every eligible 名臣 has weight 0, the candidate is an ordinary official drawn exactly as at the start (UC-CORE-004): outlier roll, stats, then a name that no official in the game has and that is not reserved.
+
+The candidate has a name, four stats, and `notable` (the 名臣 ID, or `null`).
+
+**Deciding.** `acceptCandidate(state)` adds the candidate to `officials` as 賦閑, with a new ID that no official has had and its `notable`. `declineCandidate(state)` discards it. Both clear the candidate but keep the turn stamp, so 舉薦 stays used until the next 早朝. Neither draws random numbers. Both are rejected, with the state unchanged, when it is not 早朝 (`'not-in-court'`) or there is no candidate from this half-season (`'no-candidate'`). A declined ordinary candidate is gone for good. A declined 名臣 stays eligible and may be drawn again at a later 舉薦. A candidate left undecided when the half-season moves on can no longer be accepted.
 
 ## UC-CORE-013 Aging and death
 From `BALANCE.aging.startAge`, the emperor loses 健康 at the end of each turn. The loss starts at `BALANCE.aging.baseLoss` and grows by 1 every `BALANCE.aging.yearsPerStep` years of age. The emperor dies when 健康 reaches 0, checked after each action and again after aging at the end of the turn. On death `dead` becomes `true`, the turn does not advance, and the economy is not settled.
@@ -83,6 +98,7 @@ stateDiagram-v2
   Palace --> Map: returnToMap
   Map --> Court: enterPalace 宣政殿, at 朝 only
   Court --> Court: appointOfficial
+  Court --> Court: recommend, then acceptCandidate or declineCandidate
   Court --> Map: returnToMap, clock moves to 午
   Palace --> Map: takeAction, not the last action point
   Palace --> TurnEnd: takeAction, last action point
