@@ -21,6 +21,7 @@ import {
   getAge,
   getHalfSeason,
   getReignYear,
+  canRecommend,
   listPosts,
   OFFICIAL_STAT_IDS,
   type DepartmentId,
@@ -95,7 +96,9 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
   const optionList = (id: DepartmentId): string =>
     `<div id="court-options">${DEPARTMENTS[id].options
       .map((option) =>
-        OPEN_COURT_OPTIONS.includes(option)
+        option === 'recommend-officials' && !canRecommend(screen.state)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.recommendUsed}</span></button>`
+          : OPEN_COURT_OPTIONS.includes(option)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}">${game.courtOptions[option].name}</button>`
           : `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.notYetOpen}</span></button>`,
       )
@@ -196,6 +199,24 @@ export function renderAppointScreen(screen: Of<'appoint'>, text: UiText, game: G
   return `${renderHeader(screen.state, text, game)}<main id="appoint-screen"><h2>${text.appointHeading}</h2>${body}<button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
 }
 
+export function renderRecommendScreen(screen: Of<'recommend'>, text: UiText, game: GameText): string {
+  const { state } = screen;
+  const rec = state.recommendation;
+  const candidate = rec !== null && rec.turn === state.turn ? rec.candidate : null;
+  const back = `<button type="button" id="back-to-court">${text.backToCourt}</button>`;
+  let body: string;
+  if (candidate === null) {
+    body = `<p id="no-candidate">${text.noCandidate}</p>${back}`;
+  } else {
+    const mark = candidate.notable === null ? '' : `<span class="notable-mark">${text.notableMark}</span>`;
+    const data = candidate.notable === null ? '' : ` data-notable="${escapeHtml(candidate.notable)}"`;
+    const head = OFFICIAL_STAT_IDS.map((stat) => `<th>${game.statLabels[stat]}</th>`).join('');
+    const cells = OFFICIAL_STAT_IDS.map((stat) => `<td>${candidate.stats[stat]}</td>`).join('');
+    body = `<div id="candidate"${data}><h3 id="candidate-name">${escapeHtml(candidate.name)}${mark}</h3><div class="table-scroll"><table id="candidate-stats"><thead><tr>${head}</tr></thead><tbody><tr>${cells}</tr></tbody></table></div></div><div id="candidate-actions"><button type="button" id="accept-candidate">${text.acceptCandidate}</button><button type="button" id="decline-candidate">${text.declineCandidate}</button></div>`;
+  }
+  return `${renderHeader(state, text, game)}<main id="recommend-screen"><h2>${text.recommendHeading}</h2>${body}</main>`;
+}
+
 export function renderEndingScreen(screen: Of<'ending'>, text: UiText, _game?: GameText): string {
   const { state } = screen;
   return `<main id="ending"><h1>${text.endingHeading}</h1><p id="ending-era">${text.eraLabel}：${escapeHtml(state.eraName)}</p><p id="ending-reign">${formatReign(getReignYear(state))}</p><p id="ending-age">${formatLifespan(getAge(state))}</p><button type="button" id="restart">${text.restartButton}</button></main>`;
@@ -217,6 +238,8 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderAtlasScreen(screen, text, game);
     case 'appoint':
       return renderAppointScreen(screen, text, game);
+    case 'recommend':
+      return renderRecommendScreen(screen, text, game);
     case 'ending':
       return renderEndingScreen(screen, text, game);
   }

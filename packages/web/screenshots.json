@@ -709,7 +709,7 @@
   },
   {
     "name": "palace-xuanzheng-personnel",
-    "description": "宣政殿畫面：展開吏部，官員任命可點選，舉薦人選與開科取士尚未開放",
+    "description": "宣政殿畫面：展開吏部，舉薦人選與官員任命可點選，開科取士尚未開放",
     "steps": [
       {
         "click": "#start"
@@ -776,6 +776,369 @@
       },
       {
         "waitFor": "#idle-list"
+      }
+    ]
+  },
+  {
+    "name": "recommend-ordinary",
+    "description": "舉薦人選：一般候選人，錄用或婉拒",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "waitFor": "#candidate"
+      }
+    ]
+  },
+  {
+    "name": "recommend-notable",
+    "description": "舉薦人選：名臣候選人，顯示名臣標記",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "click": "#decline-candidate"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "click": "#decline-candidate"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "click": "#decline-candidate"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "click": "#decline-candidate"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "click": "#decline-candidate"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "click": "#decline-candidate"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "waitFor": "#candidate[data-notable]"
+      }
+    ]
+  },
+  {
+    "name": "personnel-recommended",
+    "description": "宣政殿吏部：本次早朝已舉薦，舉薦人選停用",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-recommend-officials"
+      },
+      {
+        "click": "#decline-candidate"
+      },
+      {
+        "waitFor": "#court-option-recommend-officials[disabled]"
       }
     ]
   }
