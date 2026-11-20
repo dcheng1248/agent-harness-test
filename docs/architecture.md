@@ -37,7 +37,7 @@ Issue #17, the first playable loop, covers UC-CORE-001, UC-CORE-011 to UC-CORE-0
 | UC-CORE-011 | 選定年號：候選年號與自訂年號驗證 | implemented |
 | UC-CORE-012 | 半季回合：在宮殿以行動點執行行動 | implemented |
 | UC-CORE-013 | 年老衰弱與駕崩 | implemented |
-| UC-CORE-014 | 九州地域：由資料載入地域，各有民心、人口、富庶與歸屬 | planned |
+| UC-CORE-014 | 九州地域：由資料載入地域，各有民心、人口、富庶與歸屬 | implemented |
 | UC-CORE-015 | 國庫：春上與秋上收稅、每半季支付宮廷用度、國庫虧空時各地民心下降 | planned |
 | UC-CORE-016 | 每年人口隨民心與富庶增減 | planned |
 | UC-CONTENT-001 | 九州地域資料：名稱、相鄰地域、歸屬與初始數值 | planned |
