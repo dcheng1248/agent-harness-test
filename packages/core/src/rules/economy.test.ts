@@ -19,6 +19,21 @@ function afterPopulation(r: RegionState, next: HalfSeasonId): RegionStatValues {
     : r.stats;
 }
 
+describe("settleEconomy soldier wages", () => {
+  it("UC-CORE-024 soldiers are paid with upkeep", () => {
+    const { report, nation } = settleEconomy({ treasury: 1000000 }, [A], "summer-early", 0, "normal", 20000);
+    expect(report.soldierWages).toBe(10000);
+    expect(report.wages).toBe(0);
+    expect(nation.treasury).toBe(1000000 - 120000 - 10000);
+    expect(settleEconomy({ treasury: 1000000 }, [A], "summer-early", 0, "normal", 1).report.soldierWages).toBe(0);
+    expect(settleEconomy({ treasury: 1000000 }, [A], "summer-early").report.soldierWages).toBe(0);
+  });
+  it("UC-CORE-024 unpaid soldier wages trigger bankruptcy", () => {
+    const { regions } = settleEconomy({ treasury: 125000 }, [A], "summer-early", 0, "normal", 20000);
+    expect(regions[0]?.stats.morale).toBe(A.stats.morale - BALANCE.bankruptcyMoraleLoss);
+  });
+});
+
 describe("settleEconomy wages", () => {
   it("UC-CORE-015 pays wages with upkeep and reports them", () => {
     const { report, nation } = settleEconomy({ treasury: 1000000 }, [A], "summer-early", 100000);

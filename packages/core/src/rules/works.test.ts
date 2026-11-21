@@ -51,13 +51,13 @@ function ok(outcome: { ok: boolean; state: GameState }): GameState {
 }
 
 describe("UC-CORE-019 freePopulation and maxRecruit", () => {
-  it("UC-CORE-019 free population is player 人口 minus 工匠, never negative", () => {
-    expect(freePopulation(court())).toBe(30500000);
-    expect(freePopulation(withArtisans(court(), 500000))).toBe(30000000);
+  it("UC-CORE-019 free population is player 人口 minus 工匠 and soldiers, never negative", () => {
+    expect(freePopulation(court())).toBe(30480000);
+    expect(freePopulation(withArtisans(court(), 500000))).toBe(29980000);
     expect(freePopulation(withArtisans(court(), 40000000))).toBe(0);
   });
   it("UC-CORE-019 maxRecruit is 1% rounded to the nearest step, halves up", () => {
-    expect(maxRecruit(court())).toBe(310000);
+    expect(maxRecruit(court())).toBe(300000);
     expect(maxRecruit(withPopulation(court(), 30499999))).toBe(300000);
     expect(maxRecruit(withPopulation(court(), 4999))).toBe(0);
   });
@@ -83,8 +83,8 @@ describe("UC-CORE-019 canRecruit", () => {
 describe("UC-CORE-019 recruitArtisans", () => {
   it("UC-CORE-019 adds 工匠, stamps the turn and keeps the rng", () => {
     const s = court();
-    const next = ok(recruitArtisans(s, 310000));
-    expect(next.works.artisans).toBe(310000);
+    const next = ok(recruitArtisans(s, 300000));
+    expect(next.works.artisans).toBe(300000);
     expect(next.works.recruitedTurn).toBe(s.turn);
     expect(next.rngState).toBe(s.rngState);
   });

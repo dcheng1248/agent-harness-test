@@ -151,7 +151,7 @@ export function takeAction(
     const turnEnd: TurnEnd = {
       aging,
       totals,
-      economy: { taxIncome: 0, upkeep: 0, wages: 0, regionChanges: [] },
+      economy: { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, regionChanges: [] },
       completed: [],
     };
     return {
@@ -172,6 +172,7 @@ export function takeAction(
     HALF_SEASONS[(state.turn + 1) % BALANCE.turnsPerYear] as HalfSeasonId,
     state.works.artisans,
     state.revenue.taxLevel,
+    state.army.soldiers,
   );
   const advanced = advanceBuildings(state.works.buildings);
   const turnEnd: TurnEnd = { aging, totals, economy: settled.report, completed: advanced.completed };

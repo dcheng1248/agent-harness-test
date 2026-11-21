@@ -294,7 +294,8 @@ describe("economy at turn end", () => {
     }
     expect(last.turnEnd?.economy.upkeep).toBe(120000);
     expect(last.turnEnd?.economy.taxIncome).toBe(0);
-    expect(state.nation.treasury).toBe(380000);
+    expect(last.turnEnd?.economy.soldierWages).toBe(10000);
+    expect(state.nation.treasury).toBe(370000);
   });
 
   it("UC-CORE-015 the summary of 夏下 reports the 秋上 tax", () => {
@@ -322,6 +323,7 @@ describe("economy at turn end", () => {
       taxIncome: 0,
       upkeep: 0,
       wages: 0,
+      soldierWages: 0,
       regionChanges: [],
     });
     expect(out.turnEnd?.completed).toEqual([]);
