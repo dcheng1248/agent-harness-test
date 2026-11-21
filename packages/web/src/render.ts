@@ -25,6 +25,7 @@ import {
   getHalfSeason,
   getReignYear,
   canHoldExam,
+  canHoldSacrifice,
   canLevy,
   expectedTax,
   levyAmount,
@@ -120,7 +121,9 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
   const optionList = (id: DepartmentId): string =>
     `<div id="court-options">${DEPARTMENTS[id].options
       .map((option) =>
-        option === 'extra-levy' && !canLevy(screen.state)
+        option === 'hold-sacrifice' && !canHoldSacrifice(screen.state)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.sacrificeUsed}</span></button>`
+          : option === 'extra-levy' && !canLevy(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.levyUsed}</span></button>`
           : option === 'recruit-artisans' && !canRecruit(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${screen.state.works.recruitedTurn === screen.state.turn ? text.recruitUsed : text.noRecruits}</span></button>`
@@ -364,6 +367,10 @@ export function renderLevyScreen(screen: Of<'levy'>, text: UiText, game: GameTex
   return `${renderHeader(state, text, game)}<main id="levy-screen"><h2>${text.levyHeading}</h2>${body}</main>`;
 }
 
+export function renderSacrificeScreen(screen: Of<'sacrifice'>, text: UiText, game: GameText): string {
+  return `${renderHeader(screen.state, text, game)}<main id="sacrifice-screen"><h2>${text.sacrificeHeading}</h2><p id="sacrifice-hint">${text.sacrificeHint}</p><button type="button" id="confirm-sacrifice">${text.confirmSacrifice}</button><button type="button" id="back-to-court">${text.sacrificeBack}</button></main>`;
+}
+
 export function renderBudgetScreen(screen: Of<'budget'>, text: UiText, game: GameText): string {
   const { state } = screen;
   const rows = expectedTax(state);
@@ -414,6 +421,8 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderTaxScreen(screen, text, game);
     case 'levy':
       return renderLevyScreen(screen, text, game);
+    case 'sacrifice':
+      return renderSacrificeScreen(screen, text, game);
     case 'budget':
       return renderBudgetScreen(screen, text, game);
     case 'ending':

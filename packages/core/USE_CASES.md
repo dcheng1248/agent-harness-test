@@ -26,6 +26,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-020 | 營建工程：指派工匠至全國工程，累積工匠·半季直至落成 | implemented |
 | UC-CORE-021 | 調整賦稅：全國稅率分極輕、輕、平、重、極重五等，收稅時影響稅入，每半季影響各地民心；早朝時可隨時調整 | implemented |
 | UC-CORE-022 | 額外徵稅：每次早朝一次，向各地加徵約半次稅收，各地民心大降 | implemented |
+| UC-CORE-023 | 祭祀：每個在位年一次，於早朝舉行，耗國庫並耗用午時，記錄本年已祭 | implemented |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.
@@ -46,8 +47,8 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 
 ## UC-CORE-003 早朝
 - 宣政殿 is open only at 朝 (`COURT_ACTION_POINT`, the first action point of each half-season). At any other action point `canEnterPalace` is false and `enterPalace` returns the state unchanged.
-- Being in 宣政殿 is 早朝 (`isMorningCourt(state)`: alive and `location` is 宣政殿). 早朝 spends that morning's action point: while inside, the clock stays on 朝, and leaving with `returnToMap` puts the player on the map at 午 (the next action point). Leaving never ends the turn, since 朝 is not the last action point.
-- So there is at most one 早朝 per half-season. Nothing inside 宣政殿 draws random numbers or uses another action point.
+- Being in 宣政殿 is 早朝 (`isMorningCourt(state)`: alive and `location` is 宣政殿). 早朝 spends that morning's action point: while inside, the clock stays on 朝, and leaving with `returnToMap` puts the player on the map at 午 (the next action point). When 祭祀 was held during this 早朝 (UC-CORE-023), 早朝 also spends 午, and leaving puts the player on the map at 夕 instead. Leaving never ends the turn, since neither 朝 nor 午 is the last action point.
+- So there is at most one 早朝 per half-season. Nothing inside 宣政殿 draws random numbers. 祭祀 is the only thing inside it that uses another action point (午); everything else uses none.
 
 ## UC-CORE-004 Officials and appointments
 **Officials.** `GameState.officials` lists every official. Each has an ID, a name, four stats from the stat registry (文治, 武功, 野心 and 忠誠, owner `official`, each within its `STAT_REGISTRY` bounds), either exactly one post or none (賦閑), and `notable`: the 名臣 ID for a 名臣, or `null` for an ordinary official. Stats never change for now, and they have no effect on play yet.
@@ -146,6 +147,11 @@ The checks run in that order.
 
 **Levying.** `levy(state)` adds `levyAmount` to 國庫 at once, takes `BALANCE.tax.levyMoraleLoss` 民心 from every player-owned region (never below 0), and stamps `revenue.leviedTurn` with the turn. Its `amount` is the taels gained. It is allowed when the amount is 0. It uses no action point and draws no random numbers. The tax level's 民心 change is not applied by the levy; it comes only at turn end. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when already used this half-season (`'already-used'`). The checks run in that order.
 
+## UC-CORE-023 祭祀
+**Once per reign year.** `sacrificedThisYear(state)` is true when 祭祀 has been held in the current reign year, that is, when `rites.sacrificeTurn` is not `null` and falls in the current reign year (春上 through 冬下). It turns false again at the next 春上, with nothing to reset. A later natural-disaster system will read it to lower the disaster chance for the rest of that year; no such system exists yet, so for now it is only recorded. `canHoldSacrifice(state)` is true during 早朝 when `sacrificedThisYear` is false, so 祭祀 can be held at any one 早朝 of a reign year, in any half-season.
+
+**Holding.** `holdSacrifice(state)` takes `BALANCE.rites.sacrificeCost` from 國庫 and stamps `rites.sacrificeTurn` with the current turn. 國庫 may go below 0; the bankruptcy rule then applies at the end of the half-season as usual (UC-CORE-015, step 5). It changes nothing else: no 民心, no emperor stat, and officials, including 禮部尚書, have no effect. It draws no random numbers. It does not move the clock at once: the player stays in 早朝, the clock stays on 朝, and the other court options stay usable. 午 is spent when the player leaves (UC-CORE-003). It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when 祭祀 was already held this reign year (`'already-held'`). The checks run in that order.
+
 ## UC-CORE-013 Aging and death
 From `BALANCE.aging.startAge`, the emperor loses 健康 at the end of each turn. The loss starts at `BALANCE.aging.baseLoss` and grows by 1 every `BALANCE.aging.yearsPerStep` years of age. The emperor dies when 健康 reaches 0, checked after each action and again after aging at the end of the turn. On death `dead` becomes `true`, the turn does not advance, and the economy is not settled.
 
@@ -170,7 +176,8 @@ stateDiagram-v2
   Court --> Court: holdExam in an exam year, then confirmExam
   Court --> Court: recruitArtisans once, releaseArtisans, assignArtisans
   Court --> Court: setTaxLevel, levy once
-  Court --> Map: returnToMap, clock moves to 午
+  Court --> Court: holdSacrifice once per reign year
+  Court --> Map: returnToMap, clock moves to 午, or to 夕 after holdSacrifice
   Palace --> Map: takeAction, not the last action point
   Palace --> TurnEnd: takeAction, last action point
   TurnEnd --> Economy: aging, emperor alive

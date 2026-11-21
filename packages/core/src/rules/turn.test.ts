@@ -8,6 +8,7 @@ import {
   getAge,
   getHalfSeason,
   getReignYear,
+  holdSacrifice,
   isMorningCourt,
   regionTax,
   returnToMap,
@@ -58,6 +59,21 @@ describe("宣政殿", () => {
       expect(canEnterPalace(s, "xuanzheng")).toBe(false);
       expect(enterPalace(s, "xuanzheng")).toBe(s);
     }
+  });
+  it("UC-CORE-003 UC-CORE-023 leaving after 祭祀 moves the clock to 夕", () => {
+    const held = holdSacrifice(enterPalace(makeState(), "xuanzheng"));
+    if (!held.ok) throw new Error("rejected");
+    const out = returnToMap(held.state);
+    expect([out.location, out.actionPoint, out.turn]).toEqual(["map", 2, 0]);
+    expect(canEnterPalace(out, "xuanzheng")).toBe(false);
+    const next = act(out, "chongwen", "study");
+    expect(next.state.actionPoint).toBe(3);
+    expect(next.turnEnd).toBeNull();
+  });
+  it("UC-CORE-003 a 祭祀 earlier this year does not spend 午", () => {
+    const s = makeState({ turn: 2, rites: { sacrificeTurn: 0 } });
+    const out = returnToMap(enterPalace(s, "xuanzheng"));
+    expect(out.actionPoint).toBe(1);
   });
   it("UC-CORE-012 other palaces open at every action point; canEnterPalace refuses when dead, off the map or unknown", () => {
     for (const actionPoint of [0, 1, 2, 3])

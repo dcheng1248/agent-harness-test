@@ -81,6 +81,7 @@ button#start:hover {
 #build-screen,
 #tax-screen,
 #levy-screen,
+#sacrifice-screen,
 #budget-screen {
   max-width: 32rem;
   margin: 0 auto;
@@ -152,6 +153,7 @@ button#start:hover {
 #confirm-recruit,
 #confirm-release,
 #confirm-levy,
+#confirm-sacrifice,
 #exam-picked {
   min-width: 44px;
   min-height: 44px;
@@ -179,7 +181,8 @@ button#start:hover {
 #confirm-exam:hover,
 #confirm-recruit:hover,
 #confirm-release:hover,
-#confirm-levy:hover {
+#confirm-levy:hover,
+#confirm-sacrifice:hover {
   background: #922424;
 }
 

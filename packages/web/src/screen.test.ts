@@ -30,6 +30,7 @@ import {
   confirmExamPicks,
   confirmRecruit,
   confirmLevy,
+  confirmSacrifice,
   setTax,
   confirmRelease,
   examCandidates,
@@ -819,5 +820,50 @@ describe('戶部 screens', () => {
     const back = backToCourt(done);
     if (back.screen !== 'play') throw new Error('expected play');
     expect(canLevy(back.state)).toBe(false);
+  });
+});
+
+describe('祭祀 screens', () => {
+  const court = enterPalace(newState(), 'xuanzheng');
+  const courtScreen: Screen = { screen: 'play', state: court, department: 'rites' };
+  const sacrificeScreen: Screen = { screen: 'sacrifice', state: court };
+
+  it('UC-WEB-007 祭祀 opens its screen once per reign year', () => {
+    expect(chooseCourtOption(courtScreen, 'hold-sacrifice', notables, names)).toEqual(sacrificeScreen);
+    const used: Screen = { screen: 'play', state: { ...court, rites: { sacrificeTurn: court.turn } }, department: 'rites' };
+    expect(chooseCourtOption(used, 'hold-sacrifice', notables, names)).toBe(used);
+    expect(chooseCourtOption(courtScreen, 'conduct-diplomacy', notables, names)).toBe(courtScreen);
+  });
+
+  it('UC-WEB-017 confirmSacrifice holds it and returns to 禮部', () => {
+    const done = confirmSacrifice(sacrificeScreen);
+    if (done.screen !== 'play') throw new Error('expected play');
+    expect(done.department).toBe('rites');
+    expect(done.state.location).toBe('xuanzheng');
+    expect(done.state.actionPoint).toBe(0);
+    expect(done.state.nation.treasury).toBe(court.nation.treasury - BALANCE.rites.sacrificeCost);
+    const levy: Screen = { screen: 'levy', state: court };
+    expect(confirmSacrifice(levy)).toBe(levy);
+    expect(confirmSacrifice(courtScreen)).toBe(courtScreen);
+  });
+
+  it('UC-WEB-017 返回 does not hold it', () => {
+    const back = backToCourt(sacrificeScreen);
+    expect(back).toEqual(courtScreen);
+    if (back.screen !== 'play') throw new Error('expected play');
+    expect(back.state).toBe(court);
+  });
+
+  it('UC-WEB-007 leaving after 祭祀 lands on 夕', () => {
+    const left = goToMap(confirmSacrifice(sacrificeScreen));
+    if (left.screen !== 'play') throw new Error('expected play');
+    expect(left.state.location).toBe('map');
+    expect(left.state.actionPoint).toBe(2);
+  });
+
+  it('UC-WEB-007 after 祭祀 the other 禮部 and 戶部 options still work', () => {
+    const done = confirmSacrifice(sacrificeScreen);
+    expect(chooseCourtOption(done, 'adjust-taxes', notables, names).screen).toBe('taxes');
+    expect(chooseCourtOption(done, 'hold-sacrifice', notables, names)).toBe(done);
   });
 });

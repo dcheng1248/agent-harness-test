@@ -49,14 +49,18 @@ export function enterPalace(
   return { ...state, location: palaceId };
 }
 
-/** Leaving 宣政殿 spends 朝 and puts the clock on the next action point. */
+/**
+ * Leaving 宣政殿 spends 朝 and puts the clock on the next action point (午),
+ * or on 夕 when 祭祀 was held during this 早朝.
+ */
 export function returnToMap(state: GameState): GameState {
   if (state.dead) return state;
   if (state.location === COURT_PALACE_ID)
     return {
       ...state,
       location: "map",
-      actionPoint: ACTION_POINTS.indexOf(COURT_ACTION_POINT) + 1,
+      actionPoint: ACTION_POINTS.indexOf(COURT_ACTION_POINT) +
+        (state.rites.sacrificeTurn === state.turn ? 2 : 1),
     };
   return { ...state, location: "map" };
 }

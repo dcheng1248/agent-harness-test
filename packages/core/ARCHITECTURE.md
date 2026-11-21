@@ -24,7 +24,11 @@ classDiagram
     Exam or null exam
     Works works
     Revenue revenue
+    Rites rites
     boolean dead
+  }
+  class Rites {
+    number or null sacrificeTurn
   }
   class Revenue {
     TaxLevelId taxLevel
@@ -104,6 +108,7 @@ classDiagram
   Works "1" *-- "many" BuildingState
   BuildingData ..> BuildingState : createInitialState copies
   GameState "1" *-- "1" Revenue
+  GameState "1" *-- "1" Rites
 ```
 
 `StatValues` is `Record<EmperorStatId, number>`, `NationStatValues` is `Record<NationStatId, number>`, `RegionStatValues` is `Record<RegionStatId, number>`, and `OfficialStatValues` is `Record<OfficialStatId, number>`. `PostId` is a string (see "Posts"). `TaxLevelId` is one of `TAX_LEVEL_IDS` (see "Registries"). `Location` is `'map' | PalaceId`.
@@ -121,6 +126,7 @@ classDiagram
 - `exam` is the last 開科取士: the `turn` it was held in, and the `candidates` waiting for confirmation, or `null` once confirmed. It is `null` until the first exam. An exam has been held this reign year when the reign year of its `turn` equals the current one.
 - `works` holds 工部's state. `artisans` is the nation's total 工匠. `recruitedTurn` is the `turn` of the last 徵召, or `null` before the first; 徵召 is used this half-season when it equals `turn`. `buildings` holds one entry per building, in the order of the building data passed to `createInitialState`: its `id`, its `required` manpower in 工匠·半季 (copied from the data), its `progress` so far, and the 工匠 `assigned` to it now. Idle 工匠 (`artisans` minus the sum of `assigned`) and each building's status are derived, not stored.
 - `revenue` holds 戶部's state. `taxLevel` is the national tax rate, a `TaxLevelId`; a new game starts at `'normal'` (平). `leviedTurn` is the `turn` of the last 額外徵稅, or `null` before the first; 額外徵稅 is used this half-season when it equals `turn`. The rules live in `src/rules/revenue.ts`.
+- `rites` holds 禮部's state, typed `Rites` in `src/model/rites.ts`. `sacrificeTurn` is the `turn` of the last 祭祀, or `null` before the first. 祭祀 has been held this reign year when the reign year of `sacrificeTurn` equals the current one (`sacrificedThisYear`), the same pattern as `exam.turn`; nothing resets it. 祭祀 was held during the current 早朝 when it equals `turn`, which `returnToMap` reads to decide whether 午 is spent too. A later disaster system reads `sacrificedThisYear`. The rules live in `src/rules/rites.ts`.
 - `dead` is set when the emperor dies. A dead state accepts no action.
 
 Derived values are never stored:
@@ -264,6 +270,11 @@ type RevenueRejection = 'not-in-court' | 'unknown-level' | 'already-used';
 type RevenueOutcome =
   | { ok: false; reason: RevenueRejection; state: GameState }
   | { ok: true; state: GameState; amount: number }; // taels gained; 0 for setTaxLevel
+interface Rites { sacrificeTurn: number | null }
+type RitesRejection = 'not-in-court' | 'already-held';
+type RitesOutcome =
+  | { ok: false; reason: RitesRejection; state: GameState }
+  | { ok: true; state: GameState };
 interface EconomyReport { taxIncome: number; upkeep: number; wages: number; regionChanges: RegionChange[] }
 interface TurnEnd { aging: number; totals: StatChange[]; economy: EconomyReport; completed: string[] }
 type ActionOutcome =
@@ -300,6 +311,9 @@ function setTaxLevel(state: GameState, level: TaxLevelId): RevenueOutcome;
 function levyAmount(state: GameState): number;
 function canLevy(state: GameState): boolean;
 function levy(state: GameState): RevenueOutcome;
+function sacrificedThisYear(state: Pick<GameState, 'turn' | 'rites'>): boolean;
+function canHoldSacrifice(state: GameState): boolean;
+function holdSacrifice(state: GameState): RitesOutcome;
 function settleEconomy(
   nation: NationStatValues,
   regions: readonly RegionState[],

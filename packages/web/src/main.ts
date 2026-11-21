@@ -18,6 +18,7 @@ import {
   closeAtlas,
   confirmExamPicks,
   confirmLevy,
+  confirmSacrifice,
   confirmRecruit,
   confirmRelease,
   continueToMap,
@@ -129,6 +130,8 @@ if (root) {
       current = confirmRecruit(current);
     } else if (hit('#confirm-levy')) {
       current = confirmLevy(current);
+    } else if (hit('#confirm-sacrifice')) {
+      current = confirmSacrifice(current);
     } else if (hit('#confirm-release')) {
       current = confirmRelease(current);
     } else if (hit('[data-assign]')) {
