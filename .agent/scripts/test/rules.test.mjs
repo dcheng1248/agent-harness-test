@@ -70,8 +70,13 @@ describe('risk rules', () => {
   it('raises for several modules, dependencies, the data model and the harness', () => {
     expect(risk(['packages/web/src/a.ts', 'packages/content/src/a.ts'])).toBe('medium');
     expect(risk(['package-lock.json'])).toBe('medium');
-    expect(risk(['packages/core/src/model/state.ts'])).toBe('high');
     expect(risk(['.github/workflows/ci.yml'])).toBe('high');
+  });
+
+  it('leaves a high rating for model and schema changes to the planner', () => {
+    // A path cannot tell an added field from a breaking one, so the script stops at medium.
+    expect(risk(['packages/core/src/model/state.ts'])).toBe('medium');
+    expect(risk(['packages/content/src/schema.ts'])).toBe('medium');
   });
 
   it('keeps the higher rating', () => {
