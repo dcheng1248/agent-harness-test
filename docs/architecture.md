@@ -13,7 +13,7 @@ graph LR
 flowchart LR
   Player -->|choice| web
   web -->|action, region data, name pool and building data at game start, 名臣 data and name pool on 舉薦 and 開科取士| core
-  content -->|text, events, region data, name pool, 名臣 data and building data| web
+  content -->|text, events, region data, nations, name pool, 名臣 data and building data| web
   core -->|new state| web
 ```
 

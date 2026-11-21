@@ -17,7 +17,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-011 | 選定年號：候選年號與自訂年號驗證 | implemented |
 | UC-CORE-012 | 半季回合：在宮殿以行動點執行行動 | implemented |
 | UC-CORE-013 | 年老衰弱與駕崩 | implemented |
-| UC-CORE-014 | 九州地域：由資料載入地域，各有民心、人口、富庶與歸屬 | implemented |
+| UC-CORE-014 | 地域：由資料載入本朝與外國地域，各有民心、人口、富庶、歸屬與輿圖格位，相鄰由格位推得 | implemented |
 | UC-CORE-015 | 國庫：春上與秋上依稅率收稅、每半季依稅率調整民心並支付宮廷用度與工匠工錢、國庫虧空時各地民心下降 | implemented |
 | UC-CORE-016 | 每年人口隨民心與富庶增減 | implemented |
 | UC-CORE-017 | 舉薦人選：每次早朝一次，舉薦一名候選人（一般官員或名臣），錄用或婉拒 | implemented |
@@ -36,7 +36,11 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 `createInitialState(seed, eraName, regions, names)` sets every emperor stat to `BALANCE.startingStats.min`, then splits the rest of `BALANCE.startingStats.budget` by four seeded weights, one per stat in registry order. Each share is rounded down and capped so no stat passes `BALANCE.startingStats.max`. Points left over go one at a time, in registry order, to stats below the cap. The stats always add up to the budget.
 
 ## UC-CORE-014 Regions
-`createInitialState` sets `nation.treasury` to `BALANCE.startingTreasury` and copies the regions as described in `ARCHITECTURE.md` under "Region data". It draws no random numbers for them.
+`createInitialState` sets `nation.treasury` to `BALANCE.startingTreasury` and copies the regions as described in `ARCHITECTURE.md` under "Region data". It draws no random numbers for them, so adding foreign regions does not change the officials or stats a seed produces.
+
+**Foreign regions.** A region whose owner is not `PLAYER_OWNER` belongs to a foreign nation. Foreign nations are passive: their regions' 民心, 人口 and 富庶 never change, they pay no tax, 額外徵稅 and 工匠 limits ignore them, and they have no 知州 or 總兵 posts (UC-CORE-004, UC-CORE-015, UC-CORE-016, UC-CORE-019, UC-CORE-022).
+
+**Neighbours.** Each region sits on one cell `{ x, y }` of the world grid. `regionNeighbours(regions, id)` returns the IDs of the regions whose cell shares an edge with the cell of region `id`: one step along x or along y, never diagonal. So a region has at most four neighbours, and an empty cell next to it adds none. Owners do not matter: a player region and a foreign one can be neighbours. The result follows the order of `regions`. An unknown `id` gives `[]`. It draws no random numbers and changes nothing.
 
 ## UC-CORE-012 Turn loop
 - `enterPalace(state, palaceId)` and `returnToMap(state)` change only `location`. They never use an action point, except for 宣政殿 (UC-CORE-003). Entering from a palace, entering an unknown palace, entering a palace that `canEnterPalace` refuses, or any move when dead returns the state unchanged. A palace may offer no actions; it can still be entered and left, and every action there is rejected as `'not-offered'`. 宣政殿 (`xuanzheng`, `COURT_PALACE_ID`) is such a palace: it is in the catalog and offers no actions. `DEPARTMENTS` lists each court department's options in order.

@@ -89,11 +89,16 @@ classDiagram
   class RegionData {
     string id
     string owner
-    string[] adjacent
+    GridCell cell
     RegionStatValues start
+  }
+  class GridCell {
+    number x
+    number y
   }
   GameState "1" *-- "many" RegionState
   RegionData ..> RegionState : createInitialState copies
+  RegionData "1" *-- "1" GridCell
   GameState "1" *-- "many" Official
   NamePool ..> Official : createInitialState draws names
   GameState "1" *-- "0..1" Recommendation
@@ -120,7 +125,7 @@ classDiagram
 - `stats` holds every stat owned by the emperor.
 - `turnDeltas` adds up the applied emperor stat changes of the current turn. It resets when the turn ends.
 - `nation` holds every stat owned by the nation.
-- `regions` holds one entry per region, in the order of the region data passed to `createInitialState`. The player's regions have owner `PLAYER_OWNER`. Any other owner is a foreign power. Adjacency is static data and is not stored in the state.
+- `regions` holds one entry per region, in the order of the region data passed to `createInitialState`. The player's regions have owner `PLAYER_OWNER`. Any other owner is a foreign power. Grid cells, and so neighbours, are static data and are not stored in the state.
 - `officials` holds every official, in the order they were generated. IDs are unique and never reused. `post` is the `PostId` the official holds, or `null` for 賦閑. At most one official holds each post. Who holds a post is found by searching `officials`; it is not stored twice. `notable` is the 名臣 ID of a 名臣, or `null` for an ordinary official; whether a 名臣 is at court is found by searching `officials`.
 - `recommendation` is the last 舉薦: the `turn` it was used in, and the `candidate` waiting for a decision, or `null` once accepted or declined. It is `null` until the first 舉薦. 舉薦 is used this half-season when its `turn` equals `turn`.
 - `exam` is the last 開科取士: the `turn` it was held in, and the `candidates` waiting for confirmation, or `null` once confirmed. It is `null` until the first exam. An exam has been held this reign year when the reign year of its `turn` equals the current one.
@@ -139,16 +144,19 @@ Derived values are never stored:
 
 ```ts
 const PLAYER_OWNER = 'player';
+interface GridCell { x: number; y: number } // column and row on the world grid; x grows east, y grows south
 interface RegionData {
   id: string;
   owner: string;
-  adjacent: readonly string[];
+  cell: GridCell;
   start: RegionStatValues;
 }
 interface RegionState { id: string; owner: string; stats: RegionStatValues }
 ```
 
-`createInitialState` copies each entry's `id`, `owner` and `start` into a `RegionState`, keeping the order. Adding a region means adding one data entry; no `core` code changes.
+`createInitialState` copies each entry's `id`, `owner` and `start` into a `RegionState`, keeping the order. It does not copy `cell`. Adding a region means adding one data entry; no `core` code changes.
+
+The world is a grid of square cells. Each region fills one cell, and no two regions share one (`content` checks this). Cells with no region are empty. Neighbours are derived, never listed: two regions are neighbours when their cells share an edge, so a region has at most four. `regionNeighbours(regions, id)` in `src/rules/regions.ts` computes them from the region data, since cells are not in the state. Owners are plain strings: `core` knows only `PLAYER_OWNER`, and the list of foreign nations, with their names and colours, lives in `content`. Rules that skip foreign regions (taxes, 民心, population, 工匠, regional posts) test `owner !== PLAYER_OWNER`, so foreign regions stay unchanged.
 
 ## Name pool
 `core` does not hold names. `content` passes a `NamePool` to `createInitialState`:
@@ -311,6 +319,7 @@ function setTaxLevel(state: GameState, level: TaxLevelId): RevenueOutcome;
 function levyAmount(state: GameState): number;
 function canLevy(state: GameState): boolean;
 function levy(state: GameState): RevenueOutcome;
+function regionNeighbours(regions: readonly RegionData[], id: string): string[]; // IDs of the regions whose cell shares an edge with id's cell, in data order; [] for an unknown id
 function sacrificedThisYear(state: Pick<GameState, 'turn' | 'rites'>): boolean;
 function canHoldSacrifice(state: GameState): boolean;
 function holdSacrifice(state: GameState): RitesOutcome;
