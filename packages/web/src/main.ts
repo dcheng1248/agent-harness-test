@@ -19,6 +19,9 @@ import {
   pickLegionName,
   typeLegionName,
   confirmLegion,
+  selectLegion,
+  moveSelectedLegion,
+  recallSelectedLegion,
   closeAtlas,
   confirmExamPicks,
   confirmLevy,
@@ -109,6 +112,14 @@ if (root) {
       current = goToPalace(current, hit('[data-palace]')?.dataset.palace as PalaceId);
     } else if (hit('[data-department]')) {
       current = toggleDepartment(current, hit('[data-department]')?.dataset.department as DepartmentId);
+    } else if (hit('#deploy-map [data-legion]')) {
+      current = selectLegion(current, hit('#deploy-map [data-legion]')?.dataset.legion ?? '');
+    } else if (hit('[data-move-to]')) {
+      current = moveSelectedLegion(current, gameText.regions, hit('[data-move-to]')?.dataset.moveTo ?? '');
+    } else if (hit('#recall-legion')) {
+      current = recallSelectedLegion(current, gameText.regions);
+    } else if (hit('#close-legion-panel')) {
+      current = selectLegion(current, null);
     } else if (hit('[data-court-option]')) {
       current = chooseCourtOption(
         current,

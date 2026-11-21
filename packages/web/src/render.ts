@@ -28,6 +28,8 @@ import {
   getReignYear,
   canHoldExam,
   canFormLegion,
+  canRecall,
+  legionMoves,
   maxLegionSoldiers,
   capitalRegion,
   stationedLegion,
@@ -328,6 +330,47 @@ export function renderConscriptScreen(screen: Of<'conscript'>, text: UiText, gam
   return `${renderHeader(state, text, game)}<main id="conscript-screen"><h2>${text.conscriptHeading}</h2><p id="soldier-total">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p><p id="free-population">${text.freePopulationLabel}：${formatArtisans(freePopulation(state))}</p><p id="conscript-max-line">${text.recruitMaxLabel}：${formatArtisans(max)}</p><p id="conscript-hint">${text.conscriptHint}</p>${renderPicker(count, max, countStep(screen), text.recruitMax, text)}<button type="button" id="confirm-conscript">${text.confirmConscript}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
 }
 
+function renderLegionPanel(state: GameState, legionId: string, text: UiText, game: GameText): string {
+  const l = state.army.legions.find((x) => x.id === legionId);
+  if (!l) return '';
+  const general = state.officials.find((o) => o.id === l.general);
+  const regionName = game.regions.find((r) => r.id === l.region)?.name ?? l.region;
+  const status =
+    l.route === null
+      ? text.stationedStatus
+      : `${text.returningPrefix}${formatChineseNumber(l.route.length)}${text.returningSuffix}`;
+  let orders = '';
+  if (l.route === null) {
+    const moves = legionMoves(state, game.regions, l.id);
+    const move =
+      moves.length > 0
+        ? `<p id="move-hint">${text.moveHint}</p>`
+        : l.movedTurn === state.turn
+        ? `<p id="legion-moved">${text.movedThisTurn}</p>`
+        : `<p id="legion-no-moves">${text.noMoves}</p>`;
+    const atCapital = l.region === capitalRegion(game.regions);
+    const hint = atCapital ? `<p id="recall-hint">${text.recallDisbandHint}</p>` : '';
+    const recall = canRecall(state, game.regions, l.id)
+      ? `<button type="button" id="recall-legion">${text.recallButton}</button>`
+      : `<button type="button" id="recall-legion" disabled>${text.recallButton}<span class="court-option-tag">${text.noRoute}</span></button>`;
+    orders = `${move}${hint}${recall}`;
+  }
+  return `<section id="legion-panel"><h3 id="legion-panel-name">${escapeHtml(formatLegionName(l.name))}</h3><dl><dt>${text.generalLabel}</dt><dd id="legion-general">${escapeHtml(general?.name ?? '')}</dd><dt>${text.legionSoldiersLabel}</dt><dd id="legion-soldiers">${formatArtisans(l.soldiers)}</dd><dt>${text.trainingLabel}</dt><dd id="legion-training">${l.training}</dd><dt>${text.legionRegionLabel}</dt><dd id="legion-region">${escapeHtml(regionName)}</dd><dt>${text.legionStatusLabel}</dt><dd id="legion-status">${status}</dd></dl>${orders}<button type="button" id="close-legion-panel">${text.closeLegionPanel}</button></section>`;
+}
+
+export function renderDeployScreen(screen: Of<'deploy'>, text: UiText, game: GameText): string {
+  const { state, legion } = screen;
+  const moves = legion === undefined ? [] : legionMoves(state, game.regions, legion);
+  const map = renderWorldMap(state, text, game, legion === undefined ? { kind: 'deploy', moves } : { kind: 'deploy', legion, moves });
+  const panel =
+    state.army.legions.length === 0
+      ? `<p id="deploy-empty">${text.noLegions}</p>`
+      : legion !== undefined && state.army.legions.some((l) => l.id === legion)
+      ? renderLegionPanel(state, legion, text, game)
+      : `<p id="deploy-hint">${text.deployHint}</p>`;
+  return `${renderHeader(state, text, game)}<main id="deploy-screen"><h2>${text.deployHeading}</h2>${map}${panel}<button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
 export function renderLegionScreen(screen: Of<'legion'>, text: UiText, game: GameText): string {
   const { state, count, general, draft, error } = screen;
   const max = maxLegionSoldiers(state);
@@ -490,6 +533,8 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderDischargeScreen(screen, text, game);
     case 'legion':
       return renderLegionScreen(screen, text, game);
+    case 'deploy':
+      return renderDeployScreen(screen, text, game);
     case 'drill':
       return renderDrillScreen(screen, text, game);
     case 'build':

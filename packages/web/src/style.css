@@ -266,9 +266,12 @@ button.legion-marker { cursor: pointer; }
 .capital-mark { font-size: 0.7em; color: #f0d78c; }
 #map-legend ul { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; padding: 0; list-style: none; }
 .legend-swatch { display: inline-block; width: 1em; height: 1em; margin-right: 0.3em; vertical-align: middle; border: 1px solid rgba(0, 0, 0, 0.35); }
-#region-panel { margin: 0.5rem 0; padding: 0.5rem 1rem; border: 2px solid #c9a227; border-radius: 0.5em; }
-#region-panel dl { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 1rem; margin: 0.5rem 0; }
-#region-panel dd { margin: 0; }
+#region-panel,
+#legion-panel { margin: 0.5rem 0; padding: 0.5rem 1rem; border: 2px solid #c9a227; border-radius: 0.5em; }
+#region-panel dl,
+#legion-panel dl { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 1rem; margin: 0.5rem 0; }
+#region-panel dd,
+#legion-panel dd { margin: 0; }
 
 .table-scroll {
   overflow-x: auto;

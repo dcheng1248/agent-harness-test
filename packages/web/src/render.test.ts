@@ -7,6 +7,8 @@ import {
   maxConscript,
   conscriptSoldiers,
   formLegion,
+  moveLegion,
+  recallLegion,
   startDrill,
   recruitArtisans,
   releaseArtisans,
@@ -1211,5 +1213,103 @@ describe('組建軍團 screen', () => {
     const taken = render({ ...base, error: 'name-taken' });
     expect(taken).toContain(uiText.legionNameTaken);
     expect(taken).not.toContain(uiText.legionNameError);
+  });
+});
+
+describe('調兵遣將 screen', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const render = (screen: Screen): string => renderScreen(screen, uiText, gameText, images);
+  const ok = (o: { ok: boolean; state: GameState }): GameState => {
+    if (!o.ok) throw new Error('rejected');
+    return o.state;
+  };
+  const idle = court.officials.find((o) => o.post === null)!;
+  const formed = ok(formLegion(court, gameText.regions, idle.id, BALANCE.army.step, '征西'));
+  const deploy = (s: GameState, legion?: string): Screen =>
+    legion === undefined ? { screen: 'deploy', state: s } : { screen: 'deploy', state: s, legion };
+  const buttonOf = (html: string, id: string): string => {
+    const m = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`));
+    if (!m) throw new Error(`no ${id}`);
+    return m[0];
+  };
+
+  it('UC-WEB-022 with no 軍團 shows the map and a line saying so', () => {
+    const html = render(deploy(court));
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('<main id="deploy-screen">'));
+    expect(html).toContain(`<h2>${uiText.deployHeading}</h2>`);
+    expect(html).toContain('id="deploy-map"');
+    expect(html).toContain('id="map-legend"');
+    expect(html).toContain(`<p id="deploy-empty">${uiText.noLegions}</p>`);
+    expect(html).not.toContain('id="deploy-hint"');
+    expect(html).not.toContain('id="legion-panel"');
+    expect(html).toContain('id="back-to-court"');
+  });
+
+  it('UC-WEB-022 with 軍團 but none selected shows the hint', () => {
+    const html = render(deploy(formed));
+    expect(html).toContain(`<p id="deploy-hint">${uiText.deployHint}</p>`);
+    expect(html).not.toContain('id="deploy-empty"');
+    expect(html).toContain('data-legion="legion-1"');
+    expect(html).not.toContain('data-move-to');
+  });
+
+  it('UC-WEB-022 a selected 軍團 in 京師 shows its panel, moves and 招回', () => {
+    const html = render(deploy(formed, 'legion-1'));
+    expect(html).toContain('id="legion-panel"');
+    expect(html).toMatch(/id="legion-panel-name">征西軍</);
+    expect(html).toContain(`id="legion-general">${idle.name}<`);
+    expect(html).toMatch(/id="legion-soldiers">[^<]*10,000/);
+    expect(html).toMatch(/id="legion-training">[^<]*50</);
+    expect(html).toMatch(/id="legion-region">關中</);
+    expect(html).toContain(`id="legion-status">${uiText.stationedStatus}<`);
+    expect(html).toContain('id="move-hint"');
+    expect(html).toContain('id="recall-hint"');
+    expect(html).toContain('data-move-to="zhongyuan"');
+    expect(html).toContain('data-move-to="bashu"');
+    expect(buttonOf(html, 'recall-legion')).not.toContain('disabled');
+    expect(html).toContain('id="close-legion-panel"');
+    expect(html).not.toContain('id="legion-moved"');
+  });
+
+  it('UC-WEB-022 after moving the panel says so and no destination is offered', () => {
+    const moved = ok(moveLegion(formed, gameText.regions, 'legion-1', 'zhongyuan'));
+    const html = render(deploy(moved, 'legion-1'));
+    expect(html).toContain(`id="legion-moved">${uiText.movedThisTurn}<`);
+    expect(html).not.toContain('data-move-to');
+    expect(html).not.toContain('id="move-hint"');
+    expect(html).not.toContain('id="recall-hint"');
+    expect(html).toMatch(/id="legion-region">中原</);
+  });
+
+  it('UC-WEB-022 after 招回 away from 京師 the 軍團 is returning', () => {
+    const moved = ok(moveLegion(formed, gameText.regions, 'legion-1', 'zhongyuan'));
+    const back = ok(recallLegion(moved, gameText.regions, 'legion-1'));
+    const html = render(deploy(back, 'legion-1'));
+    expect(html).toContain('legion-marker returning');
+    expect(html).toContain('id="legion-status">回師中，尚需一半季抵京<');
+    expect(html).not.toContain('id="recall-legion"');
+    expect(html).not.toContain('data-move-to');
+    expect(html).not.toContain('id="legion-moved"');
+  });
+
+  it('UC-WEB-022 a stationed 軍團 with nowhere to go says so', () => {
+    const stuck: GameState = {
+      ...formed,
+      regions: formed.regions.map((r) => (r.id === 'zhongyuan' || r.id === 'bashu' ? { ...r, owner: 'foreign' } : r)),
+    };
+    const html = render(deploy(stuck, 'legion-1'));
+    expect(html).toContain(`id="legion-no-moves">${uiText.noMoves}<`);
+    expect(html).not.toContain('id="move-hint"');
+  });
+
+  it('UC-WEB-022 招回 is disabled with a tag when no route leads home', () => {
+    const far = {
+      ...formed,
+      army: { ...formed.army, legions: formed.army.legions.map((l) => ({ ...l, region: 'lingnan' })) },
+      regions: formed.regions.map((r) => (r.id === 'jingchu' ? { ...r, owner: 'foreign' } : r)),
+    };
+    const html = render(deploy(far, 'legion-1'));
+    expect(buttonOf(html, 'recall-legion')).toContain('disabled');
+    expect(html).toMatch(/id="recall-legion"[^>]*>招回<span class="court-option-tag">無路可返<\/span>/);
   });
 });

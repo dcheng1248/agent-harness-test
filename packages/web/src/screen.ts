@@ -59,6 +59,8 @@ import {
   formLegion,
   maxLegionSoldiers,
   drawLegionNameSuggestions,
+  moveLegion,
+  recallLegion,
 } from '@emperor/core';
 
 export type Screen =
@@ -78,6 +80,7 @@ export type Screen =
       training: number | null;
     }
   | { screen: 'atlas'; state: GameState; region?: string }
+  | { screen: 'deploy'; state: GameState; legion?: string }
   | { screen: 'recommend'; state: GameState }
   | { screen: 'appoint'; state: GameState; post?: PostId; sort?: OfficialStatId }
   | { screen: 'exam'; state: GameState; picks: number[]; sort?: OfficialStatId }
@@ -210,6 +213,7 @@ export function chooseCourtOption(
       draft: '',
     };
   }
+  if (optionId === 'deploy-legions') return { screen: 'deploy', state: screen.state };
   if (optionId === 'drill-troops') return { screen: 'drill', state: screen.state };
   if (optionId === 'adjust-taxes') return { screen: 'taxes', state: screen.state };
   if (optionId === 'budget-sheet') return { screen: 'budget', state: screen.state };
@@ -400,6 +404,29 @@ export function confirmSacrifice(screen: Screen): Screen {
   return outcome.ok ? { screen: 'play', state: outcome.state, department: 'rites' } : screen;
 }
 
+type DeployScreen = Extract<Screen, { screen: 'deploy' }>;
+
+export function selectLegion(screen: Screen, legionId: string | null): Screen {
+  if (screen.screen !== 'deploy') return screen;
+  if (legionId === null) return { screen: 'deploy', state: screen.state };
+  return screen.state.army.legions.some((l) => l.id === legionId) ? { ...screen, legion: legionId } : screen;
+}
+
+export function moveSelectedLegion(screen: Screen, regions: readonly RegionData[], regionId: string): Screen {
+  if (screen.screen !== 'deploy' || screen.legion === undefined) return screen;
+  const outcome = moveLegion(screen.state, regions, screen.legion, regionId);
+  return outcome.ok ? { ...screen, state: outcome.state } : screen;
+}
+
+export function recallSelectedLegion(screen: Screen, regions: readonly RegionData[]): Screen {
+  if (screen.screen !== 'deploy' || screen.legion === undefined) return screen;
+  const outcome = recallLegion(screen.state, regions, screen.legion);
+  if (!outcome.ok) return screen;
+  const next: DeployScreen = { ...screen, state: outcome.state };
+  if (!outcome.state.army.legions.some((l) => l.id === screen.legion)) delete next.legion;
+  return next;
+}
+
 export function backToCourt(screen: Screen): Screen {
   if (screen.screen === 'sacrifice') return { screen: 'play', state: screen.state, department: 'rites' };
   if (screen.screen === 'taxes' || screen.screen === 'levy' || screen.screen === 'budget') {
@@ -409,6 +436,7 @@ export function backToCourt(screen: Screen): Screen {
     screen.screen === 'conscript' ||
     screen.screen === 'discharge' ||
     screen.screen === 'drill' ||
+    screen.screen === 'deploy' ||
     screen.screen === 'legion'
   ) {
     return { screen: 'play', state: screen.state, department: 'war' };
