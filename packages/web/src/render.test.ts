@@ -30,8 +30,8 @@ import {
   levyAmount,
   nextCollection,
 } from '@emperor/core';
+import { escapeHtml } from './html';
 import {
-  escapeHtml,
   renderAtlasScreen,
   renderEndingScreen,
   renderEraScreen,

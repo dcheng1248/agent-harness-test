@@ -1,7 +1,7 @@
 import type { GameText, UiText } from '@emperor/content';
 import { formatLegionName } from '@emperor/content';
 import type { GameState, Legion } from '@emperor/core';
-import { escapeHtml } from './render';
+import { escapeHtml } from './html';
 
 export type WorldMapMode =
   | { kind: 'atlas'; region?: string }
@@ -19,8 +19,8 @@ function marker(legion: Legion, text: UiText, mode: WorldMapMode): string {
   return `<button type="button" class="legion-marker${returning ? ' returning' : ''}${selected ? ' selected' : ''}" data-legion="${id}" aria-pressed="${selected}">${label}${tag}</button>`;
 }
 
-/** The 輿圖 grid, the 軍團 markers and the legend, for 輿圖 and 調兵遣將. */
-export function renderWorldMap(state: GameState, text: UiText, game: GameText, mode: WorldMapMode): string {
+/** The 輿圖 grid, the 軍團 markers and the legend, for 輿圖 and 調兵遣將. `between` goes under the grid, above the legend. */
+export function renderWorldMap(state: GameState, text: UiText, game: GameText, mode: WorldMapMode, between = ''): string {
   const nationOf = (id: string) => game.nations.find((n) => n.id === id);
   const drawn = state.regions.flatMap((r) => {
     const entry = game.regions.find((g) => g.id === r.id);
@@ -42,8 +42,8 @@ export function renderWorldMap(state: GameState, text: UiText, game: GameText, m
       const background = color === undefined ? '' : `;background:${escapeHtml(color)}`;
       const mark = found.entry.capital ? `<span class="capital-mark">${text.capitalMark}</span>` : '';
       const markers = state.army.legions
-        .filter((l) => l.region === found.state.id)
-        .map((l) => marker(l, text, mode))
+        .filter((legion) => legion.region === found.state.id)
+        .map((legion) => marker(legion, text, mode))
         .join('');
       const name = escapeHtml(found.entry.name);
       if (mode.kind === 'atlas') {
@@ -67,5 +67,5 @@ export function renderWorldMap(state: GameState, text: UiText, game: GameText, m
   const legend = game.nations
     .map((n) => `<li data-nation="${escapeHtml(n.id)}"><span class="legend-swatch" style="background:${escapeHtml(n.color)}"></span>${escapeHtml(n.name)}</li>`)
     .join('');
-  return `${container}<section id="map-legend"><h3>${text.legendHeading}</h3><ul>${legend}</ul></section>`;
+  return `${container}${between}<section id="map-legend"><h3>${text.legendHeading}</h3><ul>${legend}</ul></section>`;
 }

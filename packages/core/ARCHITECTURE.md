@@ -371,10 +371,10 @@ function startDrill(state: GameState): ArmyOutcome;
 function capitalRegion(regions: readonly RegionData[]): string | null;
 function isIdleOfficial(state: Pick<GameState, 'officials' | 'army'>, officialId: string): boolean;
 function legionSoldiers(state: Pick<GameState, 'army'>): number; // every 軍團's soldiers together
-function maxLegionSoldiers(state: GameState): number;
+function maxLegionSoldiers(state: Pick<GameState, 'army'>): number;
 function isValidLegionName(name: string): boolean;
-function drawLegionNameSuggestions(state: GameState, pool: readonly string[], count?: number): string[]; // count defaults to 3
-function stationedLegion(state: GameState, regionId: string): Legion | undefined;
+function drawLegionNameSuggestions(state: Pick<GameState, 'rngState' | 'army'>, pool: readonly string[], count?: number): string[];
+function stationedLegion(state: Pick<GameState, 'army'>, regionId: string): Legion | undefined;
 function canFormLegion(state: GameState, regions: readonly RegionData[]): boolean;
 function formLegion(state: GameState, regions: readonly RegionData[], generalId: string, count: number, name: string): LegionOutcome;
 function legionMoves(state: GameState, regions: readonly RegionData[], legionId: string): string[];

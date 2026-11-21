@@ -46,7 +46,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - Every tax level in `TAX_LEVEL_IDS` has a name: 極輕, 輕, 平, 重, 極重.
 - Every palace has a description except 宣政殿, which has no panel to show one.
 - `eraNamePool` entries are original, and each passes `isValidEraName`.
-- `legionNamePool` holds about twenty two-character 軍團 names in a martial style, such as 征西, 平南 and 鎮北, without the 軍 suffix. Entries are unique, each passes `isValidLegionName`, and there are far more than the three suggestions a screen shows.
+- `legionNamePool` holds 軍團 names in a martial style, without the 軍 suffix. Entries are unique, each passes `isValidLegionName`, and there are far more than the suggestions a screen shows.
 - Every court option in `COURT_OPTION_IDS` has a name, including 兵部's 組建軍團 and 調兵遣將.
 
 ## Formatting
@@ -59,7 +59,7 @@ Format functions in `src/format.ts` turn numbers and changes into player-facing 
 - `formatTaels(n)` is `formatAmount(n)` followed by the tael unit.
 - `formatEconomy(report)` gives the tax income and the upkeep. The tax part appears only when `taxIncome` is above 0. It leaves out the 工匠 and soldier wages, which have their own line.
 - `formatWages(artisanWages, soldierWages, legionWages = 0)` gives the wages line: the 工匠 wages part (its label and the amount in taels, shown as a loss), then the soldier wages part (its own label, the same way), then the 軍團 wages part (its own label, the same way), joined like the other lists. Each part appears only when it is above 0.
-- `formatLegionName(name)` gives a 軍團's display name: its two-character name followed by 軍, such as 「征西軍」.
+- `formatLegionName(name)` gives a 軍團's display name: its name followed by 軍.
 - `formatTrainingChange(amount)` gives the training line of the turn summary: the training label and the change with its sign, such as 「訓練 +2」. 0 is written with `+`.
 - `formatArtisans(n)` is `formatAmount(n)` followed by the unit for persons.
 - `formatReign(years)`, such as 「在位十二年」. `formatLifespan(age)`, such as 「享年五十八歲」.
