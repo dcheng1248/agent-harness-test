@@ -126,4 +126,14 @@ describe('content', () => {
     expect(uiText.levyUsed).toBe('已徵');
     expect(uiText.confirmLevy).toBe('徵收');
   });
+
+  it('UC-WEB-017 祭祀 text', () => {
+    expect(uiText.sacrificeUsed).toBe('本年已祭');
+    expect(uiText.confirmSacrifice).toBe('舉行');
+    expect(uiText.sacrificeBack).toBe('返回');
+    expect(uiText.sacrificeHint).toContain('國庫');
+    expect(uiText.sacrificeHint).toContain('午');
+    expect(uiText.sacrificeHint).toContain('天災');
+    expect(uiText.sacrificeHint).not.toMatch(/[0-9０-９一二三四五六七八九十百千萬]/);
+  });
 });

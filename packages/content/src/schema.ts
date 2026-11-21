@@ -102,6 +102,11 @@ export interface UiText {
   levyBack: string;
   levyResultLabel: string;
   levyUsed: string;
+  sacrificeHeading: string;
+  sacrificeHint: string;
+  confirmSacrifice: string;
+  sacrificeBack: string;
+  sacrificeUsed: string;
   budgetHeading: string;
   currentTaxLabel: string;
   expectedTaxColumn: string;
