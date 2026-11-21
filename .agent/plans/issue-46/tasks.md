@@ -23,11 +23,12 @@
 
 ## Review Focus
 
-1. **民心 at the bound at collection**: a region at 民心 100 on 極輕 stays 100, and at 0 on 極重 stays 0. Test in Task 1 (`clamps 民心 at collection`).
-2. **平 keeps today's income exactly**: `regionTax(stats)` and `regionTax(stats, 'normal')` equal the old formula, and settling at 平 changes no 民心. Test in Task 1.
-3. **Levy at the same 早朝 twice, or after leaving and re-entering in the same half-season**: second call rejected `'already-used'`; next half-season's 早朝 allows it. Tests in Task 1 and Task 3.
-4. **Levy with no player regions**: amount 0, still succeeds and stamps the turn. Test in Task 1.
-5. **Slider preview leaves state alone**: `renderTaxPreview` for a level other than the current one does not change `state.revenue.taxLevel`, and the header 國庫 stays the same after `setTax`. Test in Task 3.
+1. **民心 at the bound at turn end**: a region at 民心 100 on 極輕 stays 100, and at 0 on 極重 stays 0, at a collection and outside one. Test in Task 1 (`clamps 民心 at turn end`).
+2. **平 keeps today's income and 民心 exactly**: `regionTax(stats)` and `regionTax(stats, 'normal')` equal the old formula, and settling at 平 changes no 民心 at a collection or outside one. Test in Task 1.
+3. **The level's 民心 change applies every half-season, but tax only at collections**: outside a collection `taxIncome` is 0 and 民心 still moves; at a collection the tax uses 民心 from before the move. Tests in Task 1 (`民心 changes every half-season`, `collection uses the level`, and the two turn-loop tests).
+4. **Levy at the same 早朝 twice, or after leaving and re-entering in the same half-season**: second call rejected `'already-used'`; next half-season's 早朝 allows it. Tests in Task 1 and Task 3.
+5. **Levy with no player regions**: amount 0, still succeeds and stamps the turn. Test in Task 1.
+6. **Slider preview leaves state alone**: `renderTaxPreview` for a level other than the current one does not change `state.revenue.taxLevel`, and the header 國庫 stays the same after `setTax`. Test in Task 3.
 
 ---
 
@@ -79,10 +80,10 @@ Read first: `docs/architecture.md`, `packages/core/ARCHITECTURE.md`, `packages/c
 - [ ] **Step 3: Write failing tests in `economy.test.ts`** (region `A`: 民心 60, 人口 5,000,000, 富庶 60, so `regionTax(A.stats)` = 90,000):
   - `UC-CORE-021 regionTax scales by the level`: for `very-light`, `light`, `normal`, `heavy`, `very-heavy` gives 45000, 67500, 90000, 112500, 135000; `regionTax(A.stats)` equals `regionTax(A.stats, "normal")`.
   - `UC-CORE-021 collection uses the level and moves 民心 after the tax`: `settleEconomy({ treasury: 1000000 }, [A], "autumn-early", 0, "heavy")` gives `report.taxIncome` 112500 and the region's 民心 59; with `"very-light"` gives 45000 and 民心 62; with `"normal"` 民心 stays 60 and `regionChanges` is `[]`.
-  - `UC-CORE-021 no 民心 change outside collections`: `"summer-early"` with `"very-heavy"` leaves 民心 at 60.
-  - `UC-CORE-021 clamps 民心 at collection`: 民心 100 on `very-light` stays 100; 民心 1 on `very-heavy` goes to 0.
-  - `UC-CORE-021 foreign regions are untouched`: a foreign region keeps its 民心 on `very-heavy`.
-  - `UC-CORE-021 bankruptcy follows the level change`: 國庫 0, upkeep pushes it negative, `"autumn-early"`, `very-light`, a region too poor to cover upkeep (人口 1000): 民心 60 → 62 → 59.
+  - `UC-CORE-021 民心 changes every half-season`: `settleEconomy({ treasury: 1000000 }, [A], "summer-early", 0, "very-heavy")` gives `report.taxIncome` 0 and 民心 58, with `regionChanges` `[{ region: "A", changes: [{ stat: "morale", amount: -2 }] }]` (matching the existing `RegionChange` shape); with `"light"` 民心 61; with `"normal"` 民心 stays 60 and `regionChanges` is `[]`. (This replaces the earlier "no 民心 change outside collections" test, which now expects a change.)
+  - `UC-CORE-021 clamps 民心 at turn end`: at `"autumn-early"` and at `"summer-early"`, 民心 100 on `very-light` stays 100 and 民心 1 on `very-heavy` goes to 0.
+  - `UC-CORE-021 foreign regions are untouched`: a foreign region keeps its 民心 on `very-heavy`, at `"autumn-early"` and at `"summer-early"`.
+  - `UC-CORE-021 bankruptcy follows the level change`: 國庫 0, so upkeep pushes it negative, with a region too poor to cover upkeep (人口 1000). At `"autumn-early"` on `very-light`: 民心 60 → 62 → 59. At `"summer-early"` (no collection) on `very-heavy`: 民心 60 → 58 → 55. At `"summer-early"` on `very-light`: 60 → 62 → 59.
 
 - [ ] **Step 4: Write failing tests in `revenue.test.ts`.** Reuse the `REGIONS` and `court()` pattern from `works.test.ts`: player `a` (民心 60, 人口 20,000,000, 富庶 60 → tax 360,000), player `b` (人口 10,500,000 → 189,000), foreign `c`.
   - `UC-CORE-021 setTaxLevel sets the level during 早朝, repeatably`: set `heavy` then `light`; final `revenue.taxLevel` is `light`, `amount` 0, `actionPoint` and `rngState` unchanged.
@@ -96,7 +97,9 @@ Read first: `docs/architecture.md`, `packages/core/ARCHITECTURE.md`, `packages/c
   - `UC-CORE-022 rejections in order`: on the map → `'not-in-court'`; dead → `'not-in-court'`; used → `'already-used'`.
   - `UC-CORE-022 with no player regions the levy is 0 but allowed`: all regions foreign → `levyAmount` 0, `levy` ok with `amount` 0 and `leviedTurn` stamped.
 
-- [ ] **Step 5: Write a failing test in `turn.test.ts`.** `UC-CORE-021 the turn loop collects at the current level`: from a state at turn 3 (夏下) with `revenue.taxLevel` `"heavy"`, take the four actions of the turn; `turnEnd.economy.taxIncome` equals the sum of `regionTax(stats, "heavy")` over player regions, and each player region's 民心 dropped by 1 (unless at 0).
+- [ ] **Step 5: Write failing tests in `turn.test.ts`.**
+  - `UC-CORE-021 the turn loop collects at the current level`: from a state at turn 3 (夏下) with `revenue.taxLevel` `"heavy"`, take the four actions of the turn; `turnEnd.economy.taxIncome` equals the sum of `regionTax(stats, "heavy")` over player regions (stats from before the turn end), and each player region's 民心 dropped by 1 (unless at 0).
+  - `UC-CORE-021 the turn loop moves 民心 by the level outside collections`: from a state at turn 1 (春下) with `revenue.taxLevel` `"very-light"`, take the four actions; `turnEnd.economy.taxIncome` is 0 and each player region's 民心 rose by 2 (capped at 100). Keep 國庫 high enough that bankruptcy does not fire (the starting 國庫 covers one upkeep).
 
 - [ ] **Step 6: Run** `npm test -w packages/core` — Expected: the new tests FAIL (missing exports / `revenue` undefined).
 
@@ -105,7 +108,7 @@ Read first: `docs/architecture.md`, `packages/core/ARCHITECTURE.md`, `packages/c
   - `balance.ts`: add `levels`, `levyFraction`, `levyMoraleLoss` to `tax`.
   - `court.ts`: the registry change above.
   - `state.ts`: `revenue` field after `works`, `{ taxLevel: "normal", leviedTurn: null }` in `createInitialState`, `SCHEMA_VERSION = 8`.
-  - `economy.ts`: `regionTax` computes `Math.floor(pop * prosperity * morale * multiplier / halfYearDivisor)`. In `settleEconomy`, at a collection, sum the taxes first, then add the level's `morale` to each player region's 民心, clamped to the `morale` bounds in `STAT_REGISTRY`; bankruptcy stays after.
+  - `economy.ts`: `regionTax` computes `Math.floor(pop * prosperity * morale * multiplier / halfYearDivisor)`. In `settleEconomy`, at a collection, sum the taxes (unchanged except for the multiplier). Then, as a new step at every call, collection or not, add the level's `morale` to each player region's 民心, clamped to the `morale` bounds in `STAT_REGISTRY` (skip when `morale` is 0). Bankruptcy stays after it. The existing `regionChanges` diff then reports the change like any other.
   - `turn.ts`: pass `state.revenue.taxLevel` to `settleEconomy`.
   - `src/rules/revenue.ts`: the functions in Interfaces. Use `isMorningCourt` from `turn.ts`, the `reject` helper pattern of `works.ts`, and `HALF_SEASONS`/`BALANCE.turnsPerYear` for `nextCollection` (loop k = 1…turnsPerYear for the first `HALF_SEASONS[(turn + k) % turnsPerYear]` in `collectOn`). `setTaxLevel` checks membership with `TAX_LEVEL_IDS.includes`.
   - `index.ts`: export everything in Interfaces.

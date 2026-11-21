@@ -1,12 +1,18 @@
 # Brief: 戶部: 調整賦稅, 額外徵稅 and 收支表
 
+## Changes since last review
+- The tax level's 民心 change now applies at every turn end (every half-season), not only at the 春上/秋上 collections, as the review and the updated issue ask. Tax income is still collected only at 春上 and 秋上.
+- It becomes its own step in `settleEconomy`, after taxes and before bankruptcy. At a collection the tax is still worked out from 民心 before the change.
+- Tests changed to match: "no 民心 change outside collections" now expects the change, and there are new bankruptcy and turn-loop tests for half-seasons with no collection.
+
 ## Summary
-This turns on 戶部 in 早朝 with three options. The player sets a national tax rate in five levels that scales income and moves 民心 at each collection. They can levy an extra tax once per 早朝 at a heavy cost in 民心, and read a budget sheet. 戶口普查 and 賑濟災民 are removed.
+This turns on 戶部 in 早朝 with three options. The player sets a national tax rate in five levels. The rate scales income at each collection and moves 民心 every half-season. They can levy an extra tax once per 早朝 at a heavy cost in 民心, and read a budget sheet. 戶口普查 and 賑濟災民 are removed.
 
 ## Features
 - 戶部 lists exactly 調整賦稅, 額外徵稅, 收支表, all enabled. None uses an action point.
 - 調整賦稅: a five-notch slider (極輕 → 極重). While dragging it shows the level name and the expected tax at the next collection. Releasing it saves the level. It shows no 民心 numbers.
-- At each 春上/秋上 collection, every region's tax is multiplied by the level's factor, then every player region's 民心 moves by the level's amount (up when light, down when heavy, unchanged at 平).
+- At each 春上/秋上 collection, every region's tax is multiplied by the level's factor.
+- At every turn end, collection or not, every player region's 民心 moves by the amount for the level set at that moment: up when light, down when heavy, unchanged at 平.
 - 額外徵稅: once per 早朝, adds half a collection at the current level to 國庫 at once, and every player region loses a lot of 民心. Once used, the option shows 已徵 until the next 早朝.
 - 收支表: 國庫, current level, each region's expected tax and the total, upkeep per half a year, and when the next collection falls.
 
@@ -15,9 +21,9 @@ This turns on 戶部 in 早朝 with three options. The player sets a national ta
 
 ## Decisions to review
 - **Tax multipliers** in `BALANCE.tax.levels`: 極輕 0.5, 輕 0.75, 平 1, 重 1.25, 極重 1.5.
-- **民心 per collection**: +2, +1, 0, −1, −2. That makes at most ±4 a year, against the existing −3 per half-season for bankruptcy.
+- **民心 per half-season**: +2, +1, 0, −1, −2, as the issue sets. This adds up to at most ±16 a year over 8 half-seasons, against the existing −3 per half-season for bankruptcy. 極重 for a whole year takes a region from 60 to 44 民心 and cuts its tax by about a quarter.
 - **Levy**: `levyFraction` 0.5, `levyMoraleLoss` 10 民心 per player region.
-- **Order at a collection**: tax is worked out from 民心 *before* the level's change, and bankruptcy comes after. Heavy rates lower income starting from the next collection.
+- **Order at turn end**: upkeep, population, taxes (at collections only), then the level's 民心 change, then bankruptcy. At a collection the tax is worked out from 民心 *before* that half-season's change. Bankruptcy's −3 comes on top.
 - **Forecasts** (slider, 收支表, levy hint) use today's stats. They don't project 春上 population growth or bankruptcy.
 - **Levy result**: after 徵收, the levy screen swaps its hint and buttons for a result line and one button back to 宣政殿. It doesn't jump straight back.
 - **Levy with nothing to take** (no player regions) is allowed and yields 0.
@@ -31,7 +37,8 @@ This turns on 戶部 in 早朝 with three options. The player sets a national ta
 - Text: hint 「稅賦輕重，關乎各地民心。」, levy hint 「此次加徵可得…兩，然將大幅減低民心。」, result 「加徵所得：…兩」, tag 已徵. All strings are in `tasks.md`.
 - 收支表's next collection shows the half-season name only, such as 秋上, with no year.
 - Setting the same level again succeeds and changes nothing.
-- 民心 is kept within 0–100 at collection and after the levy.
+- 民心 is kept within 0–100 after the level's change at each turn end and after the levy.
+- The level's 民心 change shows in the turn summary's per-region lines like any other region change, so the summary shows 民心 numbers even though the tax screens do not.
 - Added glossary entries for 稅率 and 額外徵稅.
 
 </details>
@@ -48,17 +55,17 @@ This turns on 戶部 in 早朝 with three options. The player sets a national ta
 **Added `UC-CORE-021` 調整賦稅**
 - There are five levels in `TAX_LEVEL_IDS`, and a new game starts at 平. Each level has a multiplier and a 民心 change in `BALANCE.tax.levels`. 平 is ×1 with no change.
 - `setTaxLevel` works only during 早朝 and can be repeated. It is rejected with `not-in-court` or `unknown-level`. It uses no action point and no randomness.
-- A collection uses the level set at that moment. Officials have no effect.
+- A collection uses the level set at that moment. At every turn end, every player region's 民心 changes by the level set at that moment. Officials have no effect.
 - `expectedTax(state, level)` gives the per-region forecast from current stats. `nextCollection(state)` gives the next collection half-season (in 春上 → 秋上, in 冬下 → 春上).
 
 **Added `UC-CORE-022` 額外徵稅**
 - `levyAmount` = Σ floor(region tax at the current level × `levyFraction`) over player regions.
 - `levy` works once per half-season during 早朝 (`canLevy`). It adds the amount to 國庫, takes `levyMoraleLoss` 民心 from every player region (floor 0), and stamps `leviedTurn`.
-- It is rejected with `not-in-court` or `already-used`. The tax level's 民心 change does not apply to it.
+- It is rejected with `not-in-court` or `already-used`. The levy does not apply the tax level's 民心 change, which comes only at turn end.
 
 **Changed `UC-CORE-015` Economy**
 - Tax = plain formula → plain formula × the level's multiplier (`settleEconomy` gains `taxLevel`, default 平).
-- 民心 changes only on bankruptcy → also by the level's change at each collection, after the tax and before bankruptcy.
+- 民心 changes only on bankruptcy → also by the level's change at every turn end, collection or not. This is a new step after taxes and before bankruptcy. At a collection the tax uses 民心 from before the change.
 
 **Changed content Text rules**
 - no tax level text → every tax level has a name (極輕, 輕, 平, 重, 極重).
@@ -181,7 +188,8 @@ Migration: there are no saves, so nothing migrates.
 - A confirm button on the slider: the issue says release saves.
 - Redrawing the whole screen on every slider `input` event: replacing the markup during a drag drops the slider.
 - Storing the levy flag as a boolean reset at turn end: a turn stamp matches 徵召 and 舉薦 and needs no reset code.
-- Applying the level's 民心 change before computing the tax: then a heavy rate would cut its own income in the same collection, which makes the first collection after a change hard to predict.
+- Applying the level's 民心 change before computing the tax at a collection: then a heavy rate would cut its own income in the same collection, so the forecasts on the slider and 收支表 would be wrong.
+- Applying the level's 民心 change at turn start or inside `takeAction`: turn end already settles every per-half-season effect in `settleEconomy`, and its report already lists region changes for the summary.
 
 <details><summary>Core paths</summary>
 
