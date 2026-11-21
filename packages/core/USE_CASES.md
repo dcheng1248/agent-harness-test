@@ -30,7 +30,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-024 | 士兵：全國兵員，早朝時徵召（每次早朝一次，新兵稀釋訓練）與解甲歸田，每半季由國庫支付兵餉 | implemented |
 | UC-CORE-025 | 操練軍隊：早朝時預付國庫，為期一年，每半季訓練上升，至頂即止，期間不可取消或延長 | implemented |
 | UC-CORE-026 | 組建軍團：早朝時自全國兵員抽調士兵，以一名賦閑官員為將軍，取兩字軍名，駐紮京師；軍團兵餉加倍 | implemented |
-| UC-CORE-027 | 調兵遣將：軍團每半季可移入一處相鄰且無軍團駐紮的本朝地域；招回後每半季自動行軍一格返京，抵京解散歸入全國兵員 | planned |
+| UC-CORE-027 | 調兵遣將：軍團每半季可移入一處相鄰且無軍團駐紮的本朝地域；招回後每半季自動行軍一格返京，抵京解散歸入全國兵員 | implemented |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.

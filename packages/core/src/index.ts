@@ -143,5 +143,10 @@ export {
   stationedLegion,
   canFormLegion,
   formLegion,
+  legionMoves,
+  moveLegion,
+  recallRoute,
+  canRecall,
+  recallLegion,
 } from "./rules/legions";
 export type { LegionRejection, LegionOutcome } from "./rules/legions";

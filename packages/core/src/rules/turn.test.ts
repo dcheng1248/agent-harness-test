@@ -11,13 +11,14 @@ import {
   getHalfSeason,
   getReignYear,
   holdSacrifice,
+  recallLegion,
   isMorningCourt,
   regionTax,
   returnToMap,
   startDrill,
   takeAction,
 } from "../index";
-import type { ActionId, Catalog, GameState, PalaceId } from "../index";
+import type { ActionId, Catalog, GameState, Legion, PalaceId, RegionData } from "../index";
 import { TEST_BUILDINGS, TEST_NAMES } from "../testNames";
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
@@ -505,5 +506,85 @@ describe("drill training at turn end", () => {
     expect(conscripted.state.army.training).toBe(40);
     const { state } = playTurn({ ...conscripted.state, location: "map" });
     expect(state.army.training).toBe(42);
+  });
+});
+
+describe("UC-CORE-027 the turn-end march", () => {
+  const R = (id: string, x: number, y: number, capital = false): RegionData => ({
+    id,
+    owner: "player",
+    capital,
+    cell: { x, y },
+    start: { morale: 60, population: 10000000, prosperity: 60 },
+  });
+  const MAP = [R("cap", 0, 0, true), R("a", 1, 0), R("b", 2, 0), R("d", 2, 1)];
+  const L = (over: Partial<Legion>): Legion => ({
+    id: "legion-1",
+    name: "平北",
+    general: "x",
+    soldiers: 10000,
+    training: 40,
+    region: "d",
+    movedTurn: null,
+    route: null,
+    ...over,
+  });
+  function court(): GameState {
+    return enterPalace(createInitialState(1, "承平", MAP, TEST_NAMES, TEST_BUILDINGS), "xuanzheng");
+  }
+  function withLegions(s: GameState, legions: Legion[]): GameState {
+    return { ...s, army: { ...s.army, soldiers: 10000, training: 50, legions, legionsFormed: legions.length } };
+  }
+  function endTurn(state: GameState) {
+    let cur = state.location === "map" ? state : returnToMap(state);
+    for (;;) {
+      const out = act(cur, "yangxin", "rest");
+      if (out.turnEnd) return out;
+      cur = out.state;
+    }
+  }
+  function leaveCourt(s: GameState): GameState {
+    return returnToMap(s);
+  }
+
+  it("UC-CORE-027 returning 軍團 march one region per half-season and disband in the capital", () => {
+    const s = withLegions(court(), [L({})]);
+    const r = recallLegion(s, MAP, "legion-1");
+    if (!r.ok) throw new Error(r.reason);
+    let out = endTurn(leaveCourt(r.state));
+    expect(out.state.army.legions[0]).toMatchObject({ region: "b", route: ["a", "cap"] });
+    expect(out.turnEnd?.economy.legionWages).toBe(10000);
+    out = endTurn(out.state);
+    expect(out.state.army.legions[0]?.region).toBe("a");
+    expect(out.turnEnd?.economy.legionWages).toBe(10000);
+    out = endTurn(out.state);
+    expect(out.state.army.legions).toEqual([]);
+    expect(out.state.army.soldiers).toBe(20000);
+    expect(out.state.army.training).toBe(45);
+    expect(out.turnEnd?.economy.legionWages).toBe(10000);
+  });
+  it("UC-CORE-027 arriving 軍團 disband even when the capital is held", () => {
+    const s = withLegions(court(), [
+      L({ id: "legion-1", name: "甲乙", region: "cap" }),
+      L({ id: "legion-2", name: "丙丁", region: "a", route: ["cap"] }),
+    ]);
+    const out = endTurn(leaveCourt(s));
+    expect(out.state.army.legions.map((l) => l.id)).toEqual(["legion-1"]);
+  });
+  it("UC-CORE-027 the march follows drill training", () => {
+    const base = withLegions(court(), [L({ region: "a", route: ["cap"] })]);
+    const drilling = startDrill(base);
+    if (!drilling.ok) throw new Error(drilling.reason);
+    const out = endTurn(leaveCourt(drilling.state));
+    expect(out.state.army.legions).toEqual([]);
+    expect(out.state.army.training).toBe(46);
+  });
+  it("UC-CORE-027 nothing marches when the emperor dies of age", () => {
+    const leg = L({ region: "a", route: ["cap"] });
+    const base = withLegions(createInitialState(1, "承平", MAP, TEST_NAMES, TEST_BUILDINGS), [leg]);
+    const state = { ...base, stats: { ...baseStats, health: 1 }, turn: 399, actionPoint: 3 };
+    const out = act(state, "yanwu", "riding");
+    expect(out.state.dead).toBe(true);
+    expect(out.state.army.legions).toEqual([leg]);
   });
 });

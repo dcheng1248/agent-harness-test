@@ -12,6 +12,12 @@ import {
   returnToMap,
   startDrill,
   canFormLegion,
+  canRecall,
+  legionMoves,
+  moveLegion,
+  recallLegion,
+  recallRoute,
+  isIdleOfficial,
 } from "../index";
 import type { GameState, Legion, RegionData } from "../index";
 import { TEST_BUILDINGS, TEST_NAMES } from "../testNames";
@@ -153,5 +159,111 @@ describe("UC-CORE-026 組建軍團", () => {
       expect(drawLegionNameSuggestions(t, pool)).not.toContain("甲乙");
     }
     expect([...drawLegionNameSuggestions(used, ["甲乙", "丙丁", "戊己"])].sort()).toEqual(["丙丁", "戊己"]);
+  });
+});
+
+function place(s: GameState, l: Partial<Legion>): GameState {
+  const n = s.army.legionsFormed + 1;
+  return {
+    ...s,
+    army: { ...s.army, legions: [...s.army.legions, legion({ id: `legion-${n}`, name: `軍${n}`.slice(0, 2), ...l })], legionsFormed: n },
+  };
+}
+const G = (s: GameState, i: number) => s.officials.filter((o) => o.post === null)[i]!.id;
+function rej(o: { ok: boolean; state: GameState; reason?: string }, state: GameState, reason: string) {
+  expect(o.ok).toBe(false);
+  expect(o.reason).toBe(reason);
+  expect(o.state).toBe(state);
+}
+
+describe("UC-CORE-027 調兵遣將", () => {
+  it("UC-CORE-027 legionMoves lists free player neighbours", () => {
+    const inCap = form(court());
+    expect(legionMoves(inCap, REGIONS, "legion-1")).toEqual(["a", "c"]);
+    const inB = place(court(), { id: "legion-1", name: "甲乙", region: "b" });
+    expect(legionMoves(inB, REGIONS, "legion-1")).toEqual(["a", "d"]);
+    expect(legionMoves(place(inCap, { region: "a" }), REGIONS, "legion-1")).toEqual(["c"]);
+    expect(legionMoves(place(inCap, { region: "a", route: ["cap"] }), REGIONS, "legion-1")).toEqual(["a", "c"]);
+    const ret = place(court(), { id: "legion-1", region: "a", route: ["cap"] });
+    expect(legionMoves(ret, REGIONS, "legion-1")).toEqual([]);
+    const moved = { ...inCap, army: { ...inCap.army, legions: [{ ...inCap.army.legions[0]!, movedTurn: inCap.turn }] } };
+    expect(legionMoves(moved, REGIONS, "legion-1")).toEqual([]);
+    expect(legionMoves(inCap, REGIONS, "legion-999")).toEqual([]);
+  });
+  it("UC-CORE-027 moving once per half-season", () => {
+    const s = form(court());
+    const m = ok(moveLegion(s, REGIONS, "legion-1", "a"));
+    expect(m.army.legions[0]).toMatchObject({ region: "a", movedTurn: s.turn });
+    expect(m.nation.treasury).toBe(s.nation.treasury);
+    expect(m.actionPoint).toBe(s.actionPoint);
+    expect(m.rngState).toBe(s.rngState);
+    rej(moveLegion(m, REGIONS, "legion-1", "b"), m, "already-moved");
+    const earlier = { ...m, army: { ...m.army, legions: [{ ...m.army.legions[0]!, movedTurn: s.turn - 1 }] } };
+    expect(ok(moveLegion(earlier, REGIONS, "legion-1", "b")).army.legions[0]?.region).toBe("b");
+  });
+  it("UC-CORE-027 move rejections in order", () => {
+    const s = form(court());
+    const map = returnToMap(s);
+    rej(moveLegion(map, REGIONS, "legion-1", "a"), map, "not-in-court");
+    rej(moveLegion(s, REGIONS, "legion-999", "a"), s, "unknown-legion");
+    const ret = place(court(), { id: "legion-1", region: "a", route: ["cap"] });
+    rej(moveLegion(ret, REGIONS, "legion-1", "cap"), ret, "returning");
+    const mv = ok(moveLegion(s, REGIONS, "legion-1", "a"));
+    rej(moveLegion(mv, REGIONS, "legion-1", "b"), mv, "already-moved");
+    rej(moveLegion(mv, REGIONS, "legion-1", "g"), mv, "already-moved");
+    rej(moveLegion(s, REGIONS, "legion-1", "b"), s, "not-neighbour");
+    const inB = place(court(), { id: "legion-1", name: "甲乙", region: "b" });
+    rej(moveLegion(inB, REGIONS, "legion-1", "f"), inB, "not-owned");
+    const occ = place(s, { region: "a" });
+    rej(moveLegion(occ, REGIONS, "legion-1", "a"), occ, "occupied");
+    const passing = place(s, { region: "a", route: ["cap"] });
+    expect(ok(moveLegion(passing, REGIONS, "legion-1", "a")).army.legions[0]?.region).toBe("a");
+  });
+  it("UC-CORE-027 recallRoute is the shortest player path with a fixed tie-break", () => {
+    const at = (region: string) => place(court(), { id: "legion-1", region });
+    expect(recallRoute(at("d"), REGIONS, "legion-1")).toEqual(["b", "a", "cap"]);
+    expect(recallRoute(at("g"), REGIONS, "legion-1")).toEqual(["a", "cap"]);
+    expect(recallRoute(at("cap"), REGIONS, "legion-1")).toEqual([]);
+    expect(recallRoute(at("island"), REGIONS, "legion-1")).toBeNull();
+    expect(recallRoute(at("d"), REGIONS.slice(1), "legion-1")).toBeNull();
+    expect(recallRoute(at("d"), REGIONS, "legion-999")).toBeNull();
+    const blocked = place(at("g"), { region: "a" });
+    expect(recallRoute(blocked, REGIONS, "legion-1")).toEqual(["a", "cap"]);
+  });
+  it("UC-CORE-027 招回 outside the capital starts the march", () => {
+    const s = place(court(), { id: "legion-1", region: "d", movedTurn: 0 });
+    const r = ok(recallLegion(s, REGIONS, "legion-1"));
+    expect(r.army.legions[0]).toMatchObject({ region: "d", route: ["b", "a", "cap"] });
+    rej(moveLegion(r, REGIONS, "legion-1", "b"), r, "returning");
+    rej(recallLegion(r, REGIONS, "legion-1"), r, "returning");
+    expect(canRecall(r, REGIONS, "legion-1")).toBe(false);
+    expect(canRecall(s, REGIONS, "legion-1")).toBe(true);
+  });
+  it("UC-CORE-027 招回 in the capital disbands at once", () => {
+    const base = court();
+    const g = G(base, 0);
+    const s = place({ ...base, army: { ...base.army, soldiers: 10000, training: 60 } }, { id: "legion-1", general: g, region: "cap", training: 50 });
+    expect(isIdleOfficial(s, g)).toBe(false);
+    const r = ok(recallLegion(s, REGIONS, "legion-1"));
+    expect(r.army).toMatchObject({ soldiers: 20000, training: 55, legions: [] });
+    expect(isIdleOfficial(r, g)).toBe(true);
+    const empty = place({ ...base, army: { ...base.army, soldiers: 0, training: 80 } }, { region: "cap", training: 50 });
+    expect(ok(recallLegion(empty, REGIONS, "legion-1")).army.training).toBe(50);
+  });
+  it("UC-CORE-027 招回 rejections", () => {
+    const s = place(court(), { id: "legion-1", region: "d" });
+    const map = returnToMap(s);
+    rej(recallLegion(map, REGIONS, "legion-1"), map, "not-in-court");
+    rej(recallLegion(s, REGIONS, "legion-999"), s, "unknown-legion");
+    const ret = place(court(), { id: "legion-1", region: "a", route: ["cap"] });
+    rej(recallLegion(ret, REGIONS, "legion-1"), ret, "returning");
+    const isl = place(court(), { id: "legion-1", region: "island" });
+    rej(recallLegion(isl, REGIONS, "legion-1"), isl, "no-route");
+    expect(canRecall(isl, REGIONS, "legion-1")).toBe(false);
+  });
+  it("UC-CORE-027 rounding of the merge", () => {
+    const base = court();
+    const s = place({ ...base, army: { ...base.army, soldiers: 20000, training: 51 } }, { id: "legion-1", region: "cap", training: 50 });
+    expect(ok(recallLegion(s, REGIONS, "legion-1")).army.training).toBe(50);
   });
 });

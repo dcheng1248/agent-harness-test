@@ -1,10 +1,11 @@
 import { BALANCE } from "../model/balance";
-import type { Legion } from "../model/army";
+import type { Army, Legion } from "../model/army";
 import type { RegionData } from "../model/region";
+import { PLAYER_OWNER } from "../model/region";
 import type { GameState } from "../model/state";
 import { drawEraNameSuggestions, isValidEraName } from "./eraName";
 import { isIdleOfficial } from "./officials";
-import { capitalRegion } from "./regions";
+import { capitalRegion, regionNeighbours } from "./regions";
 import { isMorningCourt } from "./turn";
 
 export type LegionRejection =
@@ -107,4 +108,112 @@ export function formLegion(
       },
     },
   };
+}
+
+const owns = (state: GameState, regionId: string) =>
+  state.regions.some((r) => r.id === regionId && r.owner === PLAYER_OWNER);
+
+export function legionMoves(state: GameState, regions: readonly RegionData[], legionId: string): string[] {
+  const l = state.army.legions.find((x) => x.id === legionId);
+  if (!l || l.route !== null || l.movedTurn === state.turn) return [];
+  return regionNeighbours(regions, l.region).filter((id) => owns(state, id) && !stationedLegion(state, id));
+}
+
+export function moveLegion(
+  state: GameState,
+  regions: readonly RegionData[],
+  legionId: string,
+  regionId: string,
+): LegionOutcome {
+  if (!isMorningCourt(state)) return reject("not-in-court", state);
+  const l = state.army.legions.find((x) => x.id === legionId);
+  if (!l) return reject("unknown-legion", state);
+  if (l.route !== null) return reject("returning", state);
+  if (l.movedTurn === state.turn) return reject("already-moved", state);
+  if (!regionNeighbours(regions, l.region).includes(regionId)) return reject("not-neighbour", state);
+  if (!owns(state, regionId)) return reject("not-owned", state);
+  if (stationedLegion(state, regionId)) return reject("occupied", state);
+  return {
+    ok: true,
+    state: {
+      ...state,
+      army: {
+        ...state.army,
+        legions: state.army.legions.map((x) => (x.id === legionId ? { ...x, region: regionId, movedTurn: state.turn } : x)),
+      },
+    },
+  };
+}
+
+export function recallRoute(state: GameState, regions: readonly RegionData[], legionId: string): string[] | null {
+  const l = state.army.legions.find((x) => x.id === legionId);
+  const capital = capitalRegion(regions);
+  if (!l || capital === null) return null;
+  const from = new Map<string, string | null>([[l.region, null]]);
+  const queue = [l.region];
+  for (let i = 0; i < queue.length; i += 1) {
+    const here = queue[i]!;
+    if (here === capital) break;
+    for (const next of regionNeighbours(regions, here)) {
+      if (from.has(next) || !owns(state, next)) continue;
+      from.set(next, here);
+      queue.push(next);
+    }
+  }
+  if (!from.has(capital)) return null;
+  const path: string[] = [];
+  for (let at: string | null | undefined = capital; at !== null && at !== undefined && at !== l.region; at = from.get(at))
+    path.unshift(at);
+  return path;
+}
+
+export function canRecall(state: GameState, regions: readonly RegionData[], legionId: string): boolean {
+  const l = state.army.legions.find((x) => x.id === legionId);
+  return isMorningCourt(state) && l !== undefined && l.route === null && recallRoute(state, regions, legionId) !== null;
+}
+
+/** Merges a 軍團 back into the pool and removes it. */
+function disbandLegion(army: Army, legionId: string): Army {
+  const l = army.legions.find((x) => x.id === legionId);
+  if (!l) return army;
+  const total = army.soldiers + l.soldiers;
+  return {
+    ...army,
+    soldiers: total,
+    training: Math.floor((army.training * army.soldiers + l.training * l.soldiers) / total),
+    legions: army.legions.filter((x) => x.id !== legionId),
+  };
+}
+
+export function recallLegion(state: GameState, regions: readonly RegionData[], legionId: string): LegionOutcome {
+  if (!isMorningCourt(state)) return reject("not-in-court", state);
+  const l = state.army.legions.find((x) => x.id === legionId);
+  if (!l) return reject("unknown-legion", state);
+  if (l.route !== null) return reject("returning", state);
+  const route = recallRoute(state, regions, legionId);
+  if (route === null) return reject("no-route", state);
+  if (route.length === 0) return { ok: true, state: { ...state, army: disbandLegion(state.army, legionId) } };
+  return {
+    ok: true,
+    state: {
+      ...state,
+      army: { ...state.army, legions: state.army.legions.map((x) => (x.id === legionId ? { ...x, route } : x)) },
+    },
+  };
+}
+
+/** Moves every returning 軍團 one region along its route; those arriving disband. */
+export function marchLegions(army: Army): Army {
+  let next = army;
+  for (const l of army.legions) {
+    if (l.route === null) continue;
+    const [region, ...rest] = l.route;
+    if (region === undefined) continue;
+    if (rest.length === 0) {
+      next = disbandLegion({ ...next, legions: next.legions.map((x) => (x.id === l.id ? { ...x, region } : x)) }, l.id);
+    } else {
+      next = { ...next, legions: next.legions.map((x) => (x.id === l.id ? { ...x, region, route: rest } : x)) };
+    }
+  }
+  return next;
 }

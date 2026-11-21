@@ -6,7 +6,7 @@ import type { ActionId, Catalog, PalaceId } from "../model/catalog";
 import type { GameState } from "../model/state";
 import { EMPEROR_STAT_IDS, STAT_REGISTRY } from "../model/stats";
 import type { StatId, StatValues } from "../model/stats";
-import { legionSoldiers } from "./legions";
+import { legionSoldiers, marchLegions } from "./legions";
 import { settleEconomy } from "./economy";
 import type { EconomyReport } from "./economy";
 import { advanceBuildings } from "../model/works";
@@ -201,7 +201,7 @@ export function takeAction(
       nation: settled.nation,
       regions: settled.regions,
       works: { ...state.works, buildings: advanced.buildings },
-      army: { ...state.army, training: trained },
+      army: marchLegions({ ...state.army, training: trained }),
       turn: state.turn + 1,
       actionPoint: 0,
       turnDeltas: zero,
