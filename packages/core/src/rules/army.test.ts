@@ -3,13 +3,16 @@ import {
   BALANCE,
   canConscript,
   conscriptSoldiers,
+  canDrill,
   createInitialState,
+  drillTurnsLeft,
   enterPalace,
   freePopulation,
   maxConscript,
   maxRecruit,
   recruitArtisans,
   releaseSoldiers,
+  startDrill,
 } from "../index";
 import type { GameState, RegionState } from "../index";
 import { TEST_BUILDINGS, TEST_NAMES } from "../testNames";
@@ -123,5 +126,47 @@ describe("UC-CORE-024 releaseSoldiers", () => {
     const map = { ...c, location: "map" as const };
     expect(releaseSoldiers(map, 10000)).toMatchObject({ ok: false, reason: "not-in-court" });
     expect(releaseSoldiers({ ...c, dead: true }, 10000)).toMatchObject({ ok: false, reason: "not-in-court" });
+  });
+});
+
+describe("UC-CORE-025 startDrill", () => {
+  it("UC-CORE-025 starting a drill pays once and stamps the turn", () => {
+    const before = court();
+    expect(canDrill(before)).toBe(true);
+    const after = ok(startDrill(before));
+    expect(after.nation.treasury).toBe(before.nation.treasury - 100000);
+    expect(after.army.drillStartTurn).toBe(0);
+    expect(after.actionPoint).toBe(before.actionPoint);
+    expect(after.location).toBe(before.location);
+    expect(after.rngState).toBe(before.rngState);
+    expect(drillTurnsLeft(after)).toBe(8);
+    expect(canDrill(after)).toBe(false);
+    const again = startDrill(after);
+    expect(again).toEqual({ ok: false, reason: "already-drilling", state: after });
+  });
+  it("UC-CORE-025 a drill can start with no money and no soldiers", () => {
+    const base = withSoldiers(court(), 0);
+    const poor = { ...base, nation: { ...base.nation, treasury: 0 } };
+    expect(ok(startDrill(poor)).nation.treasury).toBe(-100000);
+  });
+  it("UC-CORE-025 drill rejections", () => {
+    const running = ok(startDrill(court()));
+    const map = { ...running, location: "map" as const };
+    const dead = { ...running, dead: true };
+    for (const s of [map, dead, { ...court(), location: "map" as const }]) {
+      const out = startDrill(s);
+      expect(out).toMatchObject({ ok: false, reason: "not-in-court" });
+      expect(out.state).toBe(s);
+    }
+  });
+  it("UC-CORE-025 drillTurnsLeft", () => {
+    const at = (turn: number, drillStartTurn: number | null) =>
+      court({ turn, army: { ...court().army, drillStartTurn } });
+    expect(drillTurnsLeft(at(5, null))).toBe(0);
+    expect(drillTurnsLeft(at(3, 3))).toBe(8);
+    expect(drillTurnsLeft(at(10, 3))).toBe(1);
+    expect(drillTurnsLeft(at(11, 3))).toBe(0);
+    expect(canDrill(at(10, 3))).toBe(false);
+    expect(canDrill(at(11, 3))).toBe(true);
   });
 });

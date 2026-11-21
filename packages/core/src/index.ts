@@ -81,7 +81,7 @@ export {
 } from "./rules/works";
 export type { WorksRejection, WorksOutcome } from "./rules/works";
 export type { Army } from "./model/army";
-export { maxConscript, canConscript, conscriptSoldiers, releaseSoldiers } from "./rules/army";
+export { maxConscript, canConscript, conscriptSoldiers, releaseSoldiers, drillTurnsLeft, canDrill, startDrill } from "./rules/army";
 export type { ArmyRejection, ArmyOutcome } from "./rules/army";
 export { nextRandom } from "./rng";
 export type { RandomResult } from "./rng";

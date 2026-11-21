@@ -10,6 +10,7 @@ import { settleEconomy } from "./economy";
 import type { EconomyReport } from "./economy";
 import { advanceBuildings } from "../model/works";
 import { randomInt } from "./random";
+import { drillTurnsLeft } from "./army";
 
 export type ActionRejection =
   "dead" | "not-in-palace" | "not-offered" | "not-allowed-now";
@@ -18,6 +19,8 @@ export interface TurnEnd {
   totals: StatChange[];
   economy: EconomyReport;
   completed: string[];
+  /** Training gained from a running drill; null when none is running. */
+  training: number | null;
 }
 export type ActionOutcome =
   | { ok: false; reason: ActionRejection; state: GameState }
@@ -153,6 +156,7 @@ export function takeAction(
       totals,
       economy: { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, regionChanges: [] },
       completed: [],
+      training: null,
     };
     return {
       ok: true,
@@ -175,7 +179,17 @@ export function takeAction(
     state.army.soldiers,
   );
   const advanced = advanceBuildings(state.works.buildings);
-  const turnEnd: TurnEnd = { aging, totals, economy: settled.report, completed: advanced.completed };
+  const drilling = drillTurnsLeft(state) > 0;
+  const trained = drilling
+    ? Math.min(BALANCE.army.maxTraining, state.army.training + BALANCE.army.drillGain)
+    : state.army.training;
+  const turnEnd: TurnEnd = {
+    aging,
+    totals,
+    economy: settled.report,
+    completed: advanced.completed,
+    training: drilling ? trained - state.army.training : null,
+  };
   const zero = { health: 0, learning: 0, arts: 0, resolve: 0 };
   return {
     ok: true,
@@ -185,6 +199,7 @@ export function takeAction(
       nation: settled.nation,
       regions: settled.regions,
       works: { ...state.works, buildings: advanced.buildings },
+      army: { ...state.army, training: trained },
       turn: state.turn + 1,
       actionPoint: 0,
       turnDeltas: zero,

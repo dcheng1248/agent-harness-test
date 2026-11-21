@@ -28,7 +28,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-022 | 額外徵稅：每次早朝一次，向各地加徵約半次稅收，各地民心大降 | implemented |
 | UC-CORE-023 | 祭祀：每個在位年一次，於早朝舉行，耗國庫並耗用午時，記錄本年已祭 | implemented |
 | UC-CORE-024 | 士兵：全國一支兵員，早朝時徵召（每次早朝一次，新兵稀釋訓練）與解甲歸田，每半季由國庫支付兵餉 | implemented |
-| UC-CORE-025 | 操練軍隊：早朝時預付國庫，為期一年，每半季訓練上升，至頂即止，期間不可取消或延長 | planned |
+| UC-CORE-025 | 操練軍隊：早朝時預付國庫，為期一年，每半季訓練上升，至頂即止，期間不可取消或延長 | implemented |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.
