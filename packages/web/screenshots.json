@@ -729,6 +729,48 @@
     ]
   },
   {
+    "name": "palace-xuanzheng-cabinet",
+    "description": "宣政殿畫面：展開內閣，選項列表在內閣上方，不超出圖左緣，箭頭指向內閣",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-cabinet"
+      },
+      {
+        "waitFor": "#court-options"
+      }
+    ]
+  },
+  {
+    "name": "palace-xuanzheng-works",
+    "description": "宣政殿畫面：展開工部，選項列表在工部上方右緣對齊，箭頭指向工部",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-works"
+      },
+      {
+        "waitFor": "#court-options"
+      }
+    ]
+  },
+  {
     "name": "appoint-posts",
     "description": "官員任命：中樞、六部、地方官位與在任官員",
     "steps": [

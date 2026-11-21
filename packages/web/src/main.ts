@@ -3,6 +3,7 @@ import type { ActionId, CourtOptionId, DepartmentId, OfficialStatId, PalaceId } 
 import titleImage from './assets/title-forbidden-city.webp';
 import mapImage from './assets/map-forbidden-city.webp';
 import scrollImage from './assets/title-scroll.webp';
+import { placeCourtOptions } from './courtOptions';
 import { PALACE_BACKGROUNDS } from './palaceBackgrounds';
 import { renderScreen } from './render';
 import {
@@ -35,11 +36,29 @@ const root = document.querySelector<HTMLElement>('#app');
 
 if (root) {
   let current: Screen = { screen: 'title' };
+  const placeCourtList = (): void => {
+    const list = root.querySelector<HTMLElement>('#court-options');
+    const row = root.querySelector<HTMLElement>('#department-row');
+    const image = root.querySelector<HTMLElement>('#palace-image');
+    const button = root.querySelector<HTMLElement>('#department-row button.is-open');
+    if (!list || !row || !image || !button) return;
+    const { left, caretX } = placeCourtOptions(
+      row.getBoundingClientRect(),
+      button.getBoundingClientRect(),
+      image.getBoundingClientRect(),
+      list.offsetWidth,
+    );
+    list.style.left = `${left}px`;
+    list.style.setProperty('--caret-x', `${caretX}px`);
+  };
   const draw = (): void => {
     root.innerHTML = renderScreen(current, uiText, gameText, {
       palace: titleImage, scroll: scrollImage, map: mapImage,
       backgrounds: PALACE_BACKGROUNDS,
     });
+    placeCourtList();
+    const image = root.querySelector<HTMLImageElement>('#palace-image');
+    if (image && !image.complete) image.addEventListener('load', placeCourtList, { once: true });
   };
   const confirmTyped = (): void => {
     const input = root.querySelector<HTMLInputElement>('#era-input');
@@ -116,5 +135,6 @@ if (root) {
       confirmTyped();
     }
   });
+  window.addEventListener('resize', placeCourtList);
   draw();
 }

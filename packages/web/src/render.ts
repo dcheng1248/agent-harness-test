@@ -116,9 +116,9 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
       .join('')}</div>`;
   const buttons = DEPARTMENT_IDS.map((id) => {
     const { label, name } = game.departments[id];
-    return `<button type="button" id="department-${id}" data-department="${id}" aria-label="${name}"${id === open ? ' class="is-open"' : ''}>${label}</button>`;
+    return `<button type="button" id="department-${id}" data-department="${id}" aria-label="${name}"${id === open ? ' class="is-open"' : ''}>${label}</button>${id === open ? optionList(id) : ''}`;
   }).join('');
-  const departments = buttons + (open ? optionList(open) : '');
+  const departments = buttons;
   const leave = `<button type="button" id="leave-court" aria-label="${text.leaveCourtLabel}">${text.leaveCourt}</button>`;
   return `<main id="palace-view" class="court-view"><h2 class="visually-hidden">${palace.name}</h2><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[COURT_PALACE]}" alt="${palace.imageAlt}"><div id="court-row"><div id="department-row">${departments}</div>${leave}</div></div></main>`;
 }

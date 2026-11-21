@@ -347,13 +347,15 @@ describe('宣政殿', () => {
     expect(html).toContain('<button type="button" id="court-option-appoint-officials" data-court-option="appoint-officials">官員任命</button>');
   });
 
-  it.each(DEPARTMENT_IDS)('UC-WEB-007 the options of %s are always the last child of the department row, above 工', (open) => {
+  it.each(DEPARTMENT_IDS)('UC-WEB-007 the options of %s follow its own button in the department row', (open) => {
     const html = renderPlayScreen({ screen: 'play', state: court, department: open }, uiText, gameText, images);
     const options = DEPARTMENTS[open].options
       .map(optionButton)
       .join('');
-    const buttons = DEPARTMENT_IDS.map((id) => departmentButton(id, id === open)).join('');
-    expect(html).toContain(`<div id="department-row">${buttons}<div id="court-options">${options}</div></div>`);
+    const at = DEPARTMENT_IDS.indexOf(open);
+    const before = DEPARTMENT_IDS.slice(0, at + 1).map((id) => departmentButton(id, id === open)).join('');
+    const after = DEPARTMENT_IDS.slice(at + 1).map((id) => departmentButton(id, false)).join('');
+    expect(html).toContain(`<div id="department-row">${before}<div id="court-options">${options}</div>${after}</div>`);
     expect(html.split('id="court-options"').length).toBe(2);
   });
 
