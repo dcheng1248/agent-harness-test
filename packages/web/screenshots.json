@@ -2164,6 +2164,12 @@
         "click": "#continue"
       },
       {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
         "click": "#continue"
       },
       {
