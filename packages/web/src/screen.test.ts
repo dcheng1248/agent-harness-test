@@ -19,6 +19,7 @@ import {
   levyAmount,
   canLevy,
   drillTurnsLeft,
+  formLegion,
 } from '@emperor/core';
 import {
   acceptRecommendation,
@@ -390,6 +391,14 @@ describe('官員任命', () => {
     expect(selectPost(onPlay, 'chancellor')).toBe(onPlay);
     expect(sortIdle(onPlay, 'loyalty')).toBe(onPlay);
     expect(appoint(onPlay, 'official-1')).toBe(onPlay);
+  });
+
+  it('UC-WEB-008 idleOfficials leaves out a 將軍', () => {
+    const { state } = appointScreen();
+    const general = idleOfficials(state)[0]!;
+    const formed = formLegion(state, gameText.regions, general.id, BALANCE.army.step, '征西');
+    if (!formed.ok) throw new Error('rejected');
+    expect(idleOfficials(formed.state).map((o) => o.id)).not.toContain(general.id);
   });
 
   it('UC-WEB-008 idleOfficials order', () => {

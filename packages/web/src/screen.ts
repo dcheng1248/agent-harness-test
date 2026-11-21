@@ -54,6 +54,7 @@ import {
   type PostId,
   type RegionData,
   type StatChange,
+  isIdleOfficial,
 } from '@emperor/core';
 
 export type Screen =
@@ -104,6 +105,8 @@ export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = [
   'conscript-soldiers',
   'release-soldiers',
   'drill-troops',
+  'form-legion',
+  'deploy-legions',
   'build',
   'adjust-taxes',
   'extra-levy',
@@ -387,7 +390,7 @@ export function confirmExamPicks(screen: Screen): Screen {
 
 /** The 賦閑 officials, in `officials` order or sorted by `sort`, highest first. */
 export function idleOfficials(state: GameState, sort?: OfficialStatId): Official[] {
-  const idle = state.officials.filter((o) => o.post === null);
+  const idle = state.officials.filter((o) => isIdleOfficial(state, o.id));
   if (sort === undefined) return idle;
   return idle.sort((a, b) => b.stats[sort] - a.stats[sort]);
 }

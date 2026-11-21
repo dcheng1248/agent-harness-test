@@ -26,6 +26,9 @@ import {
   getHalfSeason,
   getReignYear,
   canHoldExam,
+  canFormLegion,
+  capitalRegion,
+  stationedLegion,
   canHoldSacrifice,
   canLevy,
   expectedTax,
@@ -55,6 +58,7 @@ import {
   type PostInfo,
 } from '@emperor/core';
 import { PALACE_ANCHORS } from './palaceMap';
+import { renderWorldMap } from './worldMap';
 import { ATLAS_PALACE, COURT_PALACE, countStep, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 
 type Of<K extends Screen['screen']> = Extract<Screen, { screen: K }>;
@@ -119,6 +123,13 @@ function examTag(state: GameState, text: UiText): string {
   return `${text.nextExamPrefix}${formatChineseNumber(nextExamYear(state) - getReignYear(state))}${text.nextExamSuffix}`;
 }
 
+function legionTag(state: GameState, text: UiText, game: GameText): string {
+  const capital = capitalRegion(game.regions);
+  if (capital !== null && stationedLegion(state, capital) !== undefined) return text.capitalOccupied;
+  if (state.army.soldiers < BALANCE.army.step) return text.noSoldiers;
+  return text.noIdleGeneral;
+}
+
 function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game: GameText, images: ScreenImages): string {
   const palace = game.palaces[COURT_PALACE];
   const open = screen.department;
@@ -137,6 +148,8 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${screen.state.army.conscriptedTurn === screen.state.turn ? text.recruitUsed : text.noRecruits}</span></button>`
           : option === 'release-soldiers' && screen.state.army.soldiers <= 0
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.noSoldiers}</span></button>`
+          : option === 'form-legion' && !canFormLegion(screen.state, game.regions)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${legionTag(screen.state, text, game)}</span></button>`
           : option === 'recommend-officials' && !canRecommend(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.recommendUsed}</span></button>`
           : option === 'hold-exams' && !canHoldExam(screen.state)
@@ -172,7 +185,7 @@ export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: G
             return `<li data-region="${escapeHtml(r.region)}">${escapeHtml(name)}：${formatChanges(r.changes)}</li>`;
           })
           .join('');
-  const wages = screen.economy.wages + screen.economy.soldierWages > 0 ? `<p id="summary-wages">${formatWages(screen.economy.wages, screen.economy.soldierWages)}</p>` : '';
+  const wages = screen.economy.wages + screen.economy.soldierWages + screen.economy.legionWages > 0 ? `<p id="summary-wages">${formatWages(screen.economy.wages, screen.economy.soldierWages, screen.economy.legionWages)}</p>` : '';
   const training = screen.training === null ? '' : `<p id="summary-training">${formatTrainingChange(screen.training)}</p>`;
   const completedNames = screen.state.works.buildings
     .filter((b) => screen.completed.includes(b.id))
@@ -184,38 +197,15 @@ export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: G
 
 export function renderAtlasScreen(screen: Of<'atlas'>, text: UiText, game: GameText): string {
   const nationOf = (id: string) => game.nations.find((n) => n.id === id);
-  const drawn = screen.state.regions.flatMap((r) => {
-    const entry = game.regions.find((g) => g.id === r.id);
-    return entry ? [{ state: r, entry }] : [];
-  });
-  const cols = Math.max(0, ...drawn.map((d) => d.entry.cell.x + 1));
-  const rows = Math.max(0, ...drawn.map((d) => d.entry.cell.y + 1));
-  const cells: string[] = [];
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const place = `grid-column:${x + 1};grid-row:${y + 1}`;
-      const found = drawn.find((d) => d.entry.cell.x === x && d.entry.cell.y === y);
-      if (!found) {
-        cells.push(`<div class="map-cell map-empty" aria-hidden="true" style="${place}"></div>`);
-        continue;
-      }
-      const selected = found.state.id === screen.region;
-      const color = nationOf(found.state.owner)?.color;
-      const background = color === undefined ? '' : `;background:${escapeHtml(color)}`;
-      const mark = found.entry.capital ? `<span class="capital-mark">${text.capitalMark}</span>` : '';
-      cells.push(
-        `<button type="button" class="map-cell${selected ? ' selected' : ''}" data-region="${escapeHtml(found.state.id)}" aria-pressed="${selected}" style="${place}${background}">${escapeHtml(found.entry.name)}${mark}</button>`,
-      );
-    }
-  }
-  const chosen = drawn.find((d) => d.state.id === screen.region);
-  const panel = chosen
-    ? `<section id="region-panel"><h3 id="region-panel-name">${escapeHtml(chosen.entry.name)}</h3><dl><dt>${text.ownerLabel}</dt><dd id="region-owner">${escapeHtml(nationOf(chosen.state.owner)?.name ?? chosen.state.owner)}</dd><dt>${game.statLabels.morale}</dt><dd id="region-morale">${chosen.state.stats.morale}</dd><dt>${game.statLabels.population}</dt><dd id="region-population">${formatAmount(chosen.state.stats.population)}</dd><dt>${game.statLabels.prosperity}</dt><dd id="region-prosperity">${chosen.state.stats.prosperity}</dd></dl><button type="button" id="close-region-panel">${text.closeRegionPanel}</button></section>`
-    : `<p id="atlas-hint">${text.atlasHint}</p>`;
-  const legend = game.nations
-    .map((n) => `<li data-nation="${escapeHtml(n.id)}"><span class="legend-swatch" style="background:${escapeHtml(n.color)}"></span>${escapeHtml(n.name)}</li>`)
-    .join('');
-  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2><div id="atlas-map" role="group" aria-label="${text.atlasMapLabel}" style="--cols:${cols}">${cells.join('')}</div>${panel}<section id="map-legend"><h3>${text.legendHeading}</h3><ul>${legend}</ul></section><button type="button" id="close-atlas">${text.closeAtlas}</button></main>`;
+  const chosen = screen.state.regions
+    .map((r) => ({ state: r, entry: game.regions.find((g) => g.id === r.id) }))
+    .find((d) => d.state.id === screen.region && d.entry);
+  const panel =
+    chosen && chosen.entry
+      ? `<section id="region-panel"><h3 id="region-panel-name">${escapeHtml(chosen.entry.name)}</h3><dl><dt>${text.ownerLabel}</dt><dd id="region-owner">${escapeHtml(nationOf(chosen.state.owner)?.name ?? chosen.state.owner)}</dd><dt>${game.statLabels.morale}</dt><dd id="region-morale">${chosen.state.stats.morale}</dd><dt>${game.statLabels.population}</dt><dd id="region-population">${formatAmount(chosen.state.stats.population)}</dd><dt>${game.statLabels.prosperity}</dt><dd id="region-prosperity">${chosen.state.stats.prosperity}</dd></dl><button type="button" id="close-region-panel">${text.closeRegionPanel}</button></section>`
+      : `<p id="atlas-hint">${text.atlasHint}</p>`;
+  const map = renderWorldMap(screen.state, text, game, screen.region === undefined ? { kind: 'atlas' } : { kind: 'atlas', region: screen.region });
+  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2>${map}${panel}<button type="button" id="close-atlas">${text.closeAtlas}</button></main>`;
 }
 
 const POST_GROUPS = [

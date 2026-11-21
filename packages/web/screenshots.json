@@ -2008,7 +2008,7 @@
   },
   {
     "name": "palace-xuanzheng-war",
-    "description": "宣政殿畫面：展開兵部，徵召士兵、解甲歸田與操練軍隊",
+    "description": "宣政殿畫面：展開兵部，徵召士兵、解甲歸田、操練軍隊、組建軍團與調兵遣將",
     "steps": [
       {
         "click": "#start"

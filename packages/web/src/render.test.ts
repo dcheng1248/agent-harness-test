@@ -6,6 +6,7 @@ import {
   maxRecruit,
   maxConscript,
   conscriptSoldiers,
+  formLegion,
   startDrill,
   recruitArtisans,
   releaseArtisans,
@@ -177,7 +178,7 @@ describe('game screens', () => {
   });
 
   it('UC-WEB-004 screens without an image keep the header above the content', () => {
-    const economy = { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, regionChanges: [] };
+    const economy = { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] };
     const result = renderScreen({ screen: 'result', state, actionId: 'study', changes: [] }, uiText, gameText, images);
     const summary = renderScreen(
       { screen: 'summary', state, actionId: 'study', changes: [], endedHalfSeason: 'spring-early', totals: [], economy, completed: [], training: null },
@@ -224,7 +225,7 @@ describe('game screens', () => {
         changes: [{ stat: 'learning', amount: 3 }],
         endedHalfSeason: 'spring-early',
         totals: [{ stat: 'learning', amount: 9 }, { stat: 'health', amount: -2 }],
-        economy: { taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, regionChanges: [] },
+        economy: { taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] },
         completed: [],
       },
       uiText,
@@ -276,7 +277,7 @@ describe('game screens', () => {
         economy: {
           taxIncome: 547437,
           upkeep: 120000,
-          wages: 0, soldierWages: 0,
+          wages: 0, soldierWages: 0, legionWages: 0,
           regionChanges: [{ region: 'guanzhong', changes: [{ stat: 'morale', amount: -3 }] }],
         },
       },
@@ -286,7 +287,7 @@ describe('game screens', () => {
     expect(html).toMatch(/id="summary-treasury">稅入 \+547,437 兩，宮廷用度 −120,000 兩</);
     expect(html).toMatch(/<li data-region="guanzhong">關中：民心 −3<\/li>/);
     const empty = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, regionChanges: [] } },
+      { ...base, economy: { taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] } },
       uiText,
       gameText,
     );
@@ -708,6 +709,31 @@ describe('兵部', () => {
     expect(buttonOf(html, 'court-option-drill-troops')).not.toContain('disabled');
   });
 
+  it('UC-WEB-007 兵部 lists five options and tags an unavailable 組建軍團', () => {
+    const html = war(court);
+    let last = -1;
+    for (const id of ['conscript-soldiers', 'release-soldiers', 'drill-troops', 'form-legion', 'deploy-legions']) {
+      const at = html.indexOf(`id="court-option-${id}"`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+    }
+    expect(buttonOf(html, 'court-option-form-legion')).not.toContain('disabled');
+    const idle = court.officials.find((o) => o.post === null);
+    if (!idle) throw new Error('no idle official');
+    const formed = formLegion(court, gameText.regions, idle.id, step, '征西');
+    if (!formed.ok) throw new Error('rejected');
+    const occupied = war(formed.state);
+    expect(buttonOf(occupied, 'court-option-form-legion')).toContain('disabled');
+    expect(buttonOf(occupied, 'court-option-form-legion')).toContain('京師已有軍團駐紮');
+    const dry = war({ ...court, army: { ...court.army, soldiers: 0 } });
+    expect(buttonOf(dry, 'court-option-form-legion')).toContain('無兵可遣');
+    const busy = war({ ...court, officials: court.officials.map((o) => ({ ...o, post: o.post ?? 'chancellor' })) });
+    expect(buttonOf(busy, 'court-option-form-legion')).toContain('無賦閑官員');
+    for (const h of [html, occupied, dry, busy]) {
+      expect(buttonOf(h, 'court-option-deploy-legions')).not.toContain('disabled');
+    }
+  });
+
   it('UC-WEB-007 兵部 tags a used 徵召士兵, no recruits and no soldiers', () => {
     const used = conscriptSoldiers(court, step);
     if (!used.ok) throw new Error('rejected');
@@ -921,20 +947,40 @@ describe('工部', () => {
       training: null,
     };
     const none = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, regionChanges: [] }, completed: [] },
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] }, completed: [] },
       uiText,
       gameText,
     );
     expect(none).not.toContain('summary-wages');
     expect(none).not.toContain('summary-completed');
     const html = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, regionChanges: [] }, completed: ['observatory', 'tiantan'] },
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, legionWages: 0, regionChanges: [] }, completed: ['observatory', 'tiantan'] },
       uiText,
       gameText,
     );
     expect(html).toContain(`id="summary-wages">${formatWages(155000, 0)}<`);
     expect(html.indexOf('id="summary-wages"')).toBeGreaterThan(html.indexOf('id="summary-treasury"'));
     expect(html).toContain('id="summary-completed">落成：天壇、觀星臺<');
+  });
+
+  it('UC-WEB-004 the wages line shows 軍團兵餉', () => {
+    const html = renderSummaryScreen(
+      {
+        screen: 'summary',
+        state: { ...state, turn: 1 },
+        actionId: 'study',
+        changes: [],
+        endedHalfSeason: 'spring-early',
+        totals: [],
+        completed: [],
+        training: null,
+        economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, legionWages: 10000, regionChanges: [] },
+      },
+      uiText,
+      gameText,
+    );
+    expect(html).toContain(`id="summary-wages">${formatWages(0, 0, 10000)}<`);
+    expect(html).toContain('軍團兵餉');
   });
 
   it('UC-WEB-004 the wages line shows 工匠 wages and 兵餉', () => {
@@ -949,13 +995,13 @@ describe('工部', () => {
       training: null,
     };
     const both = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 10000, regionChanges: [] } },
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 10000, legionWages: 0, regionChanges: [] } },
       uiText,
       gameText,
     );
     expect(both).toContain(`id="summary-wages">${formatWages(155000, 10000)}<`);
     const zero = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, regionChanges: [] } },
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] } },
       uiText,
       gameText,
     );
@@ -971,7 +1017,7 @@ describe('工部', () => {
       endedHalfSeason: 'spring-early' as const,
       totals: [],
       completed: ['observatory'],
-      economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, regionChanges: [] },
+      economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, legionWages: 0, regionChanges: [] },
     };
     const html = renderSummaryScreen({ ...base, training: 2 }, uiText, gameText);
     expect(html).toContain('id="summary-training">訓練 +2<');
