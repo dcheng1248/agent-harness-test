@@ -12,8 +12,8 @@ graph LR
 ```mermaid
 flowchart LR
   Player -->|choice| web
-  web -->|action, region data, name pool and building data at game start, 名臣 data and name pool on 舉薦 and 開科取士| core
-  content -->|text, events, region data, nations, name pool, 名臣 data and building data| web
+  web -->|action, region data, name pool and building data at game start, 名臣 data and name pool on 舉薦 and 開科取士, region data and 軍團 name pool on 組建軍團 and 調兵遣將| core
+  content -->|text, events, region data, nations, name pool, 名臣 data, building data and 軍團 name pool| web
   core -->|new state| web
 ```
 

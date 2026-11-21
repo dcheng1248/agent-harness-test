@@ -1,0 +1,35 @@
+## Summary
+兵部 gets two new court options. 組建軍團 moves pool soldiers into a named 軍團 led by a 賦閑 official, stationed in 關中. 調兵遣將 shows 軍團 on the world map, where they move one region per half-season or are recalled to march home and disband. 軍團 soldiers cost double wages.
+
+## Features
+- **組建軍團:** pick a 賦閑 將軍, a size in steps of 10,000 and a two-character name (one of three suggestions, or typed). The 軍團 starts in 關中 with the pool's training.
+- **Limits:** 組建軍團 is disabled with a reason tag while a stationed 軍團 holds 關中, the pool is empty, or no one is 賦閑.
+- **將軍:** an official leading a 軍團 is not 賦閑 until it disbands.
+- **調兵遣將:** click a marker to see a 軍團. Move it once per half-season to a neighbouring player region with no stationed 軍團, or 招回 it.
+- **招回:** it marches one region per half-season by the shortest path to 關中, then disbands into the pool, with training averaged by soldiers.
+- **Wages and 輿圖:** the turn summary shows a separate 軍團兵餉 part. 輿圖 shows the markers read-only.
+
+## Risk
+`medium`. Core paths change across three modules, all additively (`GameState.army`, `RegionData`, `EconomyReport`, new exports). There are no saves.
+
+## Decisions to review
+- **Finding 關中:** an optional `capital` flag on core's `RegionData`, not a hard-coded ID.
+- **招回 route:** computed once when ordered and stored on the 軍團, so `takeAction` keeps its signature. #62 must revisit this.
+- **Free population:** 軍團 soldiers still count against it, so forming a 軍團 can't open room for unlimited conscription.
+- **Turn-end order:** wages first, so a 軍團 that disbands that turn still pays. The march comes after drill.
+- **Name suggestions:** seeded from `rngState` + `legionsFormed`, without advancing `rngState`.
+- **Timing:** a new 軍團 can move at once, and 招回 works in the half-season it moved.
+- **Balance:** maximum 軍團 size 100,000, wage multiplier 2 (1 tael per soldier per half-season).
+
+<details><summary>Minor decisions</summary>
+
+- Merged training rounds down. Names are trimmed and must be two Han characters, like 年號. 軍 is shown after the input.
+- The empty-pool tag reuses 「無兵可遣」. The no-idle tag is 「無賦閑官員」.
+- 軍團 IDs are `legion-1`, `legion-2` and so on, never reused.
+- After forming, the game returns to 宣政殿 with 兵部 open.
+- A returning 軍團's panel shows the half-seasons left. In 關中, the panel warns that 招回 disbands at once.
+- The 將軍 list shows the four official stats.
+- The name pool (20 names) is in `tasks.md` Task 3, and all new wording in Tasks 3–6.
+
+</details>
+
