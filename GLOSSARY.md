@@ -4,7 +4,7 @@ Domain terms used in code, docs and issues. Player-facing text is Traditional Ch
 
 | Term | Meaning |
 |---|---|
-| 早朝 (morning court) | The emperor's visit to 宣政殿. Open only at 朝, the first action point of a half-season, and spends that action point. At most one per half-season. |
+| 早朝 (morning court) | The emperor's visit to 宣政殿. Open only at 朝, the first action point of a half-season, and spends that action point; holding 祭祀 there spends 午 too. At most one per half-season. |
 | 官員 (official, `Official`) | A person in the emperor's service, with a name and four stats: 文治, 武功, 野心, 忠誠. Holds one 官位 or is 賦閑. |
 | 官位 (post, `PostId`) | A position an official can hold: 中樞 (丞相, 大將軍, 太傅), 六部 (each 部's 尚書 and 侍郎), and 地方 (each player-owned region's 知州 and 總兵). Held by at most one official. |
 | 賦閑 (idle) | An official who holds no 官位. Only 賦閑 officials can be appointed. |
@@ -16,3 +16,4 @@ Domain terms used in code, docs and issues. Player-facing text is Traditional Ch
 | 稅率 (tax level, `revenue.taxLevel`) | 戶部's 調整賦稅: one national tax rate in five levels, 極輕, 輕, 平, 重, 極重. At each collection it scales every region's tax, and at the end of every half-season it changes every region's 民心: lighter levels collect less and raise 民心, heavier levels collect more and lower it. A new game starts at 平. |
 | 額外徵稅 (extra levy, `levy`) | 戶部's one-off levy, once per 早朝: about half of one collection at the current tax rate goes into 國庫 at once, and every player region loses a large amount of 民心. |
 | 營建 (construction, `assignArtisans`) | 工部's 營建工程: assigning 工匠 to a national building. Each half-season a building's progress grows by the 工匠 assigned to it, and it is 已落成 (completed) once progress reaches its required manpower. Its statuses are 未動工, 營建中 and 已落成. |
+| 祭祀 (state sacrifice, `holdSacrifice`) | 禮部's rite, at most once per reign year, at any 早朝. It costs 國庫 and also spends 午, so leaving 早朝 puts the emperor at 夕. It is recorded for the rest of that reign year (`rites.sacrificeTurn`), for a later disaster system to read. |
