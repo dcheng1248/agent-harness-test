@@ -18,7 +18,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-012 | 半季回合：在宮殿以行動點執行行動 | implemented |
 | UC-CORE-013 | 年老衰弱與駕崩 | implemented |
 | UC-CORE-014 | 地域：由資料載入本朝與外國地域，各有民心、人口、富庶、歸屬與輿圖格位，相鄰由格位推得 | implemented |
-| UC-CORE-015 | 國庫：春上與秋上依稅率收稅、每半季依稅率調整民心並支付宮廷用度與工匠工錢、國庫虧空時各地民心下降 | implemented |
+| UC-CORE-015 | 國庫：春上與秋上依稅率收稅、每半季依稅率調整民心並支付宮廷用度、工匠工錢與兵餉、國庫虧空時各地民心下降 | implemented |
 | UC-CORE-016 | 每年人口隨民心與富庶增減 | implemented |
 | UC-CORE-017 | 舉薦人選：每次早朝一次，舉薦一名候選人（一般官員或名臣），錄用或婉拒 | implemented |
 | UC-CORE-018 | 開科取士：每三年一科，於該年一次早朝自一批應試者中擇人錄取 | implemented |
@@ -27,6 +27,8 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-021 | 調整賦稅：全國稅率分極輕、輕、平、重、極重五等，收稅時影響稅入，每半季影響各地民心；早朝時可隨時調整 | implemented |
 | UC-CORE-022 | 額外徵稅：每次早朝一次，向各地加徵約半次稅收，各地民心大降 | implemented |
 | UC-CORE-023 | 祭祀：每個在位年一次，於早朝舉行，耗國庫並耗用午時，記錄本年已祭 | implemented |
+| UC-CORE-024 | 士兵：全國一支兵員，早朝時徵召（每次早朝一次，新兵稀釋訓練）與解甲歸田，每半季由國庫支付兵餉 | planned |
+| UC-CORE-025 | 操練軍隊：早朝時預付國庫，為期一年，每半季訓練上升，至頂即止，期間不可取消或延長 | planned |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.
@@ -38,7 +40,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 ## UC-CORE-014 Regions
 `createInitialState` sets `nation.treasury` to `BALANCE.startingTreasury` and copies the regions as described in `ARCHITECTURE.md` under "Region data". It draws no random numbers for them, so adding foreign regions does not change the officials or stats a seed produces.
 
-**Foreign regions.** A region whose owner is not `PLAYER_OWNER` belongs to a foreign nation. Foreign nations are passive: their regions' 民心, 人口 and 富庶 never change, they pay no tax, 額外徵稅 and 工匠 limits ignore them, and they have no 知州 or 總兵 posts (UC-CORE-004, UC-CORE-015, UC-CORE-016, UC-CORE-019, UC-CORE-022).
+**Foreign regions.** A region whose owner is not `PLAYER_OWNER` belongs to a foreign nation. Foreign nations are passive: their regions' 民心, 人口 and 富庶 never change, they pay no tax, 額外徵稅 and the 工匠 and soldier limits ignore them, and they have no 知州 or 總兵 posts (UC-CORE-004, UC-CORE-015, UC-CORE-016, UC-CORE-019, UC-CORE-022, UC-CORE-024).
 
 **Neighbours.** Each region sits on one cell `{ x, y }` of the world grid. `regionNeighbours(regions, id)` returns the IDs of the regions whose cell shares an edge with the cell of region `id`: one step along x or along y, never diagonal. So a region has at most four neighbours, and an empty cell next to it adds none. Owners do not matter: a player region and a foreign one can be neighbours. The result follows the order of `regions`. An unknown `id` gives `[]`. It draws no random numbers and changes nothing.
 
@@ -47,7 +49,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - `canEnterPalace(state, palaceId)` is true when the emperor is alive, on the map, the palace is in the catalog, and the palace is open now. Every palace is open at every action point except 宣政殿 (UC-CORE-003).
 - `takeAction(state, actionId, catalog = CATALOG)` is rejected, with the state unchanged, if the emperor is dead (`'dead'`), is on the map (`'not-in-palace'`), the palace does not offer the action (`'not-offered'`), or the action is not allowed in the current action point (`'not-allowed-now'`).
 - Otherwise it applies the action's effects from `BALANCE.actions`, with a seeded variance of up to `BALANCE.actionVariance` on the first effect. It clamps each stat to its range and reports the applied changes, leaving out zero changes. It adds them to `turnDeltas`, returns to the map, and uses the action point.
-- After the last action point of the turn, the turn ends: aging applies; if the emperor survives, the economy is settled (below), then building progress is added (UC-CORE-020); the emperor's turn totals (`turnDeltas` plus aging, in registry order, leaving out zeros) are reported; `turn` goes up by 1, `actionPoint` goes back to the first, and `turnDeltas` resets.
+- After the last action point of the turn, the turn ends: aging applies; if the emperor survives, the economy is settled (below), then building progress is added (UC-CORE-020), then drill training is added (UC-CORE-025); the emperor's turn totals (`turnDeltas` plus aging, in registry order, leaving out zeros) are reported; `turn` goes up by 1, `actionPoint` goes back to the first, and `turnDeltas` resets.
 
 ## UC-CORE-003 早朝
 - 宣政殿 is open only at 朝 (`COURT_ACTION_POINT`, the first action point of each half-season). At any other action point `canEnterPalace` is false and `enterPalace` returns the state unchanged.
@@ -104,7 +106,7 @@ The candidate has a name, four stats, and `notable` (the 名臣 ID, or `null`).
 ## UC-CORE-019 工匠
 **Count.** The nation has a total of 工匠 (`GameState.works.artisans`). A new game starts with 0. Each 工匠 is either idle or assigned to one building (UC-CORE-020). Idle 工匠 (`idleArtisans(state)`) are the total minus everything assigned. 工匠 do not change region 人口, 民心 or taxes for now.
 
-**Free population.** `freePopulation(state)` is the total 人口 of the player-owned regions minus the total 工匠, never below 0. (士兵 will also be taken off once 兵部 exists.)
+**Free population.** `freePopulation(state)` is the total 人口 of the player-owned regions minus the total 工匠 and minus the soldiers (UC-CORE-024), never below 0. So 工匠 and soldiers draw on the same pool: recruiting either lowers the maximum of the other.
 
 **Steps.** Every 工匠 count the player chooses is a whole multiple of `BALANCE.works.step`, so totals and assignments always stay multiples of the step.
 
@@ -156,12 +158,32 @@ The checks run in that order.
 
 **Holding.** `holdSacrifice(state)` takes `BALANCE.rites.sacrificeCost` from 國庫 and stamps `rites.sacrificeTurn` with the current turn. 國庫 may go below 0; the bankruptcy rule then applies at the end of the half-season as usual (UC-CORE-015, step 5). It changes nothing else: no 民心, no emperor stat, and officials, including 禮部尚書, have no effect. It draws no random numbers. It does not move the clock at once: the player stays in 早朝, the clock stays on 朝, and the other court options stay usable. 午 is spent when the player leaves (UC-CORE-003). It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when 祭祀 was already held this reign year (`'already-held'`). The checks run in that order.
 
+## UC-CORE-024 士兵
+**Count.** The nation has one soldier count, `GameState.army.soldiers`, not split by region. A new game starts with `BALANCE.army.startingSoldiers` soldiers and training `BALANCE.army.startingTraining` (UC-CORE-025). Soldiers are taken off the free population (UC-CORE-019), the way 工匠 are; region 人口, 民心 and taxes do not change. Soldiers and training affect nothing else yet, and officials, including 兵部尚書, 總兵 and 大將軍, have no effect on them.
+
+**Steps.** Every soldier count the player chooses is a whole multiple of `BALANCE.army.step`, so the total always stays a multiple of the step.
+
+**Conscripting (徵召士兵).** `maxConscript(state)` is `freePopulation` × `BALANCE.army.conscriptPercent` percent, rounded to the nearest multiple of the step (halves round up). `canConscript(state)` is true during 早朝 when 徵召士兵 has not been used this half-season (`army.conscriptedTurn` is not `turn`) and `maxConscript` is above 0. `conscriptSoldiers(state, count)` adds `count` soldiers and stamps the turn, so it can be used once per 早朝. The recruits dilute training: the new training is the soldier-weighted average of the old training and 0 for the recruits, old training × old soldiers ÷ (old soldiers + `count`), rounded down. With no soldiers before, training becomes 0. It uses no action point and draws no random numbers. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), when already used this half-season (`'already-used'`), or when `count` is not a step multiple from one step up to `maxConscript` (`'invalid-count'`, which also covers `maxConscript` being 0). The checks run in that order. Conscripting while a drill is running is allowed, and the dilution applies at once (UC-CORE-025).
+
+**Releasing (解甲歸田).** `releaseSoldiers(state, count)` removes `count` soldiers, who go back to the free population. It is free, and may be used any number of times during one 早朝. Training does not change. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when `count` is not a step multiple from one step up to the soldier count (`'invalid-count'`). Releasing every soldier is `count` = `army.soldiers`, and training is then kept for the next recruits to be averaged with.
+
+**Wages.** Paid at the end of each half-season the emperor survives, together with upkeep and 工匠 wages (UC-CORE-015). There is no army-specific rule when 國庫 cannot pay: the bankruptcy rule applies as usual.
+
+## UC-CORE-025 操練軍隊
+**Training.** `army.training` is a whole number from 0 to `BALANCE.army.maxTraining`. It changes only through drill (below) and conscript dilution (UC-CORE-024). It never decays.
+
+**Running.** `drillTurnsLeft(state)` is the number of half-seasons of drill left: `army.drillStartTurn` + `BALANCE.army.drillTurns` − `turn` when that is above 0, and 0 otherwise, including before the first drill. A drill is running while it is above 0. It is `BALANCE.army.drillTurns` in the half-season the drill started.
+
+**Starting.** `canDrill(state)` is true during 早朝 when no drill is running. `startDrill(state)` takes `BALANCE.army.drillCost` from 國庫 once and stamps `army.drillStartTurn` with the current turn. 國庫 may go below 0; the bankruptcy rule then applies at the end of the half-season as usual (UC-CORE-015, step 5). It is allowed with no soldiers. It uses no action point and draws no random numbers. A running drill cannot be cancelled or extended. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when a drill is running (`'already-drilling'`). The checks run in that order. Once the drill ends, a new one can start at any later 早朝, including the next one.
+
+**Progress.** At the end of each half-season the emperor survives while a drill is running (so in `BALANCE.army.drillTurns` turn ends, starting with the end of the half-season it started in), after building progress, training rises by `BALANCE.army.drillGain`, never above `BALANCE.army.maxTraining`. `TurnEnd.training` reports the training gained (0 when already at the cap), or `null` when no drill was running. When the emperor dies, training does not change and `training` is `null`. When the drill ends, training stays where it is.
+
 ## UC-CORE-013 Aging and death
 From `BALANCE.aging.startAge`, the emperor loses 健康 at the end of each turn. The loss starts at `BALANCE.aging.baseLoss` and grows by 1 every `BALANCE.aging.yearsPerStep` years of age. The emperor dies when 健康 reaches 0, checked after each action and again after aging at the end of the turn. On death `dead` becomes `true`, the turn does not advance, and the economy is not settled.
 
 ## UC-CORE-015 and UC-CORE-016 Economy
-`settleEconomy(nation, regions, nextHalfSeason, artisans, taxLevel)` runs at the end of every turn the emperor survives. `nextHalfSeason` is the half-season the game moves into, `artisans` is the nation's total 工匠 (UC-CORE-019; `0` when left out), and `taxLevel` is the current tax rate (UC-CORE-021; `'normal'` when left out). The turn loop passes `state.revenue.taxLevel`. In order:
-1. Upkeep and wages: 國庫 loses `BALANCE.upkeep`, and also the 工匠 wages: `artisans` × `BALANCE.works.wagePerArtisan`, rounded down. Every 工匠 is paid, idle or assigned. The report gives the wages apart from the upkeep (`wages`, a positive number, `0` without 工匠).
+`settleEconomy(nation, regions, nextHalfSeason, artisans, taxLevel, soldiers)` runs at the end of every turn the emperor survives. `nextHalfSeason` is the half-season the game moves into, `artisans` is the nation's total 工匠 (UC-CORE-019; `0` when left out), `taxLevel` is the current tax rate (UC-CORE-021; `'normal'` when left out), and `soldiers` is the nation's soldier count (UC-CORE-024; `0` when left out). The turn loop passes `state.revenue.taxLevel` and `state.army.soldiers`. In order:
+1. Upkeep and wages: 國庫 loses `BALANCE.upkeep`, the 工匠 wages, `artisans` × `BALANCE.works.wagePerArtisan` rounded down, and the soldier wages, `soldiers` × `BALANCE.army.wagePerSoldier` rounded down. Every 工匠 is paid, idle or assigned, and every soldier is paid. The report gives each apart from the upkeep (`wages` for 工匠 and `soldierWages` for soldiers, positive numbers, each `0` when there are none).
 2. Population (UC-CORE-016), only when `nextHalfSeason` is 春上, so once a year: each player-owned region's 人口 grows by `BALANCE.population.ratePercent` percent (rounded down) when 民心 + 富庶 is at least `growAtOrAbove`, shrinks by the same amount when it is at most `shrinkAtOrBelow`, and otherwise stays. 人口 never goes below 0.
 3. Taxes (UC-CORE-015), only when `nextHalfSeason` is in `BALANCE.tax.collectOn`: 國庫 gains each player-owned region's `regionTax(stats, taxLevel)`, `floor(人口 × 富庶 × 民心 × multiplier / BALANCE.tax.halfYearDivisor)` with the level's multiplier from `BALANCE.tax.levels`, computed from its 人口 after step 2. Taxes arrive as the game enters a collection half-season, so they are reported in the summary of the half-season before it. No tax is collected at game start.
 4. Tax level (UC-CORE-021), at every turn end, collection or not: every player-owned region's 民心 changes by `taxLevel`'s 民心 change from `BALANCE.tax.levels`, kept within its `STAT_REGISTRY` bounds. At a collection the tax in step 3 is computed from 民心 before this change.
@@ -181,12 +203,13 @@ stateDiagram-v2
   Court --> Court: recruitArtisans once, releaseArtisans, assignArtisans
   Court --> Court: setTaxLevel, levy once
   Court --> Court: holdSacrifice once per reign year
+  Court --> Court: conscriptSoldiers once, releaseSoldiers, startDrill when no drill is running
   Court --> Map: returnToMap, clock moves to 午, or to 夕 after holdSacrifice
   Palace --> Map: takeAction, not the last action point
   Palace --> TurnEnd: takeAction, last action point
   TurnEnd --> Economy: aging, emperor alive
   Economy --> Works: upkeep and wages, population, taxes, tax level 民心, bankruptcy
-  Works --> Map: building progress and completions, next turn
+  Works --> Map: building progress and completions, drill training, next turn
   Palace --> Dead: 健康 reaches 0
   TurnEnd --> Dead: 健康 reaches 0 after aging
   Dead --> [*]

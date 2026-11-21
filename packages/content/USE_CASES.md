@@ -55,7 +55,8 @@ Format functions in `src/format.ts` turn numbers and changes into player-facing 
 - `formatAmount(n)` uses Arabic digits with `,` every three digits, and `−` (U+2212) for negatives.
 - `formatChanges(changes)` lists stat changes with their labels and signs, in the given order, such as 「學識 +3，健康 −1」. An empty list gives the `noChange` text.
 - `formatTaels(n)` is `formatAmount(n)` followed by the tael unit.
-- `formatEconomy(report)` gives the tax income and the upkeep. The tax part appears only when `taxIncome` is above 0. It leaves out the 工匠 wages, which have their own line.
-- `formatWages(wages)` gives the 工匠 wages line: its label and the amount in taels, shown as a loss.
+- `formatEconomy(report)` gives the tax income and the upkeep. The tax part appears only when `taxIncome` is above 0. It leaves out the 工匠 and soldier wages, which have their own line.
+- `formatWages(artisanWages, soldierWages)` gives the wages line: the 工匠 wages part (its label and the amount in taels, shown as a loss), then the soldier wages part (its own label, the same way), joined like the other lists. Each part appears only when it is above 0.
+- `formatTrainingChange(amount)` gives the training line of the turn summary: the training label and the change with its sign, such as 「訓練 +2」. 0 is written with `+`.
 - `formatArtisans(n)` is `formatAmount(n)` followed by the unit for persons.
 - `formatReign(years)`, such as 「在位十二年」. `formatLifespan(age)`, such as 「享年五十八歲」.
