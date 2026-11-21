@@ -67,6 +67,14 @@ export const uiText: UiText = {
   declineCandidate: '婉拒',
   recommendUsed: '已舉薦',
   noCandidate: '此次早朝已無候選人',
+  examHeading: '開科取士',
+  examPickColumn: '錄取',
+  examPicked: '已選',
+  confirmExamButton: '確定錄取',
+  examHeld: '已開科',
+  nextExamPrefix: '下次開科：',
+  nextExamSuffix: '年後',
+  noExamCandidates: '此科已無應試者',
 };
 
 export const gameText: GameText = {

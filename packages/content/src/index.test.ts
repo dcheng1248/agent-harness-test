@@ -90,4 +90,17 @@ describe('content', () => {
       noIdleOfficials: '並無賦閑官員', appointButton: '任命', backToPosts: '返回官位列表', backToCourt: '返回宣政殿',
     });
   });
+
+  it('UC-WEB-010 開科取士 text', () => {
+    expect(uiText).toMatchObject({
+      examHeading: '開科取士',
+      examPickColumn: '錄取',
+      examPicked: '已選',
+      confirmExamButton: '確定錄取',
+      examHeld: '已開科',
+      nextExamPrefix: '下次開科：',
+      nextExamSuffix: '年後',
+      noExamCandidates: '此科已無應試者',
+    });
+  });
 });
