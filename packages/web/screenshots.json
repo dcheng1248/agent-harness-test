@@ -2182,5 +2182,122 @@
         "waitFor": "#summary-training"
       }
     ]
+  },
+  {
+    "name": "form-legion",
+    "description": "組建軍團：全國兵員、訓練、此軍至多、賦閑官員、人數選擇、建議軍名與自擬軍名",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "waitFor": "#legion-screen"
+      }
+    ]
+  },
+  {
+    "name": "form-legion-ready",
+    "description": "組建軍團：已選將軍、已填建議軍名，可組建",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "waitFor": "#confirm-legion:not([disabled])"
+      }
+    ]
+  },
+  {
+    "name": "form-legion-error",
+    "description": "組建軍團：軍名錯誤提示",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "waitFor": "#legion-error"
+      }
+    ]
+  },
+  {
+    "name": "palace-xuanzheng-war-capital-occupied",
+    "description": "宣政殿兵部：京師已有軍團駐紮，組建軍團停用",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "waitFor": "#court-option-form-legion[disabled]"
+      }
+    ]
   }
 ]

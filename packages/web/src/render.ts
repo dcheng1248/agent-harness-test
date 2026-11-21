@@ -13,6 +13,7 @@ import {
   formatPostName,
   formatReign,
   formatTaels,
+  formatLegionName,
 } from '@emperor/content';
 import {
   canEnterPalace,
@@ -27,6 +28,7 @@ import {
   getReignYear,
   canHoldExam,
   canFormLegion,
+  maxLegionSoldiers,
   capitalRegion,
   stationedLegion,
   canHoldSacrifice,
@@ -326,6 +328,30 @@ export function renderConscriptScreen(screen: Of<'conscript'>, text: UiText, gam
   return `${renderHeader(state, text, game)}<main id="conscript-screen"><h2>${text.conscriptHeading}</h2><p id="soldier-total">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p><p id="free-population">${text.freePopulationLabel}：${formatArtisans(freePopulation(state))}</p><p id="conscript-max-line">${text.recruitMaxLabel}：${formatArtisans(max)}</p><p id="conscript-hint">${text.conscriptHint}</p>${renderPicker(count, max, countStep(screen), text.recruitMax, text)}<button type="button" id="confirm-conscript">${text.confirmConscript}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
 }
 
+export function renderLegionScreen(screen: Of<'legion'>, text: UiText, game: GameText): string {
+  const { state, count, general, draft, error } = screen;
+  const max = maxLegionSoldiers(state);
+  const head = `<tr><th>${text.nameColumn}</th>${OFFICIAL_STAT_IDS.map((stat) => `<th>${game.statLabels[stat]}</th>`).join('')}<th></th></tr>`;
+  const rows = idleOfficials(state)
+    .map((o, i) => {
+      const chosen = o.id === general;
+      return `<tr${chosen ? ' class="is-chosen"' : ''}><th scope="row">${escapeHtml(o.name)}</th>${statCells(o)}<td><button type="button" id="legion-general-${i}" data-general="${escapeHtml(o.id)}" aria-pressed="${chosen}">${text.chooseGeneral}</button></td></tr>`;
+    })
+    .join('');
+  const generals =
+    rows === ''
+      ? `<p id="no-idle">${text.noIdleOfficials}</p>`
+      : `<div class="table-scroll"><table id="legion-generals"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+  const suggestions = screen.suggestions
+    .map(
+      (name, i) =>
+        `<button type="button" id="legion-suggestion-${i}" data-legion-name="${escapeHtml(name)}">${escapeHtml(formatLegionName(name))}</button>`,
+    )
+    .join('');
+  const message = error === undefined ? '' : `<p id="legion-error" role="alert">${error === 'name-taken' ? text.legionNameTaken : text.legionNameError}</p>`;
+  return `${renderHeader(state, text, game)}<main id="legion-screen"><h2>${text.legionHeading}</h2><p id="legion-pool">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p><p id="legion-training">${text.trainingLabel}：${state.army.training}</p><p id="legion-max-line">${text.legionMaxLabel}：${formatArtisans(max)}</p><h3>${text.generalHeading}</h3>${generals}<h3>${text.legionSizeHeading}</h3>${renderPicker(count, max, countStep(screen), text.recruitMax, text)}<h3>${text.legionNameHeading}</h3><div id="legion-suggestions">${suggestions}</div><label for="legion-name-input">${text.legionNameInputLabel}</label><div id="legion-name-row"><input type="text" id="legion-name-input" maxlength="4" value="${escapeHtml(draft)}" autocomplete="off"><span>${text.legionSuffix}</span></div>${message}<button type="button" id="confirm-legion"${general === undefined ? ' disabled' : ''}>${text.confirmLegion}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
 export function renderDrillScreen(screen: Of<'drill'>, text: UiText, game: GameText): string {
   const { state } = screen;
   const left = drillTurnsLeft(state);
@@ -462,6 +488,8 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderConscriptScreen(screen, text, game);
     case 'discharge':
       return renderDischargeScreen(screen, text, game);
+    case 'legion':
+      return renderLegionScreen(screen, text, game);
     case 'drill':
       return renderDrillScreen(screen, text, game);
     case 'build':

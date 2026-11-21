@@ -1145,3 +1145,71 @@ describe('祭祀 screens', () => {
     expect(textOnly).not.toContain(formatTaels(BALANCE.rites.sacrificeCost));
   });
 });
+
+describe('組建軍團 screen', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const render = (screen: Screen): string => renderScreen(screen, uiText, gameText, images);
+  const base: Extract<Screen, { screen: 'legion' }> = {
+    screen: 'legion',
+    state: court,
+    count: BALANCE.army.step,
+    suggestions: gameText.legionNamePool.slice(0, 3),
+    draft: '',
+  };
+  const idle = court.officials.filter((o) => o.post === null);
+  const buttonOf = (html: string, id: string): string => {
+    const m = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`));
+    if (!m) throw new Error(`no ${id}`);
+    return m[0];
+  };
+
+  it('UC-WEB-021 shows the totals, the 將軍 table, the picker and the buttons', () => {
+    const html = render(base);
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('<main id="legion-screen">'));
+    expect(html).toContain(`<h2>${uiText.legionHeading}</h2>`);
+    expect(html).toMatch(new RegExp(`id="legion-pool">[^<]*${formatArtisans(court.army.soldiers)}<`));
+    expect(html).toMatch(new RegExp(`id="legion-training">[^<]*${court.army.training}<`));
+    expect(html).toContain('id="legion-max-line"');
+    expect(html).toContain('id="legion-generals"');
+    expect(html.match(/data-general="/g)).toHaveLength(idle.length);
+    expect(buttonOf(html, 'legion-general-0')).toContain(`data-general="${idle[0]!.id}"`);
+    expect(html).toContain(uiText.chooseGeneral);
+    for (const id of ['count-picker', 'count-down', 'count-up', 'count-max', 'confirm-legion', 'back-to-court']) {
+      expect(html).toContain(`id="${id}"`);
+    }
+    expect(buttonOf(html, 'count-max')).toBeTruthy();
+    expect(html).toContain(`>${uiText.recruitMax}`);
+  });
+
+  it('UC-WEB-021 three suggestions end in 軍 and the input has the label and 軍 suffix', () => {
+    const html = render(base);
+    base.suggestions.forEach((n, i) => {
+      expect(buttonOf(html, `legion-suggestion-${i}`)).toContain(`data-legion-name="${n}"`);
+      expect(html).toContain(`>${n}軍</button>`);
+    });
+    expect(html).toContain('<label for="legion-name-input">');
+    expect(html).toContain('id="legion-name-input" maxlength="4"');
+    expect(html).toMatch(/<input[^>]*id="legion-name-input"[^>]*>\s*<span>軍<\/span>/);
+  });
+
+  it('UC-WEB-021 confirm is disabled until a 將軍 is chosen, and the chosen row is marked', () => {
+    expect(buttonOf(render(base), 'confirm-legion')).toContain('disabled');
+    const html = render({ ...base, general: idle[0]!.id });
+    expect(buttonOf(html, 'confirm-legion')).not.toContain('disabled');
+    expect(buttonOf(html, 'legion-general-0')).toContain('aria-pressed="true"');
+    expect(buttonOf(html, 'legion-general-1')).toContain('aria-pressed="false"');
+    expect(html.match(/class="is-chosen"/g)).toHaveLength(1);
+  });
+
+  it('UC-WEB-021 escapes the draft and shows the error per reason', () => {
+    const html = render({ ...base, draft: '<b>' });
+    expect(html).toContain('value="&lt;b&gt;"');
+    expect(html).not.toContain('id="legion-error"');
+    const bad = render({ ...base, error: 'invalid-name' });
+    expect(bad).toMatch(new RegExp(`id="legion-error"[^>]*>${uiText.legionNameError}<`));
+    expect(bad).toContain('role="alert"');
+    const taken = render({ ...base, error: 'name-taken' });
+    expect(taken).toContain(uiText.legionNameTaken);
+    expect(taken).not.toContain(uiText.legionNameError);
+  });
+});

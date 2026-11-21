@@ -24,7 +24,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-018 | 徵召士兵畫面：顯示士兵總數、可徵人口與此次至多，按級距選定人數後徵召；每次早朝限用一次 | implemented |
 | UC-WEB-019 | 解甲歸田畫面：顯示士兵總數，按級距或全部遣返士兵 | implemented |
 | UC-WEB-020 | 操練軍隊畫面：顯示士兵總數與訓練，提示耗費與為期一年，確認後開始；操練期間按鈕停用並顯示尚餘半季 | implemented |
-| UC-WEB-021 | 組建軍團畫面：自賦閑官員中選將軍，按級距選定兵員，點選建議軍名或自填兩字軍名後組建；京師已有軍團駐紮時停用 | planned |
+| UC-WEB-021 | 組建軍團畫面：自賦閑官員中選將軍，按級距選定兵員，點選建議軍名或自填兩字軍名後組建；京師已有軍團駐紮時停用 | implemented |
 | UC-WEB-022 | 調兵遣將畫面：天下輿圖標示各軍團，點選軍團顯示將軍、兵員、訓練，移駐相鄰本朝地域或招回 | planned |
 
 ## UC-WEB-001 Title screen

@@ -79,6 +79,7 @@ button#start:hover {
 #recruit-screen,
 #release-screen,
 #conscript-screen,
+#legion-screen,
 #discharge-screen,
 #drill-screen,
 #build-screen,
@@ -95,6 +96,7 @@ button#start:hover {
 
 #appoint-screen,
 #exam-screen,
+#legion-screen,
 #build-screen {
   max-width: 48rem;
 }
@@ -117,6 +119,7 @@ button#start:hover {
 }
 
 #era-suggestions,
+#legion-suggestions,
 #action-list {
   display: flex;
   flex-wrap: wrap;
@@ -129,7 +132,8 @@ button#start:hover {
   margin-top: 1rem;
 }
 
-#era-input {
+#era-input,
+#legion-name-input {
   box-sizing: border-box;
   width: 100%;
   min-height: 44px;
@@ -137,11 +141,13 @@ button#start:hover {
   font-size: 1.125rem;
 }
 
-#era-error {
+#era-error,
+#legion-error {
   color: #8b0000;
 }
 
 #era-screen button,
+#legion-suggestions button,
 #action-list button,
 #back-to-map,
 #close-atlas,
@@ -157,6 +163,7 @@ button#start:hover {
 #confirm-recruit,
 #confirm-release,
 #confirm-conscript,
+#confirm-legion,
 #confirm-discharge,
 #confirm-drill,
 #confirm-levy,
@@ -175,6 +182,8 @@ button#start:hover {
 }
 
 #era-screen button:hover,
+#legion-suggestions button:hover,
+#confirm-legion:hover,
 #action-list button:hover,
 #back-to-map:hover,
 #close-atlas:hover,
@@ -267,6 +276,7 @@ button.legion-marker { cursor: pointer; }
 
 .post-table,
 #idle-list,
+#legion-generals,
 #building-list,
 #exam-list {
   width: 100%;
@@ -277,6 +287,8 @@ button.legion-marker { cursor: pointer; }
 .post-table td,
 #idle-list th,
 #idle-list td,
+#legion-generals th,
+#legion-generals td,
 #building-list th,
 #building-list td,
 #exam-list th,
@@ -290,6 +302,7 @@ button.legion-marker { cursor: pointer; }
 .post-table th:first-child,
 .post-table td:nth-child(2),
 #idle-list th:first-child,
+#legion-generals th:first-child,
 #building-list th:first-child,
 #exam-list th:first-child,
 #exam-list th:nth-child(2),
@@ -304,6 +317,7 @@ button.legion-marker { cursor: pointer; }
 .post-table button[data-post],
 #idle-list button[data-sort],
 #idle-list button[data-official],
+#legion-generals button[data-general],
 #exam-list button[data-exam-sort] {
   min-width: 44px;
   min-height: 44px;
@@ -319,11 +333,13 @@ button.legion-marker { cursor: pointer; }
 .post-table button[data-post]:hover,
 #idle-list button[data-sort]:hover,
 #idle-list button[data-official]:hover,
+#legion-generals button[data-general]:hover,
 #exam-list button[data-exam-sort]:hover {
   background: #922424;
 }
 
 #idle-list button[data-sort][aria-pressed="true"],
+#legion-generals button[data-general][aria-pressed="true"],
 #exam-list button[data-exam-sort][aria-pressed="true"] {
   color: #24140a;
   background: #c9a227;
@@ -722,4 +738,23 @@ button.legion-marker { cursor: pointer; }
 
 #budget-total {
   font-weight: bold;
+}
+
+#legion-name-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#legion-name-row input {
+  width: 8rem;
+}
+
+#legion-generals tr.is-chosen {
+  background: rgba(201, 162, 39, 0.25);
+}
+
+#confirm-legion:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

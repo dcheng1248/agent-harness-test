@@ -55,6 +55,10 @@ import {
   type RegionData,
   type StatChange,
   isIdleOfficial,
+  canFormLegion,
+  formLegion,
+  maxLegionSoldiers,
+  drawLegionNameSuggestions,
 } from '@emperor/core';
 
 export type Screen =
@@ -82,6 +86,15 @@ export type Screen =
   | { screen: 'conscript'; state: GameState; count: number }
   | { screen: 'discharge'; state: GameState; count: number }
   | { screen: 'drill'; state: GameState }
+  | {
+      screen: 'legion';
+      state: GameState;
+      general?: string;
+      count: number;
+      suggestions: string[];
+      draft: string;
+      error?: 'invalid-name' | 'name-taken';
+    }
   | { screen: 'build'; state: GameState }
   | { screen: 'taxes'; state: GameState }
   | { screen: 'levy'; state: GameState; gained?: number }
@@ -160,6 +173,8 @@ export function chooseCourtOption(
   optionId: CourtOptionId,
   notables: readonly NotableData[],
   names: NamePool,
+  regions: readonly RegionData[] = [],
+  legionNames: readonly string[] = [],
 ): Screen {
   if (screen.screen !== 'play' || !isMorningCourt(screen.state)) return screen;
   if (!OPEN_COURT_OPTIONS.includes(optionId)) return screen;
@@ -185,6 +200,16 @@ export function chooseCourtOption(
   if (optionId === 'release-soldiers') {
     return screen.state.army.soldiers > 0 ? { screen: 'discharge', state: screen.state, count: BALANCE.army.step } : screen;
   }
+  if (optionId === 'form-legion') {
+    if (!canFormLegion(screen.state, regions)) return screen;
+    return {
+      screen: 'legion',
+      state: screen.state,
+      count: BALANCE.army.step,
+      suggestions: drawLegionNameSuggestions(screen.state, legionNames),
+      draft: '',
+    };
+  }
   if (optionId === 'drill-troops') return { screen: 'drill', state: screen.state };
   if (optionId === 'adjust-taxes') return { screen: 'taxes', state: screen.state };
   if (optionId === 'budget-sheet') return { screen: 'budget', state: screen.state };
@@ -196,15 +221,16 @@ export function chooseCourtOption(
   return { screen: 'appoint', state: screen.state };
 }
 
-type CountScreen = Extract<Screen, { screen: 'recruit' | 'release' | 'conscript' | 'discharge' }>;
+type CountScreen = Extract<Screen, { screen: 'recruit' | 'release' | 'conscript' | 'discharge' | 'legion' }>;
 
 function isCountScreen(screen: Screen): screen is CountScreen {
-  return ['recruit', 'release', 'conscript', 'discharge'].includes(screen.screen);
+  return ['recruit', 'release', 'conscript', 'discharge', 'legion'].includes(screen.screen);
 }
 
 /** The step of a picker screen: 工匠 and soldiers use their own. */
 export function countStep(screen: CountScreen): number {
-  return screen.screen === 'conscript' || screen.screen === 'discharge' ? BALANCE.army.step : BALANCE.works.step;
+  return screen.screen === 'conscript' || screen.screen === 'discharge' || screen.screen === 'legion'
+    ? BALANCE.army.step : BALANCE.works.step;
 }
 
 /** The largest count the picker of a count screen allows. */
@@ -218,6 +244,8 @@ function countLimit(screen: CountScreen): number {
       return maxConscript(screen.state);
     case 'discharge':
       return screen.state.army.soldiers;
+    case 'legion':
+      return maxLegionSoldiers(screen.state);
   }
 }
 
@@ -265,6 +293,36 @@ export function confirmConscript(screen: Screen): Screen {
 
 export function confirmDischarge(screen: Screen): Screen {
   return confirmArmy(screen, 'discharge');
+}
+
+type LegionScreen = Extract<Screen, { screen: 'legion' }>;
+
+export function chooseGeneral(screen: Screen, officialId: string): Screen {
+  if (screen.screen !== 'legion' || !isIdleOfficial(screen.state, officialId)) return screen;
+  return { ...screen, general: officialId };
+}
+
+export function pickLegionName(screen: Screen, name: string): Screen {
+  if (screen.screen !== 'legion' || !screen.suggestions.includes(name)) return screen;
+  const { error: _error, ...rest } = screen;
+  return { ...rest, draft: name };
+}
+
+/** Records typed text without a redraw; the rest of the screen is kept. */
+export function typeLegionName(screen: Screen, text: string): Screen {
+  if (screen.screen !== 'legion') return screen;
+  return { ...screen, draft: text };
+}
+
+export function confirmLegion(screen: Screen, regions: readonly RegionData[]): Screen {
+  if (screen.screen !== 'legion' || screen.general === undefined) return screen;
+  const outcome = formLegion(screen.state, regions, screen.general, screen.count, screen.draft.trim());
+  if (outcome.ok) return { screen: 'play', state: outcome.state, department: 'war' };
+  if (outcome.reason === 'invalid-name' || outcome.reason === 'name-taken') {
+    const next: LegionScreen = { ...screen, error: outcome.reason };
+    return next;
+  }
+  return screen;
 }
 
 export function confirmDrill(screen: Screen): Screen {
@@ -347,7 +405,12 @@ export function backToCourt(screen: Screen): Screen {
   if (screen.screen === 'taxes' || screen.screen === 'levy' || screen.screen === 'budget') {
     return { screen: 'play', state: screen.state, department: 'revenue' };
   }
-  if (screen.screen === 'conscript' || screen.screen === 'discharge' || screen.screen === 'drill') {
+  if (
+    screen.screen === 'conscript' ||
+    screen.screen === 'discharge' ||
+    screen.screen === 'drill' ||
+    screen.screen === 'legion'
+  ) {
     return { screen: 'play', state: screen.state, department: 'war' };
   }
   if (screen.screen === 'recruit' || screen.screen === 'release' || screen.screen === 'build') {
