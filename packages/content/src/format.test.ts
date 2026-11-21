@@ -10,6 +10,8 @@ import {
   formatPostName,
   formatReign,
   formatTaels,
+  formatWages,
+  formatArtisans,
 } from './format';
 import { uiText } from './index';
 
@@ -41,8 +43,15 @@ describe('format', () => {
     expect(formatTaels(-20000)).toBe('−20,000 兩');
   });
   it('UC-WEB-006 formats the economy report, hiding zero tax income', () => {
-    expect(formatEconomy({ taxIncome: 547437, upkeep: 120000, regionChanges: [] })).toBe('稅入 +547,437 兩，宮廷用度 −120,000 兩');
-    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 547437, upkeep: 120000, wages: 0, regionChanges: [] })).toBe('稅入 +547,437 兩，宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 0, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
+  });
+  it('UC-WEB-004 formatEconomy ignores wages', () => {
+    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 50000, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
+  });
+  it('UC-WEB-004 formats wages and artisans', () => {
+    expect(formatWages(50000)).toBe('工匠工錢 −50,000 兩');
+    expect(formatArtisans(310000)).toBe('310,000 人');
   });
   it('UC-CONTENT-002 formatPostName', () => {
     expect(formatPostName({ id: 'chancellor', group: 'central', office: 'chancellor' })).toBe('丞相');

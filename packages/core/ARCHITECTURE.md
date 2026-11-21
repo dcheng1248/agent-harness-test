@@ -22,7 +22,23 @@ classDiagram
     Official[] officials
     Recommendation or null recommendation
     Exam or null exam
+    Works works
     boolean dead
+  }
+  class Works {
+    number artisans
+    number or null recruitedTurn
+    BuildingState[] buildings
+  }
+  class BuildingState {
+    string id
+    number required
+    number progress
+    number assigned
+  }
+  class BuildingData {
+    string id
+    number required
   }
   class Official {
     string id
@@ -79,6 +95,9 @@ classDiagram
   Exam "1" *-- "many" Candidate
   NotableData ..> Exam : holdExam draws
   Exam ..> Official : confirmExam adds
+  GameState "1" *-- "1" Works
+  Works "1" *-- "many" BuildingState
+  BuildingData ..> BuildingState : createInitialState copies
 ```
 
 `StatValues` is `Record<EmperorStatId, number>`, `NationStatValues` is `Record<NationStatId, number>`, `RegionStatValues` is `Record<RegionStatId, number>`, and `OfficialStatValues` is `Record<OfficialStatId, number>`. `PostId` is a string (see "Posts"). `Location` is `'map' | PalaceId`.
@@ -94,6 +113,7 @@ classDiagram
 - `officials` holds every official, in the order they were generated. IDs are unique and never reused. `post` is the `PostId` the official holds, or `null` for 賦閑. At most one official holds each post. Who holds a post is found by searching `officials`; it is not stored twice. `notable` is the 名臣 ID of a 名臣, or `null` for an ordinary official; whether a 名臣 is at court is found by searching `officials`.
 - `recommendation` is the last 舉薦: the `turn` it was used in, and the `candidate` waiting for a decision, or `null` once accepted or declined. It is `null` until the first 舉薦. 舉薦 is used this half-season when its `turn` equals `turn`.
 - `exam` is the last 開科取士: the `turn` it was held in, and the `candidates` waiting for confirmation, or `null` once confirmed. It is `null` until the first exam. An exam has been held this reign year when the reign year of its `turn` equals the current one.
+- `works` holds 工部's state. `artisans` is the nation's total 工匠. `recruitedTurn` is the `turn` of the last 徵召, or `null` before the first; 徵召 is used this half-season when it equals `turn`. `buildings` holds one entry per building, in the order of the building data passed to `createInitialState`: its `id`, its `required` manpower in 工匠·半季 (copied from the data), its `progress` so far, and the 工匠 `assigned` to it now. Idle 工匠 (`artisans` minus the sum of `assigned`) and each building's status are derived, not stored.
 - `dead` is set when the emperor dies. A dead state accepts no action.
 
 Derived values are never stored:
@@ -154,6 +174,18 @@ interface Exam { turn: number; candidates: Candidate[] | null }
 ```
 
 `recommend` and `holdExam` share one candidate-drawing helper in `src/rules/recommend.ts`. It takes the 名臣 types allowed, the 名臣 to leave out, the names taken and the ordinary stat table. Adding a 名臣 means adding one data entry and nothing in `core`. `content` also puts every 名臣 name in `NamePool.reserved`, so generated officials never take one.
+
+## Building data
+`core` does not hold the building list. `content` does, and passes it to `createInitialState` through this interface, in `src/model/works.ts`:
+
+```ts
+interface BuildingData { id: string; required: number } // required: 工匠·半季
+interface BuildingState { id: string; required: number; progress: number; assigned: number }
+interface Works { artisans: number; recruitedTurn: number | null; buildings: BuildingState[] }
+type BuildingStatus = 'not-started' | 'in-progress' | 'completed';
+```
+
+`createInitialState` copies each entry's `id` and `required` into a `BuildingState` with `progress` and `assigned` at 0, keeping the order, the way it copies regions. The turn loop reads `required` from the state, so `takeAction` needs no content. Adding a building means adding one data entry; no `core` code changes. The 工匠 and building rules live in `src/rules/works.ts`.
 
 ## Posts
 Posts are derived, not stored: `listPosts(state)` builds them from the post registries and the player's regions. A `PostId` is one of:
@@ -216,13 +248,17 @@ type ConfirmExamOutcome =
   | { ok: true; state: GameState };
 interface StatChange { stat: StatId; amount: number }
 interface RegionChange { region: string; changes: StatChange[] }
-interface EconomyReport { taxIncome: number; upkeep: number; regionChanges: RegionChange[] }
-interface TurnEnd { aging: number; totals: StatChange[]; economy: EconomyReport }
+type WorksRejection = 'not-in-court' | 'already-used' | 'invalid-count' | 'unknown-building' | 'completed' | 'not-enough-idle';
+type WorksOutcome =
+  | { ok: false; reason: WorksRejection; state: GameState }
+  | { ok: true; state: GameState };
+interface EconomyReport { taxIncome: number; upkeep: number; wages: number; regionChanges: RegionChange[] }
+interface TurnEnd { aging: number; totals: StatChange[]; economy: EconomyReport; completed: string[] }
 type ActionOutcome =
   | { ok: false; reason: ActionRejection; state: GameState }
   | { ok: true; state: GameState; changes: StatChange[]; turnEnd: TurnEnd | null };
 
-function createInitialState(seed: number, eraName: string, regions: readonly RegionData[], names: NamePool): GameState;
+function createInitialState(seed: number, eraName: string, regions: readonly RegionData[], names: NamePool, buildings?: readonly BuildingData[]): GameState; // buildings defaults to []
 function canEnterPalace(state: GameState, palaceId: PalaceId): boolean;
 function isMorningCourt(state: GameState): boolean;
 function listPosts(state: GameState): PostInfo[];
@@ -236,14 +272,24 @@ function nextExamYear(state: Pick<GameState, 'turn'>): number;
 function canHoldExam(state: GameState): boolean;
 function holdExam(state: GameState, notables: readonly NotableData[], names: NamePool): HoldExamOutcome;
 function confirmExam(state: GameState, picks: readonly number[]): ConfirmExamOutcome;
+function freePopulation(state: GameState): number;
+function maxRecruit(state: GameState): number;
+function idleArtisans(state: GameState): number;
+function canRecruit(state: GameState): boolean;
+function recruitArtisans(state: GameState, count: number): WorksOutcome;
+function releaseArtisans(state: GameState, count: number): WorksOutcome;
+function assignArtisans(state: GameState, buildingId: string, count: number): WorksOutcome;
+function buildingStatus(building: BuildingState): BuildingStatus;
+function halfSeasonsToFinish(building: BuildingState): number | null;
 function regionTax(stats: RegionStatValues): number;
 function settleEconomy(
   nation: NationStatValues,
   regions: readonly RegionState[],
   nextHalfSeason: HalfSeasonId,
+  artisans?: number, // defaults to 0
 ): { nation: NationStatValues; regions: RegionState[]; report: EconomyReport };
 ```
 
 `turnEnd` is set when the action ended the turn, including when the emperor then dies of age. It is `null` when the emperor dies from the action itself. `aging` is the 健康 lost to age, as a positive number. `totals` holds emperor stats only.
 
-`economy.taxIncome` and `economy.upkeep` are positive numbers of taels (`taxIncome` is 0 outside collections). `regionChanges` lists, in region order, each region with a non-zero applied change, and its changes in registry order. When the emperor dies of age, `economy` is `{ taxIncome: 0, upkeep: 0, regionChanges: [] }`.
+`economy.taxIncome`, `economy.upkeep` and `economy.wages` are positive numbers of taels (`taxIncome` is 0 outside collections, `wages` is 0 without 工匠). `regionChanges` lists, in region order, each region with a non-zero applied change, and its changes in registry order. `completed` lists the IDs of the buildings completed at this turn end, in building order. When the emperor dies of age, `economy` is `{ taxIncome: 0, upkeep: 0, wages: 0, regionChanges: [] }` and `completed` is `[]`.

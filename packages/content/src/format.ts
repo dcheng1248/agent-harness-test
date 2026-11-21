@@ -42,6 +42,14 @@ export function formatEconomy(report: EconomyReport): string {
   return parts.join('，');
 }
 
+export function formatWages(wages: number): string {
+  return `${uiText.wagesLabel} −${formatTaels(wages)}`;
+}
+
+export function formatArtisans(n: number): string {
+  return `${formatAmount(n)} ${uiText.personUnit}`;
+}
+
 export function formatChanges(changes: readonly StatChange[]): string {
   if (changes.length === 0) return uiText.noChange;
   return changes

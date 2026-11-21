@@ -14,7 +14,7 @@ import {
   listPosts,
 } from "../index";
 import type { RegionData } from "../index";
-import { TEST_NAMES } from "../testNames";
+import { TEST_BUILDINGS, TEST_NAMES } from "../testNames";
 
 const FIXTURE: RegionData[] = [
   {
@@ -65,7 +65,7 @@ describe("initial state", () => {
   it("UC-CORE-001 initial state starts at 元年春上, 朝, age 16, on the map", () => {
     const state = createInitialState(7, "承平", FIXTURE, TEST_NAMES);
     expect(state).toMatchObject({
-      schemaVersion: 6,
+      schemaVersion: 7,
       seed: 7,
       eraName: "承平",
       turn: 0,
@@ -112,7 +112,7 @@ describe("initial state", () => {
       },
     ]);
     expect(state.nation).toEqual({ treasury: 500000 });
-    expect(state.schemaVersion).toBe(6);
+    expect(state.schemaVersion).toBe(7);
     expect(JSON.parse(JSON.stringify(state))).toEqual(state);
   });
 
@@ -216,5 +216,20 @@ describe("initial state", () => {
     for (const id of ["administration", "military", "ambition", "loyalty"]) {
       expect([by(id)?.min, by(id)?.max, by(id)?.owner]).toEqual([0, 100, "official"]);
     }
+  });
+
+  it("UC-CORE-020 copies the building data into works with no progress", () => {
+    const plain = createInitialState(7, "承平", FIXTURE, TEST_NAMES);
+    const state = createInitialState(7, "承平", FIXTURE, TEST_NAMES, TEST_BUILDINGS);
+    expect(state.works).toEqual({
+      artisans: 0,
+      recruitedTurn: null,
+      buildings: [
+        { id: "small", required: 30000, progress: 0, assigned: 0 },
+        { id: "large", required: 100000, progress: 0, assigned: 0 },
+      ],
+    });
+    expect(plain.works.buildings).toEqual([]);
+    expect(state.rngState).toBe(plain.rngState);
   });
 });

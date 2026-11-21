@@ -1,3 +1,4 @@
+import type { BuildingData } from "./model/works";
 import type { NamePool } from "./model/officials";
 import type { NotableData } from "./model/notables";
 
@@ -38,4 +39,10 @@ export const TEST_NOTABLES: readonly NotableData[] = [
     stats: { administration: 95, military: 10, ambition: 0, loyalty: 95 },
     gate: { stat: "health", min: 101 },
   },
+];
+
+/** Test-only building list. */
+export const TEST_BUILDINGS: readonly BuildingData[] = [
+  { id: "small", required: 30000 },
+  { id: "large", required: 100000 },
 ];

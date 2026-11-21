@@ -13,6 +13,7 @@ export interface RegionChange {
 export interface EconomyReport {
   taxIncome: number;
   upkeep: number;
+  wages: number;
   regionChanges: RegionChange[];
 }
 
@@ -36,9 +37,11 @@ export function settleEconomy(
   nation: NationStatValues,
   regions: readonly RegionState[],
   nextHalfSeason: HalfSeasonId,
+  artisans = 0,
 ): { nation: NationStatValues; regions: RegionState[]; report: EconomyReport } {
   const upkeep = BALANCE.upkeep;
-  let treasury = nation.treasury - upkeep;
+  const wages = Math.floor(artisans * BALANCE.works.wagePerArtisan);
+  let treasury = nation.treasury - upkeep - wages;
 
   const next: RegionState[] = regions.map((r) => {
     if (r.owner !== PLAYER_OWNER || nextHalfSeason !== "spring-early")
@@ -80,6 +83,6 @@ export function settleEconomy(
   return {
     nation: { ...nation, treasury },
     regions: next,
-    report: { taxIncome, upkeep, regionChanges },
+    report: { taxIncome, upkeep, wages, regionChanges },
   };
 }

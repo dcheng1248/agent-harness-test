@@ -12,13 +12,17 @@ import {
   backToCourt,
   cancelPost,
   chooseCourtOption,
+  changeAssignment,
   chooseEraName,
   closeAtlas,
   confirmExamPicks,
+  confirmRecruit,
+  confirmRelease,
   continueToMap,
   declineRecommendation,
   goToMap,
   goToPalace,
+  maxCount,
   openAtlas,
   performAction,
   restart,
@@ -26,6 +30,7 @@ import {
   sortExam,
   sortIdle,
   startGame,
+  stepCount,
   toggleDepartment,
   toggleExamPick,
   type Screen,
@@ -62,7 +67,7 @@ if (root) {
   };
   const confirmTyped = (): void => {
     const input = root.querySelector<HTMLInputElement>('#era-input');
-    current = chooseEraName(current, input?.value ?? '', gameText.regions, gameText.officialNames);
+    current = chooseEraName(current, input?.value ?? '', gameText.regions, gameText.officialNames, gameText.buildings);
     draw();
     if (current.screen === 'era') root.querySelector<HTMLInputElement>('#era-input')?.focus();
   };
@@ -77,7 +82,7 @@ if (root) {
       confirmTyped();
       return;
     } else if (hit('[data-era]')) {
-      current = chooseEraName(current, hit('[data-era]')?.dataset.era ?? '', gameText.regions, gameText.officialNames);
+      current = chooseEraName(current, hit('[data-era]')?.dataset.era ?? '', gameText.regions, gameText.officialNames, gameText.buildings);
     } else if (hit('[data-palace]')) {
       current = goToPalace(current, hit('[data-palace]')?.dataset.palace as PalaceId);
     } else if (hit('[data-department]')) {
@@ -111,6 +116,19 @@ if (root) {
       current = sortExam(current, hit('[data-exam-sort]')?.dataset.examSort as OfficialStatId);
     } else if (hit('#confirm-exam')) {
       current = confirmExamPicks(current);
+    } else if (hit('#count-down')) {
+      current = stepCount(current, -1);
+    } else if (hit('#count-up')) {
+      current = stepCount(current, 1);
+    } else if (hit('#count-max')) {
+      current = maxCount(current);
+    } else if (hit('#confirm-recruit')) {
+      current = confirmRecruit(current);
+    } else if (hit('#confirm-release')) {
+      current = confirmRelease(current);
+    } else if (hit('[data-assign]')) {
+      const button = hit('[data-assign]');
+      current = changeAssignment(current, button?.dataset.assign ?? '', Number(button?.dataset.direction) as 1 | -1);
     } else if (hit('[data-action]')) {
       current = performAction(current, hit('[data-action]')?.dataset.action as ActionId);
     } else if (hit('#open-atlas')) {

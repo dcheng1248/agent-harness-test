@@ -53,6 +53,18 @@ export {
 export type { ActionRejection, TurnEnd, ActionOutcome } from "./rules/turn";
 export { regionTax, settleEconomy } from "./rules/economy";
 export type { RegionChange, EconomyReport } from "./rules/economy";
+export { buildingStatus, halfSeasonsToFinish } from "./model/works";
+export type { BuildingData, BuildingState, BuildingStatus, Works } from "./model/works";
+export {
+  freePopulation,
+  maxRecruit,
+  idleArtisans,
+  canRecruit,
+  recruitArtisans,
+  releaseArtisans,
+  assignArtisans,
+} from "./rules/works";
+export type { WorksRejection, WorksOutcome } from "./rules/works";
 export { nextRandom } from "./rng";
 export type { RandomResult } from "./rng";
 export { DEPARTMENT_IDS, COURT_OPTION_IDS, DEPARTMENTS } from "./model/court";

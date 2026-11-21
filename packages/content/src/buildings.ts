@@ -1,0 +1,30 @@
+import type { BuildingEntry } from './schema';
+
+/** National works by category: 宮室, 祭祀, 文教, 園林, 水利, 防務, 交通. `required` is in 工匠·半季. */
+export const buildings: readonly BuildingEntry[] = [
+  { id: 'daming-palace', name: '大明宮', category: 'palace', required: 1000000, description: '龍首原上的宏偉宮城，含元殿居高臨下，為天子聽政之所。' },
+  { id: 'weiyang-palace', name: '未央宮', category: 'palace', required: 900000, description: '規模宏大的宮殿群，殿閣台榭環列，象徵國祚綿長。' },
+  { id: 'tiantan', name: '天壇', category: 'ritual', required: 400000, description: '冬至祭天之所，圜丘三層，祈年殿以藍瓦覆頂。' },
+  { id: 'ditan', name: '地壇', category: 'ritual', required: 200000, description: '夏至祭地之所，方澤壇與天壇南北相對。' },
+  { id: 'ritan', name: '日壇', category: 'ritual', required: 120000, description: '春分朝日之所，壇面以紅色琉璃鋪砌。' },
+  { id: 'yuetan', name: '月壇', category: 'ritual', required: 120000, description: '秋分夕月之所，壇面以白石鋪砌。' },
+  { id: 'sheji-altar', name: '社稷壇', category: 'ritual', required: 150000, description: '祭祀土神與穀神，壇上以五色土象徵天下疆域。' },
+  { id: 'xiannong-altar', name: '先農壇', category: 'ritual', required: 150000, description: '祭祀先農之所，天子於此親耕籍田，以勸農桑。' },
+  { id: 'taimiao', name: '太廟', category: 'ritual', required: 300000, description: '奉祀列祖列宗的宗廟，四時大祭皆於此舉行。' },
+  { id: 'guozijian', name: '國子監', category: 'education', required: 250000, description: '天下最高學府，太學生於此研習經史。' },
+  { id: 'confucius-temple', name: '孔廟', category: 'education', required: 200000, description: '京師祭孔之所，與國子監左廟右學相依。' },
+  { id: 'gongyuan', name: '貢院', category: 'education', required: 200000, description: '會試考場，號舍成排，天下舉子於此應試。' },
+  { id: 'hanlin-academy', name: '翰林院', category: 'education', required: 150000, description: '文學侍從之臣所居，起草詔書、修撰國史。' },
+  { id: 'wenyuan-pavilion', name: '文淵閣', category: 'education', required: 150000, description: '皇家藏書樓，典藏天下圖書典籍。' },
+  { id: 'observatory', name: '觀星臺', category: 'education', required: 100000, description: '觀測日月星辰、測定節氣曆法的高臺。' },
+  { id: 'yuanmingyuan', name: '圓明園', category: 'garden', required: 1200000, description: '規模浩大的皇家園林，集天下名園勝景於一處。' },
+  { id: 'yiheyuan', name: '頤和園', category: 'garden', required: 800000, description: '依山傍湖的皇家園林，長廊與湖光相映。' },
+  { id: 'summer-resort', name: '避暑山莊', category: 'garden', required: 900000, description: '塞上離宮，天子夏日避暑、會見藩部之所。' },
+  { id: 'xiyuan', name: '西苑', category: 'garden', required: 400000, description: '宮城西側的皇家苑囿，太液池水波相連。' },
+  { id: 'grand-canal', name: '大運河', category: 'water', required: 1800000, description: '貫通南北的漕運水道，連接諸大水系，輸糧入京。' },
+  { id: 'tonghui-canal', name: '通惠河', category: 'water', required: 300000, description: '自京城引水接通運河的漕渠，使糧船直抵京師。' },
+  { id: 'great-wall', name: '長城', category: 'defense', required: 2000000, description: '綿延萬里的北疆屏障，烽燧相望，以禦塞外。' },
+  { id: 'capital-walls', name: '京師城垣', category: 'defense', required: 800000, description: '環繞京城的高大城牆與城門，固守天子腳下。' },
+  { id: 'zhidao', name: '直道', category: 'transport', required: 700000, description: '自京畿直通北疆的軍用大道，塹山堙谷，千里相通。' },
+  { id: 'chidao', name: '馳道', category: 'transport', required: 1000000, description: '以京師為中心通達四方的天子大道，路旁植樹為界。' },
+];

@@ -14,6 +14,9 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-008 | 官員任命畫面：按中樞、六部、地方列出官位，選官位後自賦閑官員中任命 | implemented |
 | UC-WEB-009 | 舉薦人選畫面：顯示一名候選人（名臣另有標記），錄用或婉拒；每次早朝限用一次 | implemented |
 | UC-WEB-010 | 開科取士畫面：列出應試者（名臣另有標記），可依屬性排序，勾選錄取後確定；非開科之年顯示下次開科 | implemented |
+| UC-WEB-011 | 徵召工匠畫面：以一萬為單位選定人數後徵召；每次早朝限用一次 | implemented |
+| UC-WEB-012 | 遣散工匠畫面：以一萬為單位或全部遣散閒置工匠 | implemented |
+| UC-WEB-013 | 營建工程畫面：列出全部工程的簡介、所需工匠·半季與狀態，增減各工程的工匠 | implemented |
 
 ## UC-WEB-001 Title screen
 The palace image fills the viewport width with its aspect ratio kept, never cropped or stretched. A decorative scroll sits over the top centre of the image, with the game title written on it. The scroll and title scale with the image. There is no animation.
@@ -22,15 +25,15 @@ The palace image fills the viewport width with its aspect ratio kept, never crop
 The start button sits over the bottom centre of the palace image, on the stone path, scales with the image, and keeps a comfortable tap target. Clicking it starts a new game: `main.ts` picks a random 32-bit seed with `crypto.getRandomValues`, calls `startGame(seed, gameText.eraNamePool)`, and shows the 年號 screen.
 
 ## UC-WEB-003 年號 screen
-A heading and prompt, three suggested 年號 buttons, a labelled text input, and a confirm button. Clicking a suggestion starts the game with it. Confirming trims the typed text. If it is not a valid 年號, the screen shows an error as an alert, keeps the typed text, and does not start. Typed text is HTML-escaped when rendered. `chooseEraName(screen, input, regions, names)` passes the region data (`gameText.regions` in `main.ts`) and the official name pool (`gameText.officialNames`) to `createInitialState`.
+A heading and prompt, three suggested 年號 buttons, a labelled text input, and a confirm button. Clicking a suggestion starts the game with it. Confirming trims the typed text. If it is not a valid 年號, the screen shows an error as an alert, keeps the typed text, and does not start. Typed text is HTML-escaped when rendered. `chooseEraName(screen, input, regions, names, buildings)` passes the region data (`gameText.regions` in `main.ts`), the official name pool (`gameText.officialNames`) and the building list (`gameText.buildings`) to `createInitialState`.
 
 ## UC-WEB-004 Game screens
 Every game screen has a header with the date, the action point, the emperor's age, the four emperor stats in registry order (emperor-owned stats only), and 國庫 in taels.
-- Header placement: on the screens built on an image (the palace map and the palace views), the header is a banner over the top edge of the image: a semi-transparent dark band with gold text that takes no space above the image. Its contents and order do not change. On the screens without an image (action result, turn summary, 輿圖, 官員任命, 舉薦人選, 開科取士) the header is a bar above the content, as before.
+- Header placement: on the screens built on an image (the palace map and the palace views), the header is a banner over the top edge of the image: a semi-transparent dark band with gold text that takes no space above the image. Its contents and order do not change. On the screens without an image (action result, turn summary, 輿圖, 官員任命, 舉薦人選, 開科取士, 徵召工匠, 遣散工匠, 營建工程) the header is a bar above the content, as before.
 - Palace map: the illustrated palace map, laid out like the title screen: it fills the viewport width, is never upscaled past its native width, keeps its aspect ratio, and is never cropped. The 宮城 heading stays in the markup for screen readers but is visually hidden. Each palace, in catalog order, is a button placed on the image and centred on that palace's anchor, so the button is also the label for its place and stays on it at any size. The buttons scale with the image, keep a comfortable tap target, and stay above the header banner where the two meet. Every palace in the catalog has an anchor inside the image. A palace that `canEnterPalace` refuses right now (宣政殿 at any action point but 朝) keeps its place but is a disabled button, visibly dimmed, and clicking it does nothing. The map has no 輿圖 button and nothing below the image.
 - Palace: each palace shows its own background image, laid out like the map (full viewport width, never upscaled past its native width, aspect ratio kept, never cropped), with alt text from `content`. Every palace in the catalog has a background. A semi-transparent panel over the lower part of the image holds the palace name and description, one button per action it offers, and a button back to the map; text stays readable on every background. A palace that offers no actions shows a "nothing to do here" line instead of the action list. 崇文館 also shows the 輿圖 button (UC-WEB-006), styled and placed apart from the action buttons because it is not an action. When the viewport is too narrow for the banner and the panel to both fit over the image, the banner stays over the image and the panel moves below it. Entering and leaving use no action point. 宣政殿 is the exception: it is open only at 朝, uses that action point, and has the same image and banner but no panel (UC-WEB-007).
 - Action result: the action name, its changes, and a button to continue to the map.
-- Turn summary, shown instead of the action result after the last action of a turn: a heading naming the half-season that ended, the last action's changes, the half-season totals including aging, the treasury line (tax income when there was any, and upkeep), one line per region that changed (or a single "no change" line), and a button into the next half-season. The header then shows the new turn, with 國庫 after taxes and upkeep.
+- Turn summary, shown instead of the action result after the last action of a turn: a heading naming the half-season that ended, the last action's changes, the half-season totals including aging, the treasury line (tax income when there was any, and upkeep), then, only when 工匠 were paid, a separate 工匠 wages line (`formatWages`), then, only when buildings were completed, a line naming them in building order, one line per region that changed (or a single "no change" line), and a button into the next half-season. The header then shows the new turn, with 國庫 after taxes, upkeep and wages.
 
 ## UC-WEB-006 輿圖
 Opened from 崇文館 only. Opening and closing it use no action point and do not change the `GameState`. It shows the header, a heading, and a table with one row per region in `state.regions` order: the region name (the capital marked as 京師), 民心, 人口 and 富庶. A button, whose text names 崇文館, returns to 崇文館.
@@ -46,10 +49,41 @@ Entered from its button on the palace map, only at 朝 (UC-CORE-003); at other a
 - Over the lower right of the image sits one horizontal row of buttons that scales with the image: 內閣 and the six 部 in `core` registry order (`DEPARTMENT_IDS`), then 退. Each department button shows its short name and is announced by its full name, both from `content`. 退 is set apart from the departments by a gap and a different style.
 - 退 returns to the map, and the 朝 action point is now spent: the map shows 午.
 - Clicking a department highlights it and opens its options, in registry order, as a vertical list directly above the clicked department, with the list's right edge lined up with that button's right edge. If that would push the list past the image's left edge (such as 內閣 on a narrow viewport), the list shifts right just enough to stay inside the image. A small downward caret under the list points at the centre of the clicked button, and stays on the button even when the list has shifted. The list follows its department button in the markup, so keyboard and screen-reader order goes from a department to its options to the next department. Clicking another department switches the list to that department. Clicking the open department closes the list. Leaving 宣政殿 closes it, so it is closed on the next visit.
-- Open options (`OPEN_COURT_OPTIONS` in `src/screen.ts`; for now 吏部's 舉薦人選, 官員任命 and 開科取士) are enabled buttons with their name and no tag. Clicking one opens its screen (UC-WEB-009, UC-WEB-008, UC-WEB-010). Once 舉薦 has been used this 早朝 (`canRecommend` is false), 舉薦人選 is a disabled button with its name and a small "already recommended" tag, styled like the "not yet open" tag, until the next 早朝. 開科取士 is enabled only when `canHoldExam` is true. In an exam year after the exam is held, it is a disabled button with an "already held" tag. In any other year it is a disabled button with a tag saying how many years remain until the next exam (`nextExamYear` minus the current reign year), in Chinese numerals, such as "in two years". Both tags are styled like the "not yet open" tag. Every other option is a disabled button with its name and a small "not yet open" tag; clicking a disabled option does nothing.
+- Open options (`OPEN_COURT_OPTIONS` in `src/screen.ts`; for now 吏部's 舉薦人選, 官員任命 and 開科取士, and 工部's 徵召工匠, 遣散工匠 and 營建工程) are enabled buttons with their name and no tag. Clicking one opens its screen (UC-WEB-009, UC-WEB-008, UC-WEB-010, UC-WEB-011, UC-WEB-012, UC-WEB-013). 工部's options are, in order, 徵召工匠, 遣散工匠, 營建工程 (formerly named 建造) and 打造兵器, which stays "not yet open". 徵召工匠 is enabled only when `canRecruit` is true: once used this 早朝 it is a disabled button with an "already recruited" tag, and when `maxRecruit` is 0 a disabled button with a "no one to recruit" tag. 遣散工匠 is enabled only when there are idle 工匠, and otherwise is a disabled button with a "no idle 工匠" tag. 營建工程 is always enabled during 早朝. These tags are styled like the "not yet open" tag. Once 舉薦 has been used this 早朝 (`canRecommend` is false), 舉薦人選 is a disabled button with its name and a small "already recommended" tag, styled like the "not yet open" tag, until the next 早朝. 開科取士 is enabled only when `canHoldExam` is true. In an exam year after the exam is held, it is a disabled button with an "already held" tag. In any other year it is a disabled button with a tag saying how many years remain until the next exam (`nextExamYear` minus the current reign year), in Chinese numerals, such as "in two years". Both tags are styled like the "not yet open" tag. Every other option is a disabled button with its name and a small "not yet open" tag; clicking a disabled option does nothing.
 - Which department is open is `web` screen state only. Opening, switching and closing keep the same `GameState` object and use no action point.
 
-`toggleDepartment(screen, departmentId)` applies only to `play` in 宣政殿 (`COURT_PALACE`). From anywhere else, or with an ID that is not a department, it returns the screen unchanged. `chooseCourtOption(screen, optionId, notables, names)` applies only to `play` in 宣政殿 with an open option; for 舉薦人選 it also needs `canRecommend`, and for 開科取士 `canHoldExam`. Otherwise it returns the screen unchanged.
+`toggleDepartment(screen, departmentId)` applies only to `play` in 宣政殿 (`COURT_PALACE`). From anywhere else, or with an ID that is not a department, it returns the screen unchanged. `chooseCourtOption(screen, optionId, notables, names)` applies only to `play` in 宣政殿 with an open option; for 舉薦人選 it also needs `canRecommend`, for 開科取士 `canHoldExam`, for 徵召工匠 `canRecruit`, and for 遣散工匠 at least one idle 工匠. Otherwise it returns the screen unchanged.
+
+## UC-WEB-011 徵召工匠
+Opened from 工部 → 徵召工匠 during 早朝, when `canRecruit` is true. Nothing on this screen uses an action point, and the header keeps showing 朝.
+
+- The screen has the header bar, a heading, and lines with the total 工匠, the free population (`freePopulation`) and this 徵召's maximum (`maxRecruit`), in persons.
+- A number picker chooses how many to recruit, in steps of `BALANCE.works.step`. It starts at one step. A minus button lowers it by one step and is disabled at one step. A plus button raises it by one step and is disabled at the maximum. A maximum button sets it to the maximum.
+- A confirm button calls `recruitArtisans` with the chosen number. The new 工匠 are idle. The player returns to 宣政殿 with 工部's options open, where 徵召工匠 now shows as already used until the next 早朝.
+- A back button returns to 宣政殿 with 工部 open without recruiting; 徵召 stays unused.
+
+`stepCount(screen, direction)` (`1` or `-1`) and `maxCount(screen)` apply to `recruit` and `release`; a step past either end leaves the screen unchanged. `confirmRecruit(screen)` applies only to `recruit`. A rejection by `core`, any other input, or a call from another screen returns the screen unchanged. `backToCourt(screen)` returns from `recruit`, `release` and `build` to `play` in 宣政殿 with 工部 open.
+
+## UC-WEB-012 遣散工匠
+Opened from 工部 → 遣散工匠 during 早朝, when there is at least one idle 工匠. It can be opened any number of times in one 早朝. Nothing on this screen uses an action point.
+
+- The screen has the header bar, a heading, and lines with the total 工匠 and the idle 工匠, in persons.
+- The same number picker as 徵召工匠, from one step up to the idle 工匠, whose maximum button is labelled as releasing all idle 工匠 and sets the picker to every idle 工匠.
+- A confirm button calls `releaseArtisans` with the chosen number, at no cost, and returns to 宣政殿 with 工部 open.
+- A back button returns to 宣政殿 with 工部 open without releasing.
+- Only idle 工匠 can be released. To free 工匠 working on a building, lower its assignment in 營建工程 first.
+
+`confirmRelease(screen)` applies only to `release`. A rejection by `core` or a call from another screen returns the screen unchanged.
+
+## UC-WEB-013 營建工程
+Opened from 工部 → 營建工程 during 早朝. Nothing on this screen uses an action point.
+
+- The screen has the header bar, a heading, a line with the total and idle 工匠, and a table with one row per building in `state.works.buildings` order: its name and one-line description (from `content`), its required manpower in 工匠·半季, its status, and its 工匠.
+- Status: 未動工; 營建中 with progress / required, and a rough number of half-seasons left at the current assignment (`halfSeasonsToFinish`), or a "paused" mark when it has progress but no 工匠; or 已落成.
+- Each unfinished building shows its assigned 工匠 between a minus and a plus button. Each click changes the assignment by one step through `assignArtisans`: plus takes from idle 工匠 and is disabled when there are none, minus returns them to idle and is disabled at 0. The table and the idle count update at once. A completed building shows no buttons.
+- A back button returns to 宣政殿 with 工部 open.
+
+`changeAssignment(screen, buildingId, direction)` (`1` or `-1`) applies only to `build`. A rejection by `core`, any other input, or a call from another screen returns the screen unchanged.
 
 ## UC-WEB-009 舉薦人選
 Opened from 吏部 → 舉薦人選 during 早朝, once per 早朝. Opening it calls `core`'s `recommend`, which draws the candidate; nothing on this screen uses an action point, and the header keeps showing 朝.
@@ -101,6 +135,15 @@ stateDiagram-v2
   play --> exam: 開科取士, in 宣政殿, once per exam year
   exam --> exam: tick, untick, sort
   exam --> play: confirm, back to 宣政殿
+  play --> recruit: 徵召工匠, in 宣政殿, once per 早朝
+  recruit --> recruit: minus, plus, maximum
+  recruit --> play: confirm or back, to 宣政殿
+  play --> release: 遣散工匠, in 宣政殿, with idle 工匠
+  release --> release: minus, plus, all idle
+  release --> play: confirm or back, to 宣政殿
+  play --> build: 營建工程, in 宣政殿
+  build --> build: raise or lower an assignment
+  build --> play: back to 宣政殿
   play --> atlas: 輿圖, in 崇文館
   atlas --> play: back to 崇文館
   play --> result: not the last action of the turn

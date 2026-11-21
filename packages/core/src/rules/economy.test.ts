@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HALF_SEASONS, regionTax, settleEconomy } from "../index";
+import { BALANCE, HALF_SEASONS, regionTax, settleEconomy } from "../index";
 import type { HalfSeasonId, RegionState, RegionStatValues } from "../index";
 
 function region(
@@ -18,6 +18,22 @@ function afterPopulation(r: RegionState, next: HalfSeasonId): RegionStatValues {
     ? { ...r.stats, population: r.stats.population * 1.02 }
     : r.stats;
 }
+
+describe("settleEconomy wages", () => {
+  it("UC-CORE-015 pays wages with upkeep and reports them", () => {
+    const { report, nation } = settleEconomy({ treasury: 1000000 }, [A], "summer-early", 100000);
+    expect(report.wages).toBe(50000);
+    expect(nation.treasury).toBe(1000000 - BALANCE.upkeep - 50000);
+  });
+  it("UC-CORE-015 wages are 0 without 工匠 and round down", () => {
+    expect(settleEconomy({ treasury: 1000000 }, [A], "summer-early").report.wages).toBe(0);
+    expect(settleEconomy({ treasury: 1000000 }, [A], "summer-early", 1).report.wages).toBe(0);
+  });
+  it("UC-CORE-015 unpaid wages cost 民心", () => {
+    const { regions } = settleEconomy({ treasury: BALANCE.upkeep }, [A], "summer-early", 10000);
+    expect(regions[0]?.stats.morale).toBe(60 - BALANCE.bankruptcyMoraleLoss);
+  });
+});
 
 describe("regionTax", () => {
   it("UC-CORE-015 regionTax follows the formula", () => {

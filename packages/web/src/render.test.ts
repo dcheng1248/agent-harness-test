@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { formatChineseNumber, formatPostName, gameText, uiText } from '@emperor/content';
+import { formatAmount, formatArtisans, formatChineseNumber, formatPostName, formatWages, gameText, uiText } from '@emperor/content';
 import {
+  BALANCE,
+  freePopulation,
+  maxRecruit,
+  recruitArtisans,
+  releaseArtisans,
   createInitialState,
   DEPARTMENT_IDS,
   DEPARTMENTS,
@@ -31,6 +36,7 @@ import {
 } from './render';
 import { PALACE_ANCHORS } from './palaceMap';
 import { COURT_PALACE, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
+import { idleArtisans } from '@emperor/core';
 
 const images = { palace: '/img/palace.webp', scroll: '/img/scroll.webp', map: '/img/map.webp',
   backgrounds: {
@@ -59,7 +65,7 @@ describe('start flow', () => {
   });
 });
 
-const state = createInitialState(7, '承平', gameText.regions, gameText.officialNames);
+const state = createInitialState(7, '承平', gameText.regions, gameText.officialNames, gameText.buildings);
 
 describe('era screen', () => {
   const era: Extract<Screen, { screen: 'era' }> = { screen: 'era', seed: 7, suggestions: ['承平', '景和', '永綏'], draft: '', error: false };
@@ -163,10 +169,10 @@ describe('game screens', () => {
   });
 
   it('UC-WEB-004 screens without an image keep the header above the content', () => {
-    const economy = { taxIncome: 0, upkeep: 0, regionChanges: [] };
+    const economy = { taxIncome: 0, upkeep: 0, wages: 0, regionChanges: [] };
     const result = renderScreen({ screen: 'result', state, actionId: 'study', changes: [] }, uiText, gameText, images);
     const summary = renderScreen(
-      { screen: 'summary', state, actionId: 'study', changes: [], endedHalfSeason: 'spring-early', totals: [], economy },
+      { screen: 'summary', state, actionId: 'study', changes: [], endedHalfSeason: 'spring-early', totals: [], economy, completed: [] },
       uiText,
       gameText,
       images,
@@ -208,7 +214,8 @@ describe('game screens', () => {
         changes: [{ stat: 'learning', amount: 3 }],
         endedHalfSeason: 'spring-early',
         totals: [{ stat: 'learning', amount: 9 }, { stat: 'health', amount: -2 }],
-        economy: { taxIncome: 0, upkeep: 120000, regionChanges: [] },
+        economy: { taxIncome: 0, upkeep: 120000, wages: 0, regionChanges: [] },
+        completed: [],
       },
       uiText,
       gameText,
@@ -250,6 +257,7 @@ describe('game screens', () => {
       changes: [],
       endedHalfSeason: 'spring-early' as const,
       totals: [],
+      completed: [] as string[],
     };
     const html = renderSummaryScreen(
       {
@@ -257,6 +265,7 @@ describe('game screens', () => {
         economy: {
           taxIncome: 547437,
           upkeep: 120000,
+          wages: 0,
           regionChanges: [{ region: 'guanzhong', changes: [{ stat: 'morale', amount: -3 }] }],
         },
       },
@@ -266,7 +275,7 @@ describe('game screens', () => {
     expect(html).toMatch(/id="summary-treasury">稅入 \+547,437 兩，宮廷用度 −120,000 兩</);
     expect(html).toMatch(/<li data-region="guanzhong">關中：民心 −3<\/li>/);
     const empty = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 120000, regionChanges: [] } },
+      { ...base, economy: { taxIncome: 0, upkeep: 120000, wages: 0, regionChanges: [] } },
       uiText,
       gameText,
     );
@@ -307,7 +316,9 @@ describe('宣政殿', () => {
     `<button type="button" id="department-${id}" data-department="${id}" aria-label="${gameText.departments[id].name}"${expanded ? ' class="is-open"' : ''}>${gameText.departments[id].label}</button>`;
   const leave = `<button type="button" id="leave-court" aria-label="${uiText.leaveCourtLabel}">${uiText.leaveCourt}</button>`;
   const optionButton = (id: CourtOptionId): string =>
-    OPEN_COURT_OPTIONS.includes(id)
+    id === 'release-artisans'
+      ? `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.noIdleArtisans}</span></button>`
+      : OPEN_COURT_OPTIONS.includes(id)
       ? `<button type="button" id="court-option-${id}" data-court-option="${id}">${gameText.courtOptions[id].name}</button>`
       : `<button type="button" id="court-option-${id}" data-court-option="${id}" disabled>${gameText.courtOptions[id].name}<span class="court-option-tag">${uiText.notYetOpen}</span></button>`;
 
@@ -604,5 +615,170 @@ describe('開科取士', () => {
     expect(examButton(s)).toBe(
       `<button type="button" id="court-option-hold-exams" data-court-option="hold-exams" disabled>${gameText.courtOptions['hold-exams'].name}<span class="court-option-tag">${uiText.nextExamPrefix}${years}${uiText.nextExamSuffix}</span></button>`,
     );
+  });
+});
+
+describe('工部', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const render = (screen: Screen): string => renderScreen(screen, uiText, gameText, images);
+  const step = BALANCE.works.step;
+  const ok = (outcome: { ok: boolean; state: GameState }): GameState => {
+    if (!outcome.ok) throw new Error('rejected');
+    return outcome.state;
+  };
+  const withWorks = (s: GameState, buildings: GameState['works']['buildings'], artisans: number): GameState => ({
+    ...s,
+    works: { ...s.works, artisans, buildings },
+  });
+  const buttonOf = (html: string, id: string): string => {
+    const at = html.indexOf(`<button type="button" id="${id}"`);
+    return html.slice(at, html.indexOf('</button>', at));
+  };
+
+  it('UC-WEB-007 工部 lists its four options with their tags', () => {
+    const html = render({ screen: 'play', state: court, department: 'works' });
+    const ids = ['recruit-artisans', 'release-artisans', 'build', 'forge-weapons'];
+    let last = -1;
+    for (const id of ids) {
+      const at = html.indexOf(`id="court-option-${id}"`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+    }
+    expect(buttonOf(html, 'court-option-recruit-artisans')).not.toContain('disabled');
+    expect(buttonOf(html, 'court-option-build')).not.toContain('disabled');
+    expect(buttonOf(html, 'court-option-release-artisans')).toContain('disabled');
+    expect(buttonOf(html, 'court-option-release-artisans')).toContain(`>${uiText.noIdleArtisans}<`);
+    expect(buttonOf(html, 'court-option-forge-weapons')).toContain(`>${uiText.notYetOpen}<`);
+  });
+
+  it('UC-WEB-007 after a 徵召, 徵召工匠 shows 本次已徵召 and 遣散工匠 is enabled', () => {
+    const recruited = ok(recruitArtisans(court, step));
+    const html = render({ screen: 'play', state: recruited, department: 'works' });
+    const recruit = buttonOf(html, 'court-option-recruit-artisans');
+    expect(recruit).toContain('disabled');
+    expect(recruit).toContain(`>${uiText.recruitUsed}<`);
+    expect(buttonOf(html, 'court-option-release-artisans')).not.toContain('disabled');
+  });
+
+  it('UC-WEB-007 with no one to recruit the tag is 無可徵之民', () => {
+    const tiny: GameState = { ...court, regions: court.regions.map((r) => ({ ...r, stats: { ...r.stats, population: 0 } })) };
+    expect(maxRecruit(tiny)).toBe(0);
+    const html = render({ screen: 'play', state: tiny, department: 'works' });
+    const recruit = buttonOf(html, 'court-option-recruit-artisans');
+    expect(recruit).toContain('disabled');
+    expect(recruit).toContain(`>${uiText.noRecruits}<`);
+  });
+
+  it('UC-WEB-011 the recruit screen shows the totals, the picker and the buttons', () => {
+    const html = render({ screen: 'recruit', state: court, count: step });
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('<main id="recruit-screen">'));
+    expect(html).toContain(`<h2>${uiText.recruitHeading}</h2>`);
+    expect(html).toMatch(new RegExp(`id="artisan-total">[^<]*${formatArtisans(0)}<`));
+    expect(html).toMatch(new RegExp(`id="free-population">[^<]*${formatArtisans(freePopulation(court))}<`));
+    expect(html).toMatch(new RegExp(`id="recruit-max-line">[^<]*${formatArtisans(maxRecruit(court))}<`));
+    expect(html).toMatch(/id="count-value"[^>]*>10,000 人</);
+    expect(buttonOf(html, 'count-down')).toContain('disabled');
+    expect(buttonOf(html, 'count-up')).not.toContain('disabled');
+    expect(buttonOf(html, 'count-max')).toContain(`>${uiText.recruitMax}`);
+    expect(html).toContain('id="confirm-recruit"');
+    expect(html).toContain('id="back-to-court"');
+    const top = render({ screen: 'recruit', state: court, count: maxRecruit(court) });
+    expect(buttonOf(top, 'count-up')).toContain('disabled');
+    expect(buttonOf(top, 'count-down')).not.toContain('disabled');
+  });
+
+  it('UC-WEB-012 the release screen shows the total and idle 工匠', () => {
+    const s = ok(recruitArtisans(court, 3 * step));
+    const html = render({ screen: 'release', state: s, count: step });
+    expect(html).toContain('id="release-screen"');
+    expect(html).toContain(`<h2>${uiText.releaseHeading}</h2>`);
+    expect(html).toMatch(new RegExp(`id="artisan-total">[^<]*${formatArtisans(3 * step)}<`));
+    expect(html).toMatch(new RegExp(`id="artisan-idle">[^<]*${formatArtisans(idleArtisans(s))}<`));
+    expect(buttonOf(html, 'count-max')).toContain(`>${uiText.releaseAll}`);
+    expect(html).toContain('id="confirm-release"');
+    expect(html).not.toContain('recruit-max-line');
+    expect(releaseArtisans(s, step).ok).toBe(true);
+  });
+
+  const rowOf = (html: string, id: string): string => {
+    const at = html.indexOf(`<tr data-building-row="${id}"`);
+    return html.slice(at, html.indexOf('</tr>', at));
+  };
+
+  it('UC-WEB-013 the build screen lists every building in order', () => {
+    const html = render({ screen: 'build', state: court });
+    expect(html).toContain('id="build-screen"');
+    expect(html).toContain(`<h2>${uiText.buildHeading}</h2>`);
+    expect(html.match(/data-building-row="/g)).toHaveLength(25);
+    let last = -1;
+    for (const b of gameText.buildings) {
+      const at = html.indexOf(`data-building-row="${b.id}"`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+      const row = rowOf(html, b.id);
+      expect(row).toContain(b.name);
+      expect(row).toContain(b.description);
+      expect(row).toContain(formatAmount(b.required));
+    }
+    const row = rowOf(html, 'observatory');
+    expect(row).toContain('data-status="not-started"');
+    expect(row).toContain(uiText.statusNotStarted);
+    expect(buttonOf(row, 'assign-down-observatory')).toContain('disabled');
+    expect(html).toContain('id="artisan-total"');
+    expect(html).toContain('id="artisan-idle"');
+  });
+
+  it('UC-WEB-013 in-progress, paused and completed rows', () => {
+    const b = court.works.buildings;
+    const edit = (id: string, patch: object) => b.map((x) => (x.id === id ? { ...x, ...patch } : x));
+    const progress = withWorks(court, edit('tiantan', { progress: 30000, assigned: 20000 }), 50000);
+    const row = rowOf(render({ screen: 'build', state: progress }), 'tiantan');
+    expect(row).toContain('data-status="in-progress"');
+    expect(row).toContain(uiText.statusInProgress);
+    expect(row).toContain('30,000 / 400,000');
+    expect(row).toContain(`${uiText.etaPrefix}19${uiText.etaSuffix}`);
+    expect(row).toContain('data-direction="1"');
+    expect(row).toContain('data-assign="tiantan"');
+    const paused = withWorks(court, edit('tiantan', { progress: 30000, assigned: 0 }), 50000);
+    const pausedRow = rowOf(render({ screen: 'build', state: paused }), 'tiantan');
+    expect(pausedRow).toContain(uiText.pausedMark);
+    const done = withWorks(court, edit('observatory', { progress: 100000 }), 50000);
+    const doneRow = rowOf(render({ screen: 'build', state: done }), 'observatory');
+    expect(doneRow).toContain(uiText.statusCompleted);
+    expect(doneRow).not.toContain('data-assign');
+  });
+
+  it('UC-WEB-013 with no idle 工匠 every plus button is disabled', () => {
+    const html = render({ screen: 'build', state: court });
+    for (const b of gameText.buildings) expect(buttonOf(html, `assign-up-${b.id}`)).toContain('disabled');
+    const staffed = withWorks(court, court.works.buildings, 50000);
+    const open = render({ screen: 'build', state: staffed });
+    expect(buttonOf(open, 'assign-up-observatory')).not.toContain('disabled');
+  });
+
+  it('UC-WEB-004 the summary shows wages and completed buildings only when present', () => {
+    const base = {
+      screen: 'summary' as const,
+      state: { ...state, turn: 1 },
+      actionId: 'study' as const,
+      changes: [],
+      endedHalfSeason: 'spring-early' as const,
+      totals: [],
+    };
+    const none = renderSummaryScreen(
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, regionChanges: [] }, completed: [] },
+      uiText,
+      gameText,
+    );
+    expect(none).not.toContain('summary-wages');
+    expect(none).not.toContain('summary-completed');
+    const html = renderSummaryScreen(
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, regionChanges: [] }, completed: ['observatory', 'tiantan'] },
+      uiText,
+      gameText,
+    );
+    expect(html).toContain(`id="summary-wages">${formatWages(155000)}<`);
+    expect(html.indexOf('id="summary-wages"')).toBeGreaterThan(html.indexOf('id="summary-treasury"'));
+    expect(html).toContain('id="summary-completed">落成：天壇、觀星臺<');
   });
 });
