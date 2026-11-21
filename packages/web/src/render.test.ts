@@ -6,6 +6,9 @@ import {
   maxRecruit,
   maxConscript,
   conscriptSoldiers,
+  formLegion,
+  moveLegion,
+  recallLegion,
   startDrill,
   recruitArtisans,
   releaseArtisans,
@@ -27,8 +30,8 @@ import {
   levyAmount,
   nextCollection,
 } from '@emperor/core';
+import { escapeHtml } from './html';
 import {
-  escapeHtml,
   renderAtlasScreen,
   renderEndingScreen,
   renderEraScreen,
@@ -177,7 +180,7 @@ describe('game screens', () => {
   });
 
   it('UC-WEB-004 screens without an image keep the header above the content', () => {
-    const economy = { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, regionChanges: [] };
+    const economy = { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] };
     const result = renderScreen({ screen: 'result', state, actionId: 'study', changes: [] }, uiText, gameText, images);
     const summary = renderScreen(
       { screen: 'summary', state, actionId: 'study', changes: [], endedHalfSeason: 'spring-early', totals: [], economy, completed: [], training: null },
@@ -224,7 +227,7 @@ describe('game screens', () => {
         changes: [{ stat: 'learning', amount: 3 }],
         endedHalfSeason: 'spring-early',
         totals: [{ stat: 'learning', amount: 9 }, { stat: 'health', amount: -2 }],
-        economy: { taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, regionChanges: [] },
+        economy: { taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] },
         completed: [],
       },
       uiText,
@@ -276,7 +279,7 @@ describe('game screens', () => {
         economy: {
           taxIncome: 547437,
           upkeep: 120000,
-          wages: 0, soldierWages: 0,
+          wages: 0, soldierWages: 0, legionWages: 0,
           regionChanges: [{ region: 'guanzhong', changes: [{ stat: 'morale', amount: -3 }] }],
         },
       },
@@ -286,7 +289,7 @@ describe('game screens', () => {
     expect(html).toMatch(/id="summary-treasury">稅入 \+547,437 兩，宮廷用度 −120,000 兩</);
     expect(html).toMatch(/<li data-region="guanzhong">關中：民心 −3<\/li>/);
     const empty = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, regionChanges: [] } },
+      { ...base, economy: { taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] } },
       uiText,
       gameText,
     );
@@ -708,6 +711,31 @@ describe('兵部', () => {
     expect(buttonOf(html, 'court-option-drill-troops')).not.toContain('disabled');
   });
 
+  it('UC-WEB-007 兵部 lists five options and tags an unavailable 組建軍團', () => {
+    const html = war(court);
+    let last = -1;
+    for (const id of ['conscript-soldiers', 'release-soldiers', 'drill-troops', 'form-legion', 'deploy-legions']) {
+      const at = html.indexOf(`id="court-option-${id}"`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+    }
+    expect(buttonOf(html, 'court-option-form-legion')).not.toContain('disabled');
+    const idle = court.officials.find((o) => o.post === null);
+    if (!idle) throw new Error('no idle official');
+    const formed = formLegion(court, gameText.regions, idle.id, step, '征西');
+    if (!formed.ok) throw new Error('rejected');
+    const occupied = war(formed.state);
+    expect(buttonOf(occupied, 'court-option-form-legion')).toContain('disabled');
+    expect(buttonOf(occupied, 'court-option-form-legion')).toContain('京師已有軍團駐紮');
+    const dry = war({ ...court, army: { ...court.army, soldiers: 0 } });
+    expect(buttonOf(dry, 'court-option-form-legion')).toContain('無兵可遣');
+    const busy = war({ ...court, officials: court.officials.map((o) => ({ ...o, post: o.post ?? 'chancellor' })) });
+    expect(buttonOf(busy, 'court-option-form-legion')).toContain('無賦閑官員');
+    for (const h of [html, occupied, dry, busy]) {
+      expect(buttonOf(h, 'court-option-deploy-legions')).not.toContain('disabled');
+    }
+  });
+
   it('UC-WEB-007 兵部 tags a used 徵召士兵, no recruits and no soldiers', () => {
     const used = conscriptSoldiers(court, step);
     if (!used.ok) throw new Error('rejected');
@@ -921,20 +949,40 @@ describe('工部', () => {
       training: null,
     };
     const none = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, regionChanges: [] }, completed: [] },
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] }, completed: [] },
       uiText,
       gameText,
     );
     expect(none).not.toContain('summary-wages');
     expect(none).not.toContain('summary-completed');
     const html = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, regionChanges: [] }, completed: ['observatory', 'tiantan'] },
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, legionWages: 0, regionChanges: [] }, completed: ['observatory', 'tiantan'] },
       uiText,
       gameText,
     );
     expect(html).toContain(`id="summary-wages">${formatWages(155000, 0)}<`);
     expect(html.indexOf('id="summary-wages"')).toBeGreaterThan(html.indexOf('id="summary-treasury"'));
     expect(html).toContain('id="summary-completed">落成：天壇、觀星臺<');
+  });
+
+  it('UC-WEB-004 the wages line shows 軍團兵餉', () => {
+    const html = renderSummaryScreen(
+      {
+        screen: 'summary',
+        state: { ...state, turn: 1 },
+        actionId: 'study',
+        changes: [],
+        endedHalfSeason: 'spring-early',
+        totals: [],
+        completed: [],
+        training: null,
+        economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, legionWages: 10000, regionChanges: [] },
+      },
+      uiText,
+      gameText,
+    );
+    expect(html).toContain(`id="summary-wages">${formatWages(0, 0, 10000)}<`);
+    expect(html).toContain('軍團兵餉');
   });
 
   it('UC-WEB-004 the wages line shows 工匠 wages and 兵餉', () => {
@@ -949,13 +997,13 @@ describe('工部', () => {
       training: null,
     };
     const both = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 10000, regionChanges: [] } },
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 10000, legionWages: 0, regionChanges: [] } },
       uiText,
       gameText,
     );
     expect(both).toContain(`id="summary-wages">${formatWages(155000, 10000)}<`);
     const zero = renderSummaryScreen(
-      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, regionChanges: [] } },
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] } },
       uiText,
       gameText,
     );
@@ -971,7 +1019,7 @@ describe('工部', () => {
       endedHalfSeason: 'spring-early' as const,
       totals: [],
       completed: ['observatory'],
-      economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, regionChanges: [] },
+      economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, legionWages: 0, regionChanges: [] },
     };
     const html = renderSummaryScreen({ ...base, training: 2 }, uiText, gameText);
     expect(html).toContain('id="summary-training">訓練 +2<');
@@ -1097,5 +1145,171 @@ describe('祭祀 screens', () => {
     const textOnly = main.replace(/<[^>]*>/g, '');
     expect(textOnly).not.toMatch(/[0-9]/);
     expect(textOnly).not.toContain(formatTaels(BALANCE.rites.sacrificeCost));
+  });
+});
+
+describe('組建軍團 screen', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const render = (screen: Screen): string => renderScreen(screen, uiText, gameText, images);
+  const base: Extract<Screen, { screen: 'legion' }> = {
+    screen: 'legion',
+    state: court,
+    count: BALANCE.army.step,
+    suggestions: gameText.legionNamePool.slice(0, 3),
+    draft: '',
+  };
+  const idle = court.officials.filter((o) => o.post === null);
+  const buttonOf = (html: string, id: string): string => {
+    const m = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`));
+    if (!m) throw new Error(`no ${id}`);
+    return m[0];
+  };
+
+  it('UC-WEB-021 shows the totals, the 將軍 table, the picker and the buttons', () => {
+    const html = render(base);
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('<main id="legion-screen">'));
+    expect(html).toContain(`<h2>${uiText.legionHeading}</h2>`);
+    expect(html).toMatch(new RegExp(`id="legion-pool">[^<]*${formatArtisans(court.army.soldiers)}<`));
+    expect(html).toMatch(new RegExp(`id="legion-training">[^<]*${court.army.training}<`));
+    expect(html).toContain('id="legion-max-line"');
+    expect(html).toContain('id="legion-generals"');
+    expect(html.match(/data-general="/g)).toHaveLength(idle.length);
+    expect(buttonOf(html, 'legion-general-0')).toContain(`data-general="${idle[0]!.id}"`);
+    expect(html).toContain(uiText.chooseGeneral);
+    for (const id of ['count-picker', 'count-down', 'count-up', 'count-max', 'confirm-legion', 'back-to-court']) {
+      expect(html).toContain(`id="${id}"`);
+    }
+    expect(buttonOf(html, 'count-max')).toBeTruthy();
+    expect(html).toContain(`>${uiText.recruitMax}`);
+  });
+
+  it('UC-WEB-021 three suggestions end in 軍 and the input has the label and 軍 suffix', () => {
+    const html = render(base);
+    base.suggestions.forEach((n, i) => {
+      expect(buttonOf(html, `legion-suggestion-${i}`)).toContain(`data-legion-name="${n}"`);
+      expect(html).toContain(`>${n}軍</button>`);
+    });
+    expect(html).toContain('<label for="legion-name-input">');
+    expect(html).toContain('id="legion-name-input" maxlength="4"');
+    expect(html).toMatch(/<input[^>]*id="legion-name-input"[^>]*>\s*<span>軍<\/span>/);
+  });
+
+  it('UC-WEB-021 confirm is disabled until a 將軍 is chosen, and the chosen row is marked', () => {
+    expect(buttonOf(render(base), 'confirm-legion')).toContain('disabled');
+    const html = render({ ...base, general: idle[0]!.id });
+    expect(buttonOf(html, 'confirm-legion')).not.toContain('disabled');
+    expect(buttonOf(html, 'legion-general-0')).toContain('aria-pressed="true"');
+    expect(buttonOf(html, 'legion-general-1')).toContain('aria-pressed="false"');
+    expect(html.match(/class="is-chosen"/g)).toHaveLength(1);
+  });
+
+  it('UC-WEB-021 escapes the draft and shows the error per reason', () => {
+    const html = render({ ...base, draft: '<b>' });
+    expect(html).toContain('value="&lt;b&gt;"');
+    expect(html).not.toContain('id="legion-error"');
+    const bad = render({ ...base, error: 'invalid-name' });
+    expect(bad).toMatch(new RegExp(`id="legion-error"[^>]*>${uiText.legionNameError}<`));
+    expect(bad).toContain('role="alert"');
+    const taken = render({ ...base, error: 'name-taken' });
+    expect(taken).toContain(uiText.legionNameTaken);
+    expect(taken).not.toContain(uiText.legionNameError);
+  });
+});
+
+describe('調兵遣將 screen', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const render = (screen: Screen): string => renderScreen(screen, uiText, gameText, images);
+  const ok = (o: { ok: boolean; state: GameState }): GameState => {
+    if (!o.ok) throw new Error('rejected');
+    return o.state;
+  };
+  const idle = court.officials.find((o) => o.post === null)!;
+  const formed = ok(formLegion(court, gameText.regions, idle.id, BALANCE.army.step, '征西'));
+  const deploy = (s: GameState, legion?: string): Screen =>
+    legion === undefined ? { screen: 'deploy', state: s } : { screen: 'deploy', state: s, legion };
+  const buttonOf = (html: string, id: string): string => {
+    const m = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>`));
+    if (!m) throw new Error(`no ${id}`);
+    return m[0];
+  };
+
+  it('UC-WEB-022 with no 軍團 shows the map and a line saying so', () => {
+    const html = render(deploy(court));
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('<main id="deploy-screen">'));
+    expect(html).toContain(`<h2>${uiText.deployHeading}</h2>`);
+    expect(html).toContain('id="deploy-map"');
+    expect(html).toContain('id="map-legend"');
+    expect(html).toContain(`<p id="deploy-empty">${uiText.noLegions}</p>`);
+    expect(html).not.toContain('id="deploy-hint"');
+    expect(html).not.toContain('id="legion-panel"');
+    expect(html).toContain('id="back-to-court"');
+  });
+
+  it('UC-WEB-022 with 軍團 but none selected shows the hint', () => {
+    const html = render(deploy(formed));
+    expect(html).toContain(`<p id="deploy-hint">${uiText.deployHint}</p>`);
+    expect(html).not.toContain('id="deploy-empty"');
+    expect(html).toContain('data-legion="legion-1"');
+    expect(html).not.toContain('data-move-to');
+  });
+
+  it('UC-WEB-022 a selected 軍團 in 京師 shows its panel, moves and 招回', () => {
+    const html = render(deploy(formed, 'legion-1'));
+    expect(html).toContain('id="legion-panel"');
+    expect(html).toMatch(/id="legion-panel-name">征西軍</);
+    expect(html).toContain(`id="legion-general">${idle.name}<`);
+    expect(html).toMatch(/id="legion-soldiers">[^<]*10,000/);
+    expect(html).toMatch(/id="legion-training">[^<]*50</);
+    expect(html).toMatch(/id="legion-region">關中</);
+    expect(html).toContain(`id="legion-status">${uiText.stationedStatus}<`);
+    expect(html).toContain('id="move-hint"');
+    expect(html).toContain('id="recall-hint"');
+    expect(html).toContain('data-move-to="zhongyuan"');
+    expect(html).toContain('data-move-to="bashu"');
+    expect(buttonOf(html, 'recall-legion')).not.toContain('disabled');
+    expect(html).toContain('id="close-legion-panel"');
+    expect(html).not.toContain('id="legion-moved"');
+  });
+
+  it('UC-WEB-022 after moving the panel says so and no destination is offered', () => {
+    const moved = ok(moveLegion(formed, gameText.regions, 'legion-1', 'zhongyuan'));
+    const html = render(deploy(moved, 'legion-1'));
+    expect(html).toContain(`id="legion-moved">${uiText.movedThisTurn}<`);
+    expect(html).not.toContain('data-move-to');
+    expect(html).not.toContain('id="move-hint"');
+    expect(html).not.toContain('id="recall-hint"');
+    expect(html).toMatch(/id="legion-region">中原</);
+  });
+
+  it('UC-WEB-022 after 招回 away from 京師 the 軍團 is returning', () => {
+    const moved = ok(moveLegion(formed, gameText.regions, 'legion-1', 'zhongyuan'));
+    const back = ok(recallLegion(moved, gameText.regions, 'legion-1'));
+    const html = render(deploy(back, 'legion-1'));
+    expect(html).toContain('legion-marker returning');
+    expect(html).toContain('id="legion-status">回師中，尚需一半季抵京<');
+    expect(html).not.toContain('id="recall-legion"');
+    expect(html).not.toContain('data-move-to');
+    expect(html).not.toContain('id="legion-moved"');
+  });
+
+  it('UC-WEB-022 a stationed 軍團 with nowhere to go says so', () => {
+    const stuck: GameState = {
+      ...formed,
+      regions: formed.regions.map((r) => (r.id === 'zhongyuan' || r.id === 'bashu' ? { ...r, owner: 'foreign' } : r)),
+    };
+    const html = render(deploy(stuck, 'legion-1'));
+    expect(html).toContain(`id="legion-no-moves">${uiText.noMoves}<`);
+    expect(html).not.toContain('id="move-hint"');
+  });
+
+  it('UC-WEB-022 招回 is disabled with a tag when no route leads home', () => {
+    const far = {
+      ...formed,
+      army: { ...formed.army, legions: formed.army.legions.map((l) => ({ ...l, region: 'lingnan' })) },
+      regions: formed.regions.map((r) => (r.id === 'jingchu' ? { ...r, owner: 'foreign' } : r)),
+    };
+    const html = render(deploy(far, 'legion-1'));
+    expect(buttonOf(html, 'recall-legion')).toContain('disabled');
+    expect(html).toMatch(/id="recall-legion"[^>]*>招回<span class="court-option-tag">無路可返<\/span>/);
   });
 });

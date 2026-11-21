@@ -2,6 +2,7 @@ import { BALANCE } from "../model/balance";
 import { PLAYER_OWNER } from "../model/region";
 import type { GameState } from "../model/state";
 import { buildingStatus } from "../model/works";
+import { legionSoldiers } from "./legions";
 import { isMorningCourt } from "./turn";
 
 export type WorksRejection =
@@ -25,7 +26,7 @@ export function freePopulation(state: GameState): number {
   const population = state.regions
     .filter((r) => r.owner === PLAYER_OWNER)
     .reduce((sum, r) => sum + r.stats.population, 0);
-  return Math.max(0, population - state.works.artisans - state.army.soldiers);
+  return Math.max(0, population - state.works.artisans - state.army.soldiers - legionSoldiers(state));
 }
 
 export function maxRecruit(state: GameState): number {

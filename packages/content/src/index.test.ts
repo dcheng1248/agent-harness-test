@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTION_IDS, ACTION_POINTS, COURT_OPTION_IDS, DEPARTMENTS, DEPARTMENT_IDS, HALF_SEASONS, PALACE_IDS, STAT_IDS, TAX_LEVEL_IDS, isValidEraName } from '@emperor/core';
+import { ACTION_IDS, ACTION_POINTS, COURT_OPTION_IDS, DEPARTMENTS, DEPARTMENT_IDS, HALF_SEASONS, PALACE_IDS, STAT_IDS, TAX_LEVEL_IDS, isValidEraName, isValidLegionName } from '@emperor/core';
 import { gameText, uiText } from './index';
 
 const han = /\p{Script=Han}/u;
@@ -8,6 +8,13 @@ describe('content', () => {
   it('provides title screen text', () => {
     expect(uiText.gameTitle).toBe('九重天子');
     expect(uiText.titleImageAlt).toBe('暮色中的紫禁城大殿');
+  });
+
+  it('offers a valid, unique 軍團 name pool', () => {
+    expect(gameText.legionNamePool.length).toBeGreaterThanOrEqual(10);
+    expect(new Set(gameText.legionNamePool).size).toBe(gameText.legionNamePool.length);
+    for (const name of gameText.legionNamePool) expect(isValidLegionName(name)).toBe(true);
+    expect(gameText.courtOptions['form-legion'].name).toBe('組建軍團');
   });
 
   it('provides start button text', () => {
@@ -66,6 +73,7 @@ describe('content', () => {
       'adjust-taxes': { name: '調整賦稅' }, 'extra-levy': { name: '額外徵稅' }, 'budget-sheet': { name: '收支表' },
       'hold-sacrifice': { name: '祭祀' }, 'conduct-diplomacy': { name: '外交' },
       'conscript-soldiers': { name: '徵召士兵' }, 'release-soldiers': { name: '解甲歸田' }, 'drill-troops': { name: '操練軍隊' },
+      'form-legion': { name: '組建軍團' }, 'deploy-legions': { name: '調兵遣將' },
       'grant-amnesty': { name: '大赦天下' }, 'try-major-case': { name: '審理要案' },
       'recruit-artisans': { name: '徵召工匠' }, 'release-artisans': { name: '遣散工匠' },
       build: { name: '營建工程' }, 'forge-weapons': { name: '打造兵器' },

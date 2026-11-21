@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   PLAYER_OWNER,
   appointOfficial,
+  formLegion,
+  isIdleOfficial,
   createInitialState,
   enterPalace,
   listPosts,
@@ -81,5 +83,24 @@ describe("drawOfficial table", () => {
     expect(drawOfficial(hit, "x", TEST_NAMES, new Set(), BALANCE.exam.ordinary)).toEqual(
       drawOfficial(hit, "x", TEST_NAMES, new Set()),
     );
+  });
+});
+
+describe("UC-CORE-004 賦閑", () => {
+  it("UC-CORE-004 a 將軍 is not 賦閑", () => {
+    const regions: RegionData[] = [
+      { id: "cap", owner: PLAYER_OWNER, capital: true, cell: { x: 0, y: 0 }, start },
+      { id: "n", owner: PLAYER_OWNER, cell: { x: 1, y: 0 }, start },
+    ];
+    const state = enterPalace(createInitialState(3, "承平", regions, TEST_NAMES), "xuanzheng");
+    const idle = state.officials.find((o) => o.post === null)!;
+    expect(isIdleOfficial(state, idle.id)).toBe(true);
+    const out = formLegion(state, regions, idle.id, 10000, "征西");
+    if (!out.ok) throw new Error(out.reason);
+    expect(isIdleOfficial(out.state, idle.id)).toBe(false);
+    expect(isIdleOfficial(out.state, "official-999")).toBe(false);
+    const appoint = appointOfficial(out.state, "personnel-minister", idle.id);
+    expect(appoint.ok).toBe(false);
+    if (!appoint.ok) expect(appoint.reason).toBe("not-idle");
   });
 });

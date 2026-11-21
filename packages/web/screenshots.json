@@ -2008,7 +2008,7 @@
   },
   {
     "name": "palace-xuanzheng-war",
-    "description": "宣政殿畫面：展開兵部，徵召士兵、解甲歸田與操練軍隊",
+    "description": "宣政殿畫面：展開兵部，徵召士兵、解甲歸田、操練軍隊、組建軍團與調兵遣將",
     "steps": [
       {
         "click": "#start"
@@ -2180,6 +2180,375 @@
       },
       {
         "waitFor": "#summary-training"
+      }
+    ]
+  },
+  {
+    "name": "form-legion",
+    "description": "組建軍團：全國兵員、訓練、此軍至多、賦閑官員、人數選擇、建議軍名與自擬軍名",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "waitFor": "#legion-screen"
+      }
+    ]
+  },
+  {
+    "name": "form-legion-ready",
+    "description": "組建軍團：已選將軍、已填建議軍名，可組建",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "waitFor": "#confirm-legion"
+      }
+    ]
+  },
+  {
+    "name": "form-legion-error",
+    "description": "組建軍團：軍名錯誤提示",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "waitFor": "#legion-error"
+      }
+    ]
+  },
+  {
+    "name": "palace-xuanzheng-war-capital-occupied",
+    "description": "宣政殿兵部：京師已有軍團駐紮，組建軍團停用",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "waitFor": "#court-option-form-legion[disabled]"
+      }
+    ]
+  },
+  {
+    "name": "deploy-legions-empty",
+    "description": "調兵遣將：尚無軍團",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-deploy-legions"
+      },
+      {
+        "waitFor": "#deploy-empty"
+      }
+    ]
+  },
+  {
+    "name": "deploy-legions",
+    "description": "調兵遣將：選取京師軍團，顯示將軍、兵員、訓練，中原與巴蜀可移駐，京師招回即解散",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "click": "#court-option-deploy-legions"
+      },
+      {
+        "click": "[data-legion=\"legion-1\"]"
+      },
+      {
+        "waitFor": "#legion-panel"
+      }
+    ]
+  },
+  {
+    "name": "deploy-legions-moved",
+    "description": "調兵遣將：軍團移駐中原，本半季已調動",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "click": "#court-option-deploy-legions"
+      },
+      {
+        "click": "[data-legion=\"legion-1\"]"
+      },
+      {
+        "click": "[data-move-to=\"zhongyuan\"]"
+      },
+      {
+        "waitFor": "#legion-moved"
+      }
+    ]
+  },
+  {
+    "name": "deploy-legions-returning",
+    "description": "調兵遣將：招回後回師中，尚需一半季",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "click": "#court-option-deploy-legions"
+      },
+      {
+        "click": "[data-legion=\"legion-1\"]"
+      },
+      {
+        "click": "[data-move-to=\"zhongyuan\"]"
+      },
+      {
+        "click": "#recall-legion"
+      },
+      {
+        "waitFor": ".legion-marker.returning"
+      }
+    ]
+  },
+  {
+    "name": "atlas-legions",
+    "description": "輿圖：京師標示軍團",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#open-atlas"
+      },
+      {
+        "waitFor": "#atlas-map .legion-marker"
+      }
+    ]
+  },
+  {
+    "name": "turn-summary-legion-wages",
+    "description": "半季總結：工錢行列兵餉與軍團兵餉",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-form-legion"
+      },
+      {
+        "click": "#legion-general-0"
+      },
+      {
+        "click": "#legion-suggestion-0"
+      },
+      {
+        "click": "#confirm-legion"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "waitFor": "#summary-wages"
       }
     ]
   }

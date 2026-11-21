@@ -19,6 +19,8 @@ import {
   levyAmount,
   canLevy,
   drillTurnsLeft,
+  formLegion,
+  maxLegionSoldiers,
 } from '@emperor/core';
 import {
   acceptRecommendation,
@@ -26,6 +28,13 @@ import {
   backToCourt,
   cancelPost,
   chooseCourtOption,
+  chooseGeneral,
+  pickLegionName,
+  typeLegionName,
+  confirmLegion,
+  selectLegion,
+  moveSelectedLegion,
+  recallSelectedLegion,
   chooseEraName,
   closeAtlas,
   changeAssignment,
@@ -390,6 +399,14 @@ describe('官員任命', () => {
     expect(selectPost(onPlay, 'chancellor')).toBe(onPlay);
     expect(sortIdle(onPlay, 'loyalty')).toBe(onPlay);
     expect(appoint(onPlay, 'official-1')).toBe(onPlay);
+  });
+
+  it('UC-WEB-008 idleOfficials leaves out a 將軍', () => {
+    const { state } = appointScreen();
+    const general = idleOfficials(state)[0]!;
+    const formed = formLegion(state, gameText.regions, general.id, BALANCE.army.step, '征西');
+    if (!formed.ok) throw new Error('rejected');
+    expect(idleOfficials(formed.state).map((o) => o.id)).not.toContain(general.id);
   });
 
   it('UC-WEB-008 idleOfficials order', () => {
@@ -985,5 +1002,180 @@ describe('兵部', () => {
     };
     expect(turnEnd(confirmDrill(drillScreen())).training).toBe(2);
     expect(turnEnd(war()).training).toBeNull();
+  });
+});
+
+describe('組建軍團', () => {
+  const pool = gameText.legionNamePool;
+  const court = (state: GameState = newState()): Screen =>
+    toggleDepartment(goToPalace(play(state), 'xuanzheng'), 'war');
+  const open = (c: Screen = court()): Extract<Screen, { screen: 'legion' }> => {
+    const s = chooseCourtOption(c, 'form-legion', notables, names, regions, pool);
+    if (s.screen !== 'legion') throw new Error('expected legion');
+    return s;
+  };
+  const withGeneral = (s: Extract<Screen, { screen: 'legion' }>): Extract<Screen, { screen: 'legion' }> => {
+    const general = idleOfficials(s.state)[0]!;
+    const next = chooseGeneral(s, general.id);
+    if (next.screen !== 'legion') throw new Error('expected legion');
+    return next;
+  };
+
+  it('UC-WEB-021 opens with one step, three pool suggestions, no name and no general', () => {
+    const s = open();
+    expect(s.count).toBe(10000);
+    expect(s.draft).toBe('');
+    expect(s.general).toBeUndefined();
+    expect(s.suggestions).toHaveLength(3);
+    for (const n of s.suggestions) expect(pool).toContain(n);
+  });
+
+  it('UC-WEB-021 stays closed while a 軍團 is stationed in 京師', () => {
+    const s = open();
+    const done = confirmLegion(withGeneral(pickLegionName(s, s.suggestions[0]!) as typeof s), regions);
+    if (done.screen !== 'play') throw new Error('unexpected');
+    const again = { ...done, department: 'war' as const };
+    expect(chooseCourtOption(again, 'form-legion', notables, names, regions, pool)).toBe(again);
+  });
+
+  it('UC-WEB-021 chooseGeneral takes an idle official only', () => {
+    const s = open();
+    const idle = idleOfficials(s.state)[0]!;
+    expect(chooseGeneral(s, idle.id)).toMatchObject({ general: idle.id });
+    const posted = s.state.officials.find((o) => o.post !== null)!;
+    expect(chooseGeneral(s, posted.id)).toBe(s);
+    expect(chooseGeneral(s, 'nobody')).toBe(s);
+    expect(chooseGeneral(court(), idle.id)).toEqual(court());
+  });
+
+  it('UC-WEB-021 the picker stops at maxLegionSoldiers', () => {
+    const s = open();
+    expect(maxLegionSoldiers(s.state)).toBe(20000);
+    const top = maxCount(s);
+    expect(top).toMatchObject({ count: 20000 });
+    expect(stepCount(top, 1)).toBe(top);
+    expect(stepCount(s, -1)).toBe(s);
+    expect(stepCount(s, 1)).toMatchObject({ screen: 'legion', count: 20000 });
+  });
+
+  it('UC-WEB-021 pickLegionName and typeLegionName set the draft', () => {
+    const s = open();
+    const name = s.suggestions[1]!;
+    const bad = { ...s, draft: 'x', error: 'invalid-name' as const };
+    const picked = pickLegionName(bad, name);
+    expect(picked).toMatchObject({ draft: name });
+    expect((picked as { error?: string }).error).toBeUndefined();
+    expect(pickLegionName(s, '不在')).toBe(s);
+    const g = withGeneral(stepCount(s, 1) as typeof s);
+    const typed = typeLegionName(g, '平北');
+    expect(typed).toEqual({ ...g, draft: '平北' });
+    expect(typeLegionName(court(), 'x')).toEqual(court());
+  });
+
+  it('UC-WEB-021 confirmLegion needs a general, trims the name and forms the 軍團', () => {
+    const s = open();
+    expect(confirmLegion({ ...s, draft: '征西' }, regions)).toEqual({ ...s, draft: '征西' });
+    const ready = typeLegionName(withGeneral(s), ' 征西 ');
+    const done = confirmLegion(ready, regions);
+    if (done.screen !== 'play') throw new Error('unexpected');
+    expect(done.department).toBe('war');
+    expect(done.state.army.legions).toMatchObject([{ name: '征西', soldiers: 10000 }]);
+    expect(confirmLegion(court(), regions)).toEqual(court());
+  });
+
+  it('UC-WEB-021 a bad or taken name keeps the screen, choices and typed text', () => {
+    const ready = withGeneral(open());
+    const bad = confirmLegion(typeLegionName(ready, '征'), regions);
+    expect(bad).toMatchObject({ screen: 'legion', error: 'invalid-name', draft: '征', count: 10000, general: ready.general });
+    const formed = confirmLegion(typeLegionName(ready, '征西'), regions);
+    if (formed.screen !== 'play') throw new Error('unexpected');
+    const moved: GameState = {
+      ...formed.state,
+      army: { ...formed.state.army, legions: formed.state.army.legions.map((l) => ({ ...l, region: 'elsewhere' })) },
+    };
+    const again = withGeneral(open(court(moved)));
+    expect(confirmLegion(typeLegionName(again, '征西'), regions)).toMatchObject({
+      screen: 'legion',
+      error: 'name-taken',
+      draft: '征西',
+    });
+  });
+
+  it('UC-WEB-021 backToCourt returns to 兵部', () => {
+    const s = open();
+    expect(backToCourt(s)).toEqual({ screen: 'play', state: s.state, department: 'war' });
+  });
+});
+
+describe('調兵遣將', () => {
+  const court = (state: GameState = newState()): Screen =>
+    toggleDepartment(goToPalace(play(state), 'xuanzheng'), 'war');
+  const formed = (): GameState => {
+    const s = chooseCourtOption(court(), 'form-legion', notables, names, regions, gameText.legionNamePool);
+    if (s.screen !== 'legion') throw new Error('expected legion');
+    const g = chooseGeneral(s, idleOfficials(s.state)[0]!.id);
+    const done = confirmLegion(typeLegionName(g, '征西'), regions);
+    if (done.screen !== 'play') throw new Error('unexpected');
+    return done.state;
+  };
+  const open = (state: GameState = formed()): Extract<Screen, { screen: 'deploy' }> => {
+    const s = chooseCourtOption(court(state), 'deploy-legions', notables, names, regions);
+    if (s.screen !== 'deploy') throw new Error('expected deploy');
+    return s;
+  };
+  const picked = (): Screen => selectLegion(open(), 'legion-1');
+
+  it('UC-WEB-022 opens from 兵部 with nothing selected, even without a 軍團', () => {
+    expect(open()).toEqual({ screen: 'deploy', state: formed() });
+    expect(open(newState()).screen).toBe('deploy');
+  });
+
+  it('UC-WEB-022 selectLegion selects a known 軍團, ignores others and clears on null', () => {
+    const s = open();
+    expect(selectLegion(s, 'legion-1')).toEqual({ ...s, legion: 'legion-1' });
+    expect(selectLegion(s, 'legion-9')).toBe(s);
+    expect(selectLegion(selectLegion(s, 'legion-1'), null)).toEqual({ screen: 'deploy', state: s.state });
+    expect(selectLegion(court(), 'legion-1')).toEqual(court());
+  });
+
+  it('UC-WEB-022 moveSelectedLegion moves, keeps the selection and rejects a second or distant move', () => {
+    const s = picked();
+    const moved = moveSelectedLegion(s, regions, 'zhongyuan');
+    if (moved.screen !== 'deploy') throw new Error('unexpected');
+    expect(moved.legion).toBe('legion-1');
+    expect(moved.state.army.legions[0]!.region).toBe('zhongyuan');
+    expect(moveSelectedLegion(moved, regions, 'guanzhong')).toBe(moved);
+    expect(moveSelectedLegion(s, regions, 'hebei')).toBe(s);
+    const bare = open();
+    expect(moveSelectedLegion(bare, regions, 'zhongyuan')).toBe(bare);
+    expect(moveSelectedLegion(court(), regions, 'zhongyuan')).toEqual(court());
+  });
+
+  it('UC-WEB-022 recallSelectedLegion starts the return away from 京師 and keeps the selection', () => {
+    const moved = moveSelectedLegion(picked(), regions, 'zhongyuan');
+    const back = recallSelectedLegion(moved, regions);
+    if (back.screen !== 'deploy') throw new Error('unexpected');
+    expect(back.legion).toBe('legion-1');
+    expect(back.state.army.legions[0]!.route).toEqual(['guanzhong']);
+  });
+
+  it('UC-WEB-022 recallSelectedLegion in 京師 disbands and clears the selection', () => {
+    const back = recallSelectedLegion(picked(), regions);
+    expect(back).toMatchObject({ screen: 'deploy' });
+    if (back.screen !== 'deploy') throw new Error('unexpected');
+    expect(back.legion).toBeUndefined();
+    expect(back.state.army.legions).toEqual([]);
+  });
+
+  it('UC-WEB-022 recall without a selection or on another screen changes nothing', () => {
+    const bare = open();
+    expect(recallSelectedLegion(bare, regions)).toBe(bare);
+    expect(recallSelectedLegion(court(), regions)).toEqual(court());
+  });
+
+  it('UC-WEB-022 backToCourt returns to 兵部', () => {
+    const s = picked();
+    if (s.screen !== 'deploy') throw new Error('unexpected');
+    expect(backToCourt(s)).toEqual({ screen: 'play', state: s.state, department: 'war' });
   });
 });

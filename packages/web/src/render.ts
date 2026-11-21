@@ -13,9 +13,11 @@ import {
   formatPostName,
   formatReign,
   formatTaels,
+  formatLegionName,
 } from '@emperor/content';
 import {
   canEnterPalace,
+  findLegion,
   CATALOG,
   DEPARTMENT_IDS,
   DEPARTMENTS,
@@ -26,6 +28,12 @@ import {
   getHalfSeason,
   getReignYear,
   canHoldExam,
+  canFormLegion,
+  canRecall,
+  legionMoves,
+  maxLegionSoldiers,
+  capitalRegion,
+  stationedLegion,
   canHoldSacrifice,
   canLevy,
   expectedTax,
@@ -55,20 +63,13 @@ import {
   type PostInfo,
 } from '@emperor/core';
 import { PALACE_ANCHORS } from './palaceMap';
+import { escapeHtml } from './html';
+import { renderWorldMap } from './worldMap';
 import { ATLAS_PALACE, COURT_PALACE, countStep, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 
 type Of<K extends Screen['screen']> = Extract<Screen, { screen: K }>;
 
 export type ScreenImages = { palace: string; scroll: string; map: string; backgrounds: Record<PalaceId, string> };
-
-export function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 export function renderTitleScreen(text: UiText, images: ScreenImages): string {
   return `<div id="title-stage"><img id="title-palace" src="${images.palace}" alt="${text.titleImageAlt}"><div id="title-scroll"><img src="${images.scroll}" alt=""><h1>${text.gameTitle}</h1></div><button type="button" id="start">${text.startButton}</button></div>`;
@@ -119,6 +120,13 @@ function examTag(state: GameState, text: UiText): string {
   return `${text.nextExamPrefix}${formatChineseNumber(nextExamYear(state) - getReignYear(state))}${text.nextExamSuffix}`;
 }
 
+function legionTag(state: GameState, text: UiText, game: GameText): string {
+  const capital = capitalRegion(game.regions);
+  if (capital !== null && stationedLegion(state, capital) !== undefined) return text.capitalOccupied;
+  if (state.army.soldiers < BALANCE.army.step) return text.noSoldiers;
+  return text.noIdleGeneral;
+}
+
 function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game: GameText, images: ScreenImages): string {
   const palace = game.palaces[COURT_PALACE];
   const open = screen.department;
@@ -137,6 +145,8 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${screen.state.army.conscriptedTurn === screen.state.turn ? text.recruitUsed : text.noRecruits}</span></button>`
           : option === 'release-soldiers' && screen.state.army.soldiers <= 0
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.noSoldiers}</span></button>`
+          : option === 'form-legion' && !canFormLegion(screen.state, game.regions)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${legionTag(screen.state, text, game)}</span></button>`
           : option === 'recommend-officials' && !canRecommend(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.recommendUsed}</span></button>`
           : option === 'hold-exams' && !canHoldExam(screen.state)
@@ -172,7 +182,7 @@ export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: G
             return `<li data-region="${escapeHtml(r.region)}">${escapeHtml(name)}：${formatChanges(r.changes)}</li>`;
           })
           .join('');
-  const wages = screen.economy.wages + screen.economy.soldierWages > 0 ? `<p id="summary-wages">${formatWages(screen.economy.wages, screen.economy.soldierWages)}</p>` : '';
+  const wages = screen.economy.wages + screen.economy.soldierWages + screen.economy.legionWages > 0 ? `<p id="summary-wages">${formatWages(screen.economy.wages, screen.economy.soldierWages, screen.economy.legionWages)}</p>` : '';
   const training = screen.training === null ? '' : `<p id="summary-training">${formatTrainingChange(screen.training)}</p>`;
   const completedNames = screen.state.works.buildings
     .filter((b) => screen.completed.includes(b.id))
@@ -184,38 +194,15 @@ export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: G
 
 export function renderAtlasScreen(screen: Of<'atlas'>, text: UiText, game: GameText): string {
   const nationOf = (id: string) => game.nations.find((n) => n.id === id);
-  const drawn = screen.state.regions.flatMap((r) => {
-    const entry = game.regions.find((g) => g.id === r.id);
-    return entry ? [{ state: r, entry }] : [];
-  });
-  const cols = Math.max(0, ...drawn.map((d) => d.entry.cell.x + 1));
-  const rows = Math.max(0, ...drawn.map((d) => d.entry.cell.y + 1));
-  const cells: string[] = [];
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      const place = `grid-column:${x + 1};grid-row:${y + 1}`;
-      const found = drawn.find((d) => d.entry.cell.x === x && d.entry.cell.y === y);
-      if (!found) {
-        cells.push(`<div class="map-cell map-empty" aria-hidden="true" style="${place}"></div>`);
-        continue;
-      }
-      const selected = found.state.id === screen.region;
-      const color = nationOf(found.state.owner)?.color;
-      const background = color === undefined ? '' : `;background:${escapeHtml(color)}`;
-      const mark = found.entry.capital ? `<span class="capital-mark">${text.capitalMark}</span>` : '';
-      cells.push(
-        `<button type="button" class="map-cell${selected ? ' selected' : ''}" data-region="${escapeHtml(found.state.id)}" aria-pressed="${selected}" style="${place}${background}">${escapeHtml(found.entry.name)}${mark}</button>`,
-      );
-    }
-  }
-  const chosen = drawn.find((d) => d.state.id === screen.region);
-  const panel = chosen
-    ? `<section id="region-panel"><h3 id="region-panel-name">${escapeHtml(chosen.entry.name)}</h3><dl><dt>${text.ownerLabel}</dt><dd id="region-owner">${escapeHtml(nationOf(chosen.state.owner)?.name ?? chosen.state.owner)}</dd><dt>${game.statLabels.morale}</dt><dd id="region-morale">${chosen.state.stats.morale}</dd><dt>${game.statLabels.population}</dt><dd id="region-population">${formatAmount(chosen.state.stats.population)}</dd><dt>${game.statLabels.prosperity}</dt><dd id="region-prosperity">${chosen.state.stats.prosperity}</dd></dl><button type="button" id="close-region-panel">${text.closeRegionPanel}</button></section>`
-    : `<p id="atlas-hint">${text.atlasHint}</p>`;
-  const legend = game.nations
-    .map((n) => `<li data-nation="${escapeHtml(n.id)}"><span class="legend-swatch" style="background:${escapeHtml(n.color)}"></span>${escapeHtml(n.name)}</li>`)
-    .join('');
-  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2><div id="atlas-map" role="group" aria-label="${text.atlasMapLabel}" style="--cols:${cols}">${cells.join('')}</div>${panel}<section id="map-legend"><h3>${text.legendHeading}</h3><ul>${legend}</ul></section><button type="button" id="close-atlas">${text.closeAtlas}</button></main>`;
+  const chosen = screen.state.regions
+    .map((r) => ({ state: r, entry: game.regions.find((g) => g.id === r.id) }))
+    .find((d) => d.state.id === screen.region && d.entry);
+  const panel =
+    chosen && chosen.entry
+      ? `<section id="region-panel"><h3 id="region-panel-name">${escapeHtml(chosen.entry.name)}</h3><dl><dt>${text.ownerLabel}</dt><dd id="region-owner">${escapeHtml(nationOf(chosen.state.owner)?.name ?? chosen.state.owner)}</dd><dt>${game.statLabels.morale}</dt><dd id="region-morale">${chosen.state.stats.morale}</dd><dt>${game.statLabels.population}</dt><dd id="region-population">${formatAmount(chosen.state.stats.population)}</dd><dt>${game.statLabels.prosperity}</dt><dd id="region-prosperity">${chosen.state.stats.prosperity}</dd></dl><button type="button" id="close-region-panel">${text.closeRegionPanel}</button></section>`
+      : `<p id="atlas-hint">${text.atlasHint}</p>`;
+  const map = renderWorldMap(screen.state, text, game, screen.region === undefined ? { kind: 'atlas' } : { kind: 'atlas', region: screen.region }, panel);
+  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2>${map}<button type="button" id="close-atlas">${text.closeAtlas}</button></main>`;
 }
 
 const POST_GROUPS = [
@@ -334,6 +321,71 @@ export function renderConscriptScreen(screen: Of<'conscript'>, text: UiText, gam
   const { state, count } = screen;
   const max = maxConscript(state);
   return `${renderHeader(state, text, game)}<main id="conscript-screen"><h2>${text.conscriptHeading}</h2><p id="soldier-total">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p><p id="free-population">${text.freePopulationLabel}：${formatArtisans(freePopulation(state))}</p><p id="conscript-max-line">${text.recruitMaxLabel}：${formatArtisans(max)}</p><p id="conscript-hint">${text.conscriptHint}</p>${renderPicker(count, max, countStep(screen), text.recruitMax, text)}<button type="button" id="confirm-conscript">${text.confirmConscript}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
+function renderLegionPanel(state: GameState, legionId: string, text: UiText, game: GameText): string {
+  const legion = findLegion(state, legionId);
+  if (!legion) return '';
+  const general = state.officials.find((o) => o.id === legion.general);
+  const regionName = game.regions.find((r) => r.id === legion.region)?.name ?? legion.region;
+  const status =
+    legion.route === null
+      ? text.stationedStatus
+      : `${text.returningPrefix}${formatChineseNumber(legion.route.length)}${text.returningSuffix}`;
+  let orders = '';
+  if (legion.route === null) {
+    const moves = legionMoves(state, game.regions, legion.id);
+    const move =
+      moves.length > 0
+        ? `<p id="move-hint">${text.moveHint}</p>`
+        : legion.movedTurn === state.turn
+        ? `<p id="legion-moved">${text.movedThisTurn}</p>`
+        : `<p id="legion-no-moves">${text.noMoves}</p>`;
+    const atCapital = legion.region === capitalRegion(game.regions);
+    const hint = atCapital ? `<p id="recall-hint">${text.recallDisbandHint}</p>` : '';
+    const recall = canRecall(state, game.regions, legion.id)
+      ? `<button type="button" id="recall-legion">${text.recallButton}</button>`
+      : `<button type="button" id="recall-legion" disabled>${text.recallButton}<span class="court-option-tag">${text.noRoute}</span></button>`;
+    orders = `${move}${hint}${recall}`;
+  }
+  return `<section id="legion-panel"><h3 id="legion-panel-name">${escapeHtml(formatLegionName(legion.name))}</h3><dl><dt>${text.generalLabel}</dt><dd id="legion-general">${escapeHtml(general?.name ?? '')}</dd><dt>${text.legionSoldiersLabel}</dt><dd id="legion-soldiers">${formatArtisans(legion.soldiers)}</dd><dt>${text.trainingLabel}</dt><dd id="legion-training">${legion.training}</dd><dt>${text.legionRegionLabel}</dt><dd id="legion-region">${escapeHtml(regionName)}</dd><dt>${text.legionStatusLabel}</dt><dd id="legion-status">${status}</dd></dl>${orders}<button type="button" id="close-legion-panel">${text.closeLegionPanel}</button></section>`;
+}
+
+export function renderDeployScreen(screen: Of<'deploy'>, text: UiText, game: GameText): string {
+  const { state, legion } = screen;
+  const moves = legion === undefined ? [] : legionMoves(state, game.regions, legion);
+  const panel =
+    state.army.legions.length === 0
+      ? `<p id="deploy-empty">${text.noLegions}</p>`
+      : legion !== undefined && state.army.legions.some((l) => l.id === legion)
+      ? renderLegionPanel(state, legion, text, game)
+      : `<p id="deploy-hint">${text.deployHint}</p>`;
+  const map = renderWorldMap(state, text, game, legion === undefined ? { kind: 'deploy', moves } : { kind: 'deploy', legion, moves }, panel);
+  return `${renderHeader(state, text, game)}<main id="deploy-screen"><h2>${text.deployHeading}</h2>${map}<button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
+export function renderLegionScreen(screen: Of<'legion'>, text: UiText, game: GameText): string {
+  const { state, count, general, draft, error } = screen;
+  const max = maxLegionSoldiers(state);
+  const head = `<tr><th>${text.nameColumn}</th>${OFFICIAL_STAT_IDS.map((stat) => `<th>${game.statLabels[stat]}</th>`).join('')}<th></th></tr>`;
+  const rows = idleOfficials(state)
+    .map((o, i) => {
+      const chosen = o.id === general;
+      return `<tr${chosen ? ' class="is-chosen"' : ''}><th scope="row">${escapeHtml(o.name)}</th>${statCells(o)}<td><button type="button" id="legion-general-${i}" data-general="${escapeHtml(o.id)}" aria-pressed="${chosen}">${text.chooseGeneral}</button></td></tr>`;
+    })
+    .join('');
+  const generals =
+    rows === ''
+      ? `<p id="no-idle">${text.noIdleOfficials}</p>`
+      : `<div class="table-scroll"><table id="legion-generals"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+  const suggestions = screen.suggestions
+    .map(
+      (name, i) =>
+        `<button type="button" id="legion-suggestion-${i}" data-legion-name="${escapeHtml(name)}">${escapeHtml(formatLegionName(name))}</button>`,
+    )
+    .join('');
+  const message = error === undefined ? '' : `<p id="legion-error" role="alert">${error === 'name-taken' ? text.legionNameTaken : text.legionNameError}</p>`;
+  return `${renderHeader(state, text, game)}<main id="legion-screen"><h2>${text.legionHeading}</h2><p id="legion-pool">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p><p id="legion-training">${text.trainingLabel}：${state.army.training}</p><p id="legion-max-line">${text.legionMaxLabel}：${formatArtisans(max)}</p><h3>${text.generalHeading}</h3>${generals}<h3>${text.legionSizeHeading}</h3>${renderPicker(count, max, countStep(screen), text.recruitMax, text)}<h3>${text.legionNameHeading}</h3><div id="legion-suggestions">${suggestions}</div><label for="legion-name-input">${text.legionNameInputLabel}</label><div id="legion-name-row"><input type="text" id="legion-name-input" maxlength="4" value="${escapeHtml(draft)}" autocomplete="off"><span>${text.legionSuffix}</span></div>${message}<button type="button" id="confirm-legion"${general === undefined ? ' disabled' : ''}>${text.confirmLegion}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
 }
 
 export function renderDrillScreen(screen: Of<'drill'>, text: UiText, game: GameText): string {
@@ -472,6 +524,10 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderConscriptScreen(screen, text, game);
     case 'discharge':
       return renderDischargeScreen(screen, text, game);
+    case 'legion':
+      return renderLegionScreen(screen, text, game);
+    case 'deploy':
+      return renderDeployScreen(screen, text, game);
     case 'drill':
       return renderDrillScreen(screen, text, game);
     case 'build':

@@ -27,8 +27,10 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-021 | 調整賦稅：全國稅率分極輕、輕、平、重、極重五等，收稅時影響稅入，每半季影響各地民心；早朝時可隨時調整 | implemented |
 | UC-CORE-022 | 額外徵稅：每次早朝一次，向各地加徵約半次稅收，各地民心大降 | implemented |
 | UC-CORE-023 | 祭祀：每個在位年一次，於早朝舉行，耗國庫並耗用午時，記錄本年已祭 | implemented |
-| UC-CORE-024 | 士兵：全國一支兵員，早朝時徵召（每次早朝一次，新兵稀釋訓練）與解甲歸田，每半季由國庫支付兵餉 | implemented |
+| UC-CORE-024 | 士兵：全國兵員，早朝時徵召（每次早朝一次，新兵稀釋訓練）與解甲歸田，每半季由國庫支付兵餉 | implemented |
 | UC-CORE-025 | 操練軍隊：早朝時預付國庫，為期一年，每半季訓練上升，至頂即止，期間不可取消或延長 | implemented |
+| UC-CORE-026 | 組建軍團：早朝時自全國兵員抽調士兵，以一名賦閑官員為將軍，取兩字軍名，駐紮京師；軍團兵餉加倍 | implemented |
+| UC-CORE-027 | 調兵遣將：軍團每半季可移入一處相鄰且無軍團駐紮的本朝地域；招回後每半季自動行軍一格返京，抵京解散歸入全國兵員 | implemented |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.
@@ -42,6 +44,8 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 
 **Foreign regions.** A region whose owner is not `PLAYER_OWNER` belongs to a foreign nation. Foreign nations are passive: their regions' 民心, 人口 and 富庶 never change, they pay no tax, 額外徵稅 and the 工匠 and soldier limits ignore them, and they have no 知州 or 總兵 posts (UC-CORE-004, UC-CORE-015, UC-CORE-016, UC-CORE-019, UC-CORE-022, UC-CORE-024).
 
+**Capital.** A region may be marked as the capital in its data (`RegionData.capital`). `capitalRegion(regions)` returns the ID of the first region so marked, or `null` when none is. The capital is where 軍團 are formed and where they return (UC-CORE-026, UC-CORE-027). It is static data and is not stored in the state.
+
 **Neighbours.** Each region sits on one cell `{ x, y }` of the world grid. `regionNeighbours(regions, id)` returns the IDs of the regions whose cell shares an edge with the cell of region `id`: one step along x or along y, never diagonal. So a region has at most four neighbours, and an empty cell next to it adds none. Owners do not matter: a player region and a foreign one can be neighbours. The result follows the order of `regions`. An unknown `id` gives `[]`. It draws no random numbers and changes nothing.
 
 ## UC-CORE-012 Turn loop
@@ -49,7 +53,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - `canEnterPalace(state, palaceId)` is true when the emperor is alive, on the map, the palace is in the catalog, and the palace is open now. Every palace is open at every action point except 宣政殿 (UC-CORE-003).
 - `takeAction(state, actionId, catalog = CATALOG)` is rejected, with the state unchanged, if the emperor is dead (`'dead'`), is on the map (`'not-in-palace'`), the palace does not offer the action (`'not-offered'`), or the action is not allowed in the current action point (`'not-allowed-now'`).
 - Otherwise it applies the action's effects from `BALANCE.actions`, with a seeded variance of up to `BALANCE.actionVariance` on the first effect. It clamps each stat to its range and reports the applied changes, leaving out zero changes. It adds them to `turnDeltas`, returns to the map, and uses the action point.
-- After the last action point of the turn, the turn ends: aging applies; if the emperor survives, the economy is settled (below), then building progress is added (UC-CORE-020), then drill training is added (UC-CORE-025); the emperor's turn totals (`turnDeltas` plus aging, in registry order, leaving out zeros) are reported; `turn` goes up by 1, `actionPoint` goes back to the first, and `turnDeltas` resets.
+- After the last action point of the turn, the turn ends: aging applies; if the emperor survives, the economy is settled (below), then building progress is added (UC-CORE-020), then drill training is added (UC-CORE-025), then returning 軍團 march (UC-CORE-027); the emperor's turn totals (`turnDeltas` plus aging, in registry order, leaving out zeros) are reported; `turn` goes up by 1, `actionPoint` goes back to the first, and `turnDeltas` resets.
 
 ## UC-CORE-003 早朝
 - 宣政殿 is open only at 朝 (`COURT_ACTION_POINT`, the first action point of each half-season). At any other action point `canEnterPalace` is false and `enterPalace` returns the state unchanged.
@@ -57,7 +61,9 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - So there is at most one 早朝 per half-season. Nothing inside 宣政殿 draws random numbers. 祭祀 is the only thing inside it that uses another action point (午); everything else uses none.
 
 ## UC-CORE-004 Officials and appointments
-**Officials.** `GameState.officials` lists every official. Each has an ID, a name, four stats from the stat registry (文治, 武功, 野心 and 忠誠, owner `official`, each within its `STAT_REGISTRY` bounds), either exactly one post or none (賦閑), and `notable`: the 名臣 ID for a 名臣, or `null` for an ordinary official. Stats never change for now, and they have no effect on play yet.
+**Officials.** `GameState.officials` lists every official. Each has an ID, a name, four stats from the stat registry (文治, 武功, 野心 and 忠誠, owner `official`, each within its `STAT_REGISTRY` bounds), either exactly one post or none, and `notable`: the 名臣 ID for a 名臣, or `null` for an ordinary official. Stats never change for now, and they have no effect on play yet.
+
+**賦閑.** An official is 賦閑 when they hold no post and lead no 軍團 (UC-CORE-026). `isIdleOfficial(state, officialId)` tells whether one is; it is false for an unknown ID. A 將軍 holds no post but is not 賦閑 until their 軍團 disbands.
 
 **Posts.** `listPosts(state)` gives the posts that exist now, in display order:
 1. 中樞: 丞相, 大將軍, 太傅 (`CENTRAL_POST_IDS`).
@@ -73,7 +79,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - the post names an office of a region in `state.regions` that the player does not own (`'region-not-owned'`);
 - the post is not in `listPosts(state)` otherwise (`'unknown-post'`);
 - no official has that ID (`'unknown-official'`);
-- the official already holds a post, including this one (`'not-idle'`).
+- the official already holds a post, including this one, or leads a 軍團 (`'not-idle'`).
 
 The checks run in that order. There is no dismissal (罷免) yet.
 
@@ -106,7 +112,7 @@ The candidate has a name, four stats, and `notable` (the 名臣 ID, or `null`).
 ## UC-CORE-019 工匠
 **Count.** The nation has a total of 工匠 (`GameState.works.artisans`). A new game starts with 0. Each 工匠 is either idle or assigned to one building (UC-CORE-020). Idle 工匠 (`idleArtisans(state)`) are the total minus everything assigned. 工匠 do not change region 人口, 民心 or taxes for now.
 
-**Free population.** `freePopulation(state)` is the total 人口 of the player-owned regions minus the total 工匠 and minus the soldiers (UC-CORE-024), never below 0. So 工匠 and soldiers draw on the same pool: recruiting either lowers the maximum of the other.
+**Free population.** `freePopulation(state)` is the total 人口 of the player-owned regions minus the total 工匠, minus the soldiers in the national pool (UC-CORE-024) and minus the soldiers of every 軍團 (UC-CORE-026), never below 0. So 工匠 and soldiers draw on the same pool: recruiting either lowers the maximum of the other.
 
 **Steps.** Every 工匠 count the player chooses is a whole multiple of `BALANCE.works.step`, so totals and assignments always stay multiples of the step.
 
@@ -159,7 +165,7 @@ The checks run in that order.
 **Holding.** `holdSacrifice(state)` takes `BALANCE.rites.sacrificeCost` from 國庫 and stamps `rites.sacrificeTurn` with the current turn. 國庫 may go below 0; the bankruptcy rule then applies at the end of the half-season as usual (UC-CORE-015, step 5). It changes nothing else: no 民心, no emperor stat, and officials, including 禮部尚書, have no effect. It draws no random numbers. It does not move the clock at once: the player stays in 早朝, the clock stays on 朝, and the other court options stay usable. 午 is spent when the player leaves (UC-CORE-003). It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when 祭祀 was already held this reign year (`'already-held'`). The checks run in that order.
 
 ## UC-CORE-024 士兵
-**Count.** The nation has one soldier count, `GameState.army.soldiers`, not split by region. A new game starts with `BALANCE.army.startingSoldiers` soldiers and training `BALANCE.army.startingTraining` (UC-CORE-025). Soldiers are taken off the free population (UC-CORE-019), the way 工匠 are; region 人口, 民心 and taxes do not change. Soldiers and training affect nothing else yet, and officials, including 兵部尚書, 總兵 and 大將軍, have no effect on them.
+**Count.** The nation has one pool of soldiers, `GameState.army.soldiers`, not split by region. Soldiers formed into a 軍團 leave the pool (UC-CORE-026) and come back to it when the 軍團 disbands (UC-CORE-027). Everything in this use case acts on the pool only, never on a 軍團. A new game starts with `BALANCE.army.startingSoldiers` soldiers and training `BALANCE.army.startingTraining` (UC-CORE-025). Soldiers are taken off the free population (UC-CORE-019), the way 工匠 are; region 人口, 民心 and taxes do not change. Pool soldiers and training affect nothing else yet, and officials, including 兵部尚書, 總兵 and 大將軍, have no effect on them.
 
 **Steps.** Every soldier count the player chooses is a whole multiple of `BALANCE.army.step`, so the total always stays a multiple of the step.
 
@@ -167,10 +173,10 @@ The checks run in that order.
 
 **Releasing (解甲歸田).** `releaseSoldiers(state, count)` removes `count` soldiers, who go back to the free population. It is free, and may be used any number of times during one 早朝. Training does not change. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when `count` is not a step multiple from one step up to the soldier count (`'invalid-count'`). Releasing every soldier is `count` = `army.soldiers`, and training is then kept for the next recruits to be averaged with.
 
-**Wages.** Paid at the end of each half-season the emperor survives, together with upkeep and 工匠 wages (UC-CORE-015). There is no army-specific rule when 國庫 cannot pay: the bankruptcy rule applies as usual.
+**Wages.** Paid at the end of each half-season the emperor survives, together with upkeep and 工匠 wages (UC-CORE-015). 軍團 soldiers are paid apart, at a higher rate (UC-CORE-026). There is no army-specific rule when 國庫 cannot pay: the bankruptcy rule applies as usual.
 
 ## UC-CORE-025 操練軍隊
-**Training.** `army.training` is a whole number from 0 to `BALANCE.army.maxTraining`. It changes only through drill (below) and conscript dilution (UC-CORE-024). It never decays.
+**Training.** `army.training` is a whole number from 0 to `BALANCE.army.maxTraining`. It changes only through drill (below), conscript dilution (UC-CORE-024) and a 軍團 disbanding into the pool (UC-CORE-027). It never decays. Drill raises only the pool's training, never a 軍團's.
 
 **Running.** `drillTurnsLeft(state)` is the number of half-seasons of drill left: `army.drillStartTurn` + `BALANCE.army.drillTurns` − `turn` when that is above 0, and 0 otherwise, including before the first drill. A drill is running while it is above 0. It is `BALANCE.army.drillTurns` in the half-season the drill started.
 
@@ -178,12 +184,52 @@ The checks run in that order.
 
 **Progress.** At the end of each half-season the emperor survives while a drill is running (so in `BALANCE.army.drillTurns` turn ends, starting with the end of the half-season it started in), after building progress, training rises by `BALANCE.army.drillGain`, never above `BALANCE.army.maxTraining`. `TurnEnd.training` reports the training gained (0 when already at the cap), or `null` when no drill was running. When the emperor dies, training does not change and `training` is `null`. When the drill ends, training stays where it is.
 
+## UC-CORE-026 組建軍團
+**軍團.** A 軍團 (`Legion`, in `state.army.legions`) is a body of soldiers taken out of the national pool, with an ID, a name, a 將軍, a soldier count, a training value and the region it is in. IDs are `legion-` plus a running number (`army.legionsFormed` after it is counted up), so they are never reused. There is no limit on the number of 軍團. A 軍團's soldiers and training never change while it exists: 徵召士兵, 解甲歸田 and 操練軍隊 act only on the pool. Its 將軍's stats have no effect.
+
+**Size.** `maxLegionSoldiers(state)` is the smaller of the pool's soldiers and `BALANCE.army.legionMaxSoldiers`. A 軍團's size is a whole multiple of `BALANCE.army.step` from one step up to it.
+
+**Names.** `isValidLegionName(name)` is true only for exactly two Han characters; it does not trim. The name is stored without 軍; `content` adds it when showing the name. No two existing 軍團 share a name, stationed or returning; a disbanded 軍團's name can be used again. `drawLegionNameSuggestions(state, pool, count = 3)` returns up to `count` distinct entries of `pool` that no existing 軍團 has, drawn with a seed derived from `state.rngState` and `army.legionsFormed`. It does not change `rngState`, so it gives the same names until a 軍團 is formed or disbanded. The pool comes from `content`. With fewer free names than `count`, it returns all of them.
+
+**Forming.** `canFormLegion(state, regions)` is true during 早朝 when the regions have a capital (UC-CORE-014), no stationed 軍團 is in it (UC-CORE-027), the pool has at least one step of soldiers, and at least one official is 賦閑. `formLegion(state, regions, generalId, count, name)` adds a 軍團 named `name`, led by the official `generalId`, with `count` soldiers taken from the pool and the pool's training at this moment, stationed in the capital and free to move this half-season. It counts up `army.legionsFormed`. The pool's training does not change. It uses no action point, draws no random numbers, and may be repeated during one 早朝 once the capital has been cleared. It is rejected, with the state unchanged, when:
+- it is not 早朝, including when dead (`'not-in-court'`);
+- the regions have no capital (`'no-capital'`);
+- a stationed 軍團 is in the capital (`'capital-occupied'`);
+- no official has the ID `generalId` (`'unknown-official'`);
+- the official is not 賦閑 (`'not-idle'`);
+- `count` is not a step multiple from one step up to `maxLegionSoldiers` (`'invalid-count'`);
+- `name` fails `isValidLegionName` (`'invalid-name'`);
+- an existing 軍團 has that name (`'name-taken'`).
+
+The checks run in that order.
+
+**將軍.** While their 軍團 exists, the 將軍 is not 賦閑 (UC-CORE-004): they cannot be appointed to a post or lead another 軍團. They become 賦閑 again when it disbands.
+
+**Wages.** At the end of each half-season the emperor survives, every 軍團 soldier, stationed or returning, is paid `BALANCE.army.wagePerSoldier` × `BALANCE.army.legionWageMultiplier`, reported apart from the pool's wages (UC-CORE-015). A 軍團 that disbands at a turn end is paid for that half-season, because wages are settled before the march.
+
+## UC-CORE-027 調兵遣將
+**Stationed and returning.** A 軍團 is *stationed* until it is recalled, and *returning* after. At most one stationed 軍團 is in any region. Returning 軍團 do not count: they can share a region with a stationed one or with each other. `stationedLegion(state, regionId)` gives the stationed 軍團 in a region, or `undefined`.
+
+**Moving.** `legionMoves(state, regions, legionId)` lists, in `regionNeighbours` order, the regions the 軍團 may move into now: each neighbour of its region that the player owns and that has no stationed 軍團. It is empty for an unknown or returning 軍團, and for one that already moved this half-season. `moveLegion(state, regions, legionId, regionId)` puts the 軍團 in that region and stamps `movedTurn` with the turn, so each 軍團 moves at most once per half-season. It costs nothing, uses no action point and draws no random numbers. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), no 軍團 has that ID (`'unknown-legion'`), the 軍團 is returning (`'returning'`), it already moved this half-season (`'already-moved'`), the region is not a neighbour of its region (`'not-neighbour'`), the player does not own the region (`'not-owned'`), or a stationed 軍團 is there (`'occupied'`). The checks run in that order. Foreign regions can never be entered.
+
+**Route home.** `recallRoute(state, regions, legionId)` is the shortest path from the 軍團's region to the capital through player-owned regions only, given as the regions still to enter, ending with the capital. It is `[]` when the 軍團 is already in the capital, and `null` when no such path exists, the regions have no capital, or no 軍團 has that ID. Stationed 軍團 do not block the path. Ties are broken by searching breadth-first and trying each region's neighbours in `regionNeighbours` order, so the same map always gives the same route.
+
+**招回.** `canRecall(state, regions, legionId)` is true during 早朝 for a stationed 軍團 whose `recallRoute` is not `null`. `recallLegion(state, regions, legionId)`:
+- in the capital, disbands the 軍團 at once (below);
+- elsewhere, makes it returning, with its route stored on it.
+
+It may be used on a 軍團 that moved this half-season. It uses no action point and draws no random numbers. It cannot be cancelled: a returning 軍團 takes no orders. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), no 軍團 has that ID (`'unknown-legion'`), the 軍團 is already returning (`'returning'`), or `recallRoute` is `null` (`'no-route'`). The checks run in that order.
+
+**March.** At the end of each half-season the emperor survives, after drill training (UC-CORE-025), each returning 軍團, in `army.legions` order, moves into the next region of its route. It passes through regions with a stationed 軍團. On entering the capital it disbands, even if a stationed 軍團 is there. A 軍團 recalled during 早朝 makes its first step at the end of that same half-season. When the emperor dies, nothing marches.
+
+**Disbanding.** The 軍團 is removed. Its soldiers rejoin the pool, and the pool's training becomes the soldier-weighted average of the two, (pool training × pool soldiers + 軍團 training × 軍團 soldiers) ÷ (pool soldiers + 軍團 soldiers), rounded down. Its 將軍 is 賦閑 again, and its name is free again.
+
 ## UC-CORE-013 Aging and death
 From `BALANCE.aging.startAge`, the emperor loses 健康 at the end of each turn. The loss starts at `BALANCE.aging.baseLoss` and grows by 1 every `BALANCE.aging.yearsPerStep` years of age. The emperor dies when 健康 reaches 0, checked after each action and again after aging at the end of the turn. On death `dead` becomes `true`, the turn does not advance, and the economy is not settled.
 
 ## UC-CORE-015 and UC-CORE-016 Economy
-`settleEconomy(nation, regions, nextHalfSeason, artisans, taxLevel, soldiers)` runs at the end of every turn the emperor survives. `nextHalfSeason` is the half-season the game moves into, `artisans` is the nation's total 工匠 (UC-CORE-019; `0` when left out), `taxLevel` is the current tax rate (UC-CORE-021; `'normal'` when left out), and `soldiers` is the nation's soldier count (UC-CORE-024; `0` when left out). The turn loop passes `state.revenue.taxLevel` and `state.army.soldiers`. In order:
-1. Upkeep and wages: 國庫 loses `BALANCE.upkeep`, the 工匠 wages, `artisans` × `BALANCE.works.wagePerArtisan` rounded down, and the soldier wages, `soldiers` × `BALANCE.army.wagePerSoldier` rounded down. Every 工匠 is paid, idle or assigned, and every soldier is paid. The report gives each apart from the upkeep (`wages` for 工匠 and `soldierWages` for soldiers, positive numbers, each `0` when there are none).
+`settleEconomy(nation, regions, nextHalfSeason, artisans, taxLevel, soldiers, legionSoldiers)` runs at the end of every turn the emperor survives. `nextHalfSeason` is the half-season the game moves into, `artisans` is the nation's total 工匠 (UC-CORE-019; `0` when left out), `taxLevel` is the current tax rate (UC-CORE-021; `'normal'` when left out), `soldiers` is the pool's soldier count (UC-CORE-024; `0` when left out), and `legionSoldiers` is the soldiers of every 軍團 together (UC-CORE-026; `0` when left out). The turn loop passes `state.revenue.taxLevel`, `state.army.soldiers` and the sum of every 軍團's soldiers. In order:
+1. Upkeep and wages: 國庫 loses `BALANCE.upkeep`, the 工匠 wages, `artisans` × `BALANCE.works.wagePerArtisan` rounded down, the soldier wages, `soldiers` × `BALANCE.army.wagePerSoldier` rounded down, and the 軍團 wages, `legionSoldiers` × `BALANCE.army.wagePerSoldier` × `BALANCE.army.legionWageMultiplier` rounded down. Every 工匠 is paid, idle or assigned, and every soldier is paid. The report gives each apart from the upkeep (`wages` for 工匠, `soldierWages` for the pool and `legionWages` for 軍團, positive numbers, each `0` when there are none).
 2. Population (UC-CORE-016), only when `nextHalfSeason` is 春上, so once a year: each player-owned region's 人口 grows by `BALANCE.population.ratePercent` percent (rounded down) when 民心 + 富庶 is at least `growAtOrAbove`, shrinks by the same amount when it is at most `shrinkAtOrBelow`, and otherwise stays. 人口 never goes below 0.
 3. Taxes (UC-CORE-015), only when `nextHalfSeason` is in `BALANCE.tax.collectOn`: 國庫 gains each player-owned region's `regionTax(stats, taxLevel)`, `floor(人口 × 富庶 × 民心 × multiplier / BALANCE.tax.halfYearDivisor)` with the level's multiplier from `BALANCE.tax.levels`, computed from its 人口 after step 2. Taxes arrive as the game enters a collection half-season, so they are reported in the summary of the half-season before it. No tax is collected at game start.
 4. Tax level (UC-CORE-021), at every turn end, collection or not: every player-owned region's 民心 changes by `taxLevel`'s 民心 change from `BALANCE.tax.levels`, kept within its `STAT_REGISTRY` bounds. At a collection the tax in step 3 is computed from 民心 before this change.
@@ -204,12 +250,13 @@ stateDiagram-v2
   Court --> Court: setTaxLevel, levy once
   Court --> Court: holdSacrifice once per reign year
   Court --> Court: conscriptSoldiers once, releaseSoldiers, startDrill when no drill is running
+  Court --> Court: formLegion, moveLegion once per 軍團 per half-season, recallLegion
   Court --> Map: returnToMap, clock moves to 午, or to 夕 after holdSacrifice
   Palace --> Map: takeAction, not the last action point
   Palace --> TurnEnd: takeAction, last action point
   TurnEnd --> Economy: aging, emperor alive
   Economy --> Works: upkeep and wages, population, taxes, tax level 民心, bankruptcy
-  Works --> Map: building progress and completions, drill training, next turn
+  Works --> Map: building progress and completions, drill training, returning 軍團 march, next turn
   Palace --> Dead: 健康 reaches 0
   TurnEnd --> Dead: 健康 reaches 0 after aging
   Dead --> [*]

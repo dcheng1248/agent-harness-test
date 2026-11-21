@@ -33,6 +33,18 @@ classDiagram
     number training
     number or null conscriptedTurn
     number or null drillStartTurn
+    Legion[] legions
+    number legionsFormed
+  }
+  class Legion {
+    string id
+    string name
+    string general
+    number soldiers
+    number training
+    string region
+    number or null movedTurn
+    string[] or null route
   }
   class Rites {
     number or null sacrificeTurn
@@ -98,6 +110,7 @@ classDiagram
     string owner
     GridCell cell
     RegionStatValues start
+    boolean capital
   }
   class GridCell {
     number x
@@ -122,6 +135,9 @@ classDiagram
   GameState "1" *-- "1" Revenue
   GameState "1" *-- "1" Rites
   GameState "1" *-- "1" Army
+  Army "1" *-- "many" Legion
+  Legion ..> Official : general is an official ID
+  Legion ..> RegionState : region and route are region IDs
 ```
 
 `StatValues` is `Record<EmperorStatId, number>`, `NationStatValues` is `Record<NationStatId, number>`, `RegionStatValues` is `Record<RegionStatId, number>`, and `OfficialStatValues` is `Record<OfficialStatId, number>`. `PostId` is a string (see "Posts"). `TaxLevelId` is one of `TAX_LEVEL_IDS` (see "Registries"). `Location` is `'map' | PalaceId`.
@@ -134,13 +150,13 @@ classDiagram
 - `turnDeltas` adds up the applied emperor stat changes of the current turn. It resets when the turn ends.
 - `nation` holds every stat owned by the nation.
 - `regions` holds one entry per region, in the order of the region data passed to `createInitialState`. The player's regions have owner `PLAYER_OWNER`. Any other owner is a foreign power. Grid cells, and so neighbours, are static data and are not stored in the state.
-- `officials` holds every official, in the order they were generated. IDs are unique and never reused. `post` is the `PostId` the official holds, or `null` for 賦閑. At most one official holds each post. Who holds a post is found by searching `officials`; it is not stored twice. `notable` is the 名臣 ID of a 名臣, or `null` for an ordinary official; whether a 名臣 is at court is found by searching `officials`.
+- `officials` holds every official, in the order they were generated. IDs are unique and never reused. `post` is the `PostId` the official holds, or `null` when they hold none; they are 賦閑 when it is `null` and they lead no 軍團 (`isIdleOfficial`). At most one official holds each post. Who holds a post is found by searching `officials`; it is not stored twice. `notable` is the 名臣 ID of a 名臣, or `null` for an ordinary official; whether a 名臣 is at court is found by searching `officials`.
 - `recommendation` is the last 舉薦: the `turn` it was used in, and the `candidate` waiting for a decision, or `null` once accepted or declined. It is `null` until the first 舉薦. 舉薦 is used this half-season when its `turn` equals `turn`.
 - `exam` is the last 開科取士: the `turn` it was held in, and the `candidates` waiting for confirmation, or `null` once confirmed. It is `null` until the first exam. An exam has been held this reign year when the reign year of its `turn` equals the current one.
 - `works` holds 工部's state. `artisans` is the nation's total 工匠. `recruitedTurn` is the `turn` of the last 徵召, or `null` before the first; 徵召 is used this half-season when it equals `turn`. `buildings` holds one entry per building, in the order of the building data passed to `createInitialState`: its `id`, its `required` manpower in 工匠·半季 (copied from the data), its `progress` so far, and the 工匠 `assigned` to it now. Idle 工匠 (`artisans` minus the sum of `assigned`) and each building's status are derived, not stored.
 - `revenue` holds 戶部's state. `taxLevel` is the national tax rate, a `TaxLevelId`; a new game starts at `'normal'` (平). `leviedTurn` is the `turn` of the last 額外徵稅, or `null` before the first; 額外徵稅 is used this half-season when it equals `turn`. The rules live in `src/rules/revenue.ts`.
 - `rites` holds 禮部's state, typed `Rites` in `src/model/rites.ts`. `sacrificeTurn` is the `turn` of the last 祭祀, or `null` before the first. 祭祀 has been held this reign year when the reign year of `sacrificeTurn` equals the current one (`sacrificedThisYear`), the same pattern as `exam.turn`; nothing resets it. 祭祀 was held during the current 早朝 when it equals `turn`, which `returnToMap` reads to decide whether 午 is spent too. A later disaster system reads `sacrificedThisYear`. The rules live in `src/rules/rites.ts`.
-- `army` holds 兵部's state, typed `Army` in `src/model/army.ts`. `soldiers` is the nation's one soldier count (not per region); a new game starts at `BALANCE.army.startingSoldiers`. `training` is the army's training value, a whole number from 0 to `BALANCE.army.maxTraining`; a new game starts at `BALANCE.army.startingTraining`. `conscriptedTurn` is the `turn` of the last 徵召士兵, or `null` before the first; 徵召士兵 is used this half-season when it equals `turn`. `drillStartTurn` is the `turn` the last 操練軍隊 started in, or `null` before the first. The half-seasons of drill left (`drillTurnsLeft`) are derived from it and `BALANCE.army.drillTurns`, not stored. The rules live in `src/rules/army.ts`.
+- `army` holds 兵部's state, typed `Army` in `src/model/army.ts`. `soldiers` is the nation's one soldier count (not per region); a new game starts at `BALANCE.army.startingSoldiers`. `training` is the army's training value, a whole number from 0 to `BALANCE.army.maxTraining`; a new game starts at `BALANCE.army.startingTraining`. `conscriptedTurn` is the `turn` of the last 徵召士兵, or `null` before the first; 徵召士兵 is used this half-season when it equals `turn`. `drillStartTurn` is the `turn` the last 操練軍隊 started in, or `null` before the first. The half-seasons of drill left (`drillTurnsLeft`) are derived from it and `BALANCE.army.drillTurns`, not stored. The rules live in `src/rules/army.ts`. `soldiers` and `training` are the national pool only. `legions` holds every 軍團 that exists, typed `Legion` in `src/model/army.ts`, in the order they were formed; a disbanded 軍團 is removed. `legionsFormed` counts every 軍團 ever formed and gives the next ID, so IDs are never reused. In a `Legion`, `general` is the ID of the leading official, `region` the region it is in now, `movedTurn` the `turn` of its last move or `null`, and `route` is `null` while it is stationed, or, while it is returning, the region IDs still to enter, ending with the capital. Whether an official is 賦閑 is derived: no post and no `Legion.general` equal to their ID. The 軍團 rules live in `src/rules/legions.ts`.
 - `dead` is set when the emperor dies. A dead state accepts no action.
 
 Derived values are never stored:
@@ -159,11 +175,12 @@ interface RegionData {
   owner: string;
   cell: GridCell;
   start: RegionStatValues;
+  capital?: boolean; // true only for the player's capital region
 }
 interface RegionState { id: string; owner: string; stats: RegionStatValues }
 ```
 
-`createInitialState` copies each entry's `id`, `owner` and `start` into a `RegionState`, keeping the order. It does not copy `cell`. Adding a region means adding one data entry; no `core` code changes.
+`createInitialState` copies each entry's `id`, `owner` and `start` into a `RegionState`, keeping the order. It does not copy `cell` or `capital`. `capitalRegion(regions)` in `src/rules/regions.ts` finds the capital from the region data, the way `regionNeighbours` finds neighbours. Rules that need cells or the capital (the 軍團 rules) take the region data as an argument. The turn-end march needs neither, because a returning 軍團 carries its route. Adding a region means adding one data entry; no `core` code changes.
 
 The world is a grid of square cells. Each region fills one cell, and no two regions share one (`content` checks this). Cells with no region are empty. Neighbours are derived, never listed: two regions are neighbours when their cells share an edge, so a region has at most four. `regionNeighbours(regions, id)` in `src/rules/regions.ts` computes them from the region data, since cells are not in the state. Owners are plain strings: `core` knows only `PLAYER_OWNER`, and the list of foreign nations, with their names and colours, lives in `content`. Rules that skip foreign regions (taxes, 民心, population, 工匠 and 士兵, regional posts) test `owner !== PLAYER_OWNER`, so foreign regions stay unchanged.
 
@@ -292,12 +309,19 @@ type RitesRejection = 'not-in-court' | 'already-held';
 type RitesOutcome =
   | { ok: false; reason: RitesRejection; state: GameState }
   | { ok: true; state: GameState };
-interface Army { soldiers: number; training: number; conscriptedTurn: number | null; drillStartTurn: number | null }
+interface Army { soldiers: number; training: number; conscriptedTurn: number | null; drillStartTurn: number | null; legions: Legion[]; legionsFormed: number }
+interface Legion { id: string; name: string; general: string; soldiers: number; training: number; region: string; movedTurn: number | null; route: string[] | null }
 type ArmyRejection = 'not-in-court' | 'already-used' | 'invalid-count' | 'already-drilling';
 type ArmyOutcome =
   | { ok: false; reason: ArmyRejection; state: GameState }
   | { ok: true; state: GameState };
-interface EconomyReport { taxIncome: number; upkeep: number; wages: number; soldierWages: number; regionChanges: RegionChange[] }
+type LegionRejection =
+  | 'not-in-court' | 'no-capital' | 'capital-occupied' | 'unknown-official' | 'not-idle' | 'invalid-count' | 'invalid-name' | 'name-taken'
+  | 'unknown-legion' | 'returning' | 'already-moved' | 'not-neighbour' | 'not-owned' | 'occupied' | 'no-route';
+type LegionOutcome =
+  | { ok: false; reason: LegionRejection; state: GameState }
+  | { ok: true; state: GameState };
+interface EconomyReport { taxIncome: number; upkeep: number; wages: number; soldierWages: number; legionWages: number; regionChanges: RegionChange[] }
 interface TurnEnd { aging: number; totals: StatChange[]; economy: EconomyReport; completed: string[]; training: number | null }
 type ActionOutcome =
   | { ok: false; reason: ActionRejection; state: GameState }
@@ -344,6 +368,20 @@ function releaseSoldiers(state: GameState, count: number): ArmyOutcome;
 function drillTurnsLeft(state: Pick<GameState, 'turn' | 'army'>): number; // 0 when no drill is running
 function canDrill(state: GameState): boolean;
 function startDrill(state: GameState): ArmyOutcome;
+function capitalRegion(regions: readonly RegionData[]): string | null;
+function isIdleOfficial(state: Pick<GameState, 'officials' | 'army'>, officialId: string): boolean;
+function legionSoldiers(state: Pick<GameState, 'army'>): number; // every 軍團's soldiers together
+function maxLegionSoldiers(state: Pick<GameState, 'army'>): number;
+function isValidLegionName(name: string): boolean;
+function drawLegionNameSuggestions(state: Pick<GameState, 'rngState' | 'army'>, pool: readonly string[], count?: number): string[];
+function stationedLegion(state: Pick<GameState, 'army'>, regionId: string): Legion | undefined;
+function canFormLegion(state: GameState, regions: readonly RegionData[]): boolean;
+function formLegion(state: GameState, regions: readonly RegionData[], generalId: string, count: number, name: string): LegionOutcome;
+function legionMoves(state: GameState, regions: readonly RegionData[], legionId: string): string[];
+function moveLegion(state: GameState, regions: readonly RegionData[], legionId: string, regionId: string): LegionOutcome;
+function recallRoute(state: GameState, regions: readonly RegionData[], legionId: string): string[] | null;
+function canRecall(state: GameState, regions: readonly RegionData[], legionId: string): boolean;
+function recallLegion(state: GameState, regions: readonly RegionData[], legionId: string): LegionOutcome;
 function settleEconomy(
   nation: NationStatValues,
   regions: readonly RegionState[],
@@ -351,9 +389,10 @@ function settleEconomy(
   artisans?: number, // defaults to 0
   taxLevel?: TaxLevelId, // defaults to 'normal'
   soldiers?: number, // defaults to 0
+  legionSoldiers?: number, // defaults to 0
 ): { nation: NationStatValues; regions: RegionState[]; report: EconomyReport };
 ```
 
 `turnEnd` is set when the action ended the turn, including when the emperor then dies of age. It is `null` when the emperor dies from the action itself. `aging` is the 健康 lost to age, as a positive number. `totals` holds emperor stats only.
 
-`economy.taxIncome`, `economy.upkeep`, `economy.wages` and `economy.soldierWages` are positive numbers of taels (`taxIncome` is 0 outside collections, `wages` is the 工匠 wages and 0 without 工匠, `soldierWages` is the soldier wages and 0 without soldiers). `regionChanges` lists, in region order, each region with a non-zero applied change, and its changes in registry order. `completed` lists the IDs of the buildings completed at this turn end, in building order. `training` is the training gained from 操練軍隊 at this turn end (0 when already at the cap), or `null` when no drill was running in the half-season that ended. When the emperor dies of age, `economy` is `{ taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, regionChanges: [] }`, `completed` is `[]` and `training` is `null`.
+`economy.taxIncome`, `economy.upkeep`, `economy.wages`, `economy.soldierWages` and `economy.legionWages` are positive numbers of taels (`taxIncome` is 0 outside collections, `wages` is the 工匠 wages and 0 without 工匠, `soldierWages` is the pool's soldier wages and 0 without pool soldiers, `legionWages` is the 軍團 wages and 0 without 軍團). `regionChanges` lists, in region order, each region with a non-zero applied change, and its changes in registry order. `completed` lists the IDs of the buildings completed at this turn end, in building order. `training` is the training gained from 操練軍隊 at this turn end (0 when already at the cap), or `null` when no drill was running in the half-season that ended. When the emperor dies of age, `economy` is `{ taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] }`, `completed` is `[]` and `training` is `null`.

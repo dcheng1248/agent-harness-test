@@ -64,6 +64,8 @@ export const BALANCE = {
     drillCost: 100000,
     drillTurns: 8,
     drillGain: 2,
+    legionMaxSoldiers: 100000,
+    legionWageMultiplier: 2,
   },
   rites: { sacrificeCost: 50000 },
   bankruptcyMoraleLoss: 3,

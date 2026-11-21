@@ -14,7 +14,7 @@ import { EMPEROR_STAT_IDS } from "./stats";
 import type { NationStatValues, StatValues } from "./stats";
 import type { RegionData, RegionState } from "./region";
 
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 export type Location = "map" | PalaceId;
 
@@ -124,6 +124,8 @@ export function createInitialState(
       training: BALANCE.army.startingTraining,
       conscriptedTurn: null,
       drillStartTurn: null,
+      legions: [],
+      legionsFormed: 0,
     },
     revenue: { taxLevel: "normal", leviedTurn: null },
     rites: { sacrificeTurn: null },

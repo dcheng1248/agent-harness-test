@@ -15,6 +15,13 @@ import {
   chooseCourtOption,
   changeAssignment,
   chooseEraName,
+  chooseGeneral,
+  pickLegionName,
+  typeLegionName,
+  confirmLegion,
+  selectLegion,
+  moveSelectedLegion,
+  recallSelectedLegion,
   closeAtlas,
   confirmExamPicks,
   confirmLevy,
@@ -79,6 +86,16 @@ if (root) {
     draw();
     if (current.screen === 'era') root.querySelector<HTMLInputElement>('#era-input')?.focus();
   };
+  const focusLegionError = (): void => {
+    if (current.screen === 'legion' && current.error !== undefined) {
+      root.querySelector<HTMLInputElement>('#legion-name-input')?.focus();
+    }
+  };
+  const confirmLegionTyped = (): void => {
+    current = confirmLegion(current, gameText.regions);
+    draw();
+    focusLegionError();
+  };
 
   root.addEventListener('click', (event) => {
     const target = event.target as Element;
@@ -95,12 +112,22 @@ if (root) {
       current = goToPalace(current, hit('[data-palace]')?.dataset.palace as PalaceId);
     } else if (hit('[data-department]')) {
       current = toggleDepartment(current, hit('[data-department]')?.dataset.department as DepartmentId);
+    } else if (hit('#deploy-map [data-legion]')) {
+      current = selectLegion(current, hit('#deploy-map [data-legion]')?.dataset.legion ?? '');
+    } else if (hit('[data-move-to]')) {
+      current = moveSelectedLegion(current, gameText.regions, hit('[data-move-to]')?.dataset.moveTo ?? '');
+    } else if (hit('#recall-legion')) {
+      current = recallSelectedLegion(current, gameText.regions);
+    } else if (hit('#close-legion-panel')) {
+      current = selectLegion(current, null);
     } else if (hit('[data-court-option]')) {
       current = chooseCourtOption(
         current,
         hit('[data-court-option]')?.dataset.courtOption as CourtOptionId,
         gameText.notables,
         gameText.officialNames,
+        gameText.regions,
+        gameText.legionNamePool,
       );
     } else if (hit('#atlas-map [data-region]')) {
       current = selectAtlasRegion(current, hit('#atlas-map [data-region]')?.dataset.region ?? '');
@@ -140,6 +167,13 @@ if (root) {
       current = confirmConscript(current);
     } else if (hit('#confirm-discharge')) {
       current = confirmDischarge(current);
+    } else if (hit('[data-general]')) {
+      current = chooseGeneral(current, hit('[data-general]')?.dataset.general ?? '');
+    } else if (hit('[data-legion-name]')) {
+      current = pickLegionName(current, hit('[data-legion-name]')?.dataset.legionName ?? '');
+    } else if (hit('#confirm-legion')) {
+      confirmLegionTyped();
+      return;
     } else if (hit('#confirm-drill')) {
       current = confirmDrill(current);
     } else if (hit('#confirm-levy')) {
@@ -175,6 +209,10 @@ if (root) {
     return TAX_LEVEL_IDS[Number((target as HTMLInputElement).value)];
   };
   root.addEventListener('input', (event) => {
+    if ((event.target as Element).id === 'legion-name-input') {
+      current = typeLegionName(current, (event.target as HTMLInputElement).value);
+      return;
+    }
     const level = sliderLevel(event);
     if (level === undefined || current.screen !== 'taxes') return;
     const preview = renderTaxPreview(current.state, level, uiText, gameText);
@@ -194,6 +232,9 @@ if (root) {
     if (event.key === 'Enter' && (event.target as Element).id === 'era-input') {
       event.preventDefault();
       confirmTyped();
+    } else if (event.key === 'Enter' && (event.target as Element).id === 'legion-name-input') {
+      event.preventDefault();
+      confirmLegionTyped();
     }
   });
   window.addEventListener('resize', placeCourtList);

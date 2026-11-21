@@ -12,6 +12,7 @@ import {
   formatTaels,
   formatTrainingChange,
   formatWages,
+  formatLegionName,
   formatArtisans,
 } from './format';
 import { uiText } from './index';
@@ -44,17 +45,20 @@ describe('format', () => {
     expect(formatTaels(-20000)).toBe('−20,000 兩');
   });
   it('UC-WEB-006 formats the economy report, hiding zero tax income', () => {
-    expect(formatEconomy({ taxIncome: 547437, upkeep: 120000, wages: 0, soldierWages: 0, regionChanges: [] })).toBe('稅入 +547,437 兩，宮廷用度 −120,000 兩');
-    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 547437, upkeep: 120000, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] })).toBe('稅入 +547,437 兩，宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
   });
   it('UC-WEB-004 formatEconomy ignores wages', () => {
-    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 50000, soldierWages: 0, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 50000, soldierWages: 0, legionWages: 0, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
   });
   it('UC-WEB-004 formats wages and artisans', () => {
     expect(formatWages(50000, 0)).toBe('工匠工錢 −50,000 兩');
     expect(formatWages(0, 10000)).toBe('兵餉 −10,000 兩');
     expect(formatWages(50000, 10000)).toBe('工匠工錢 −50,000 兩，兵餉 −10,000 兩');
     expect(formatWages(0, 0)).toBe('');
+    expect(formatWages(0, 5000, 10000)).toBe('兵餉 −5,000 兩，軍團兵餉 −10,000 兩');
+    expect(formatWages(155000, 0)).toBe('工匠工錢 −155,000 兩');
+    expect(formatLegionName('征西')).toBe('征西軍');
     expect(formatArtisans(310000)).toBe('310,000 人');
   });
   it('UC-WEB-004 formats the training change with its sign', () => {

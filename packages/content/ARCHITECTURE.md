@@ -10,12 +10,12 @@ Data flow: content is plain data and text formatting, read by `web`. Text for `c
 flowchart LR
   core -->|IDs and types, RegionData, NamePool, NotableData, BuildingData, PostInfo| content
   content -->|uiText, gameText with regions, nations, officialNames, notables and buildings, format functions| web
-  web -->|region data, name pool, 名臣 data, building data| core
+  web -->|region data, name pool, 名臣 data, building data, 軍團 name pool| core
 ```
 
 ## Exports
 - `uiText`: screen labels and fixed lines, keyed by name.
-- `gameText`: text for `core` registries (`statLabels`, `actionPointLabels`, `halfSeasonLabels`, `palaces` with a name, a description (required for every palace except 宣政殿, enforced by the type) and the alt text of the palace's background image (`imageAlt`), `actions` with a name, `departments` with a short `label` for its button and its full `name`, `courtOptions` with a name, `taxLevels` with a name, `centralPosts`, `ministryRanks` and `regionOffices` with a name), the 年號 pool (`eraNamePool`), the regions (`regions`, `readonly RegionEntry[]`), the nations (`nations`, `readonly NationEntry[]`, in `src/nations.ts`), the official name pool (`officialNames`, a `NamePool`, in `src/officialNames.ts`), the 名臣 list (`notables`, `readonly NotableData[]`, in `src/notables.ts`), and the building list (`buildings`, `readonly BuildingEntry[]`, in `src/buildings.ts`).
+- `gameText`: text for `core` registries (`statLabels`, `actionPointLabels`, `halfSeasonLabels`, `palaces` with a name, a description (required for every palace except 宣政殿, enforced by the type) and the alt text of the palace's background image (`imageAlt`), `actions` with a name, `departments` with a short `label` for its button and its full `name`, `courtOptions` with a name, `taxLevels` with a name, `centralPosts`, `ministryRanks` and `regionOffices` with a name), the 年號 pool (`eraNamePool`), the 軍團 name pool (`legionNamePool`, two-character names without 軍), the regions (`regions`, `readonly RegionEntry[]`), the nations (`nations`, `readonly NationEntry[]`, in `src/nations.ts`), the official name pool (`officialNames`, a `NamePool`, in `src/officialNames.ts`), the 名臣 list (`notables`, `readonly NotableData[]`, in `src/notables.ts`), and the building list (`buildings`, `readonly BuildingEntry[]`, in `src/buildings.ts`).
 - `formatPostName(post: PostInfo)` in `src/format.ts` builds a post's full name from that text.
 - Format functions in `src/format.ts`. They are pure.
 
@@ -25,9 +25,11 @@ flowchart LR
 ```ts
 interface RegionEntry extends RegionData {
   name: string;      // Chinese name
-  capital: boolean;  // true only for the player's capital region
+  capital: boolean;  // true only for the player's capital region; required here, optional in core's RegionData
 }
 ```
+
+`capital` is declared by `core`'s `RegionData`, so `core` can find the capital in the same region list `web` passes it.
 
 Each entry's `cell` (from `RegionData`) places it on the world grid; see `core`'s "Region data". The list holds the player's regions first, then each foreign nation's regions in `nations` order. Adding a region means adding one entry. Region IDs must not equal a 部 ID or a central post ID (see `core`'s "Posts").
 

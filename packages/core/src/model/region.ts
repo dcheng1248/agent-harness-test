@@ -10,6 +10,7 @@ export interface GridCell {
 export interface RegionData {
   id: string;
   owner: string;
+  capital?: boolean;
   cell: GridCell;
   start: RegionStatValues;
 }
