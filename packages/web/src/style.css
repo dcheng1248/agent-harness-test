@@ -460,10 +460,10 @@ button#start:hover {
     rgba(24, 14, 8, 0.78);
 }
 
-/* Always right-aligned with the last department (工), whichever department is open. */
+/* Placed above the open department by main.ts (placeCourtOptions); the caret points at that button. */
 #court-options {
   position: absolute;
-  right: 0;
+  left: 0;
   bottom: calc(100% + 0.5em);
   display: flex;
   flex-direction: column;
@@ -474,6 +474,17 @@ button#start:hover {
   background: rgba(24, 14, 8, 0.85);
   border: 2px solid #c9a227;
   border-radius: 0.5em;
+}
+
+#court-options::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: calc(var(--caret-x, 50%) - 2px); /* 2px = list border; --caret-x is from the border-box edge */
+  transform: translateX(-50%);
+  border-left: 0.45em solid transparent;
+  border-right: 0.45em solid transparent;
+  border-top: 0.45em solid #c9a227;
 }
 
 #court-options button {
