@@ -1708,5 +1708,164 @@
         "waitFor": "#court-option-hold-exams[disabled]"
       }
     ]
+  },
+  {
+    "name": "palace-xuanzheng-revenue",
+    "description": "宣政殿畫面：展開戶部，調整賦稅、額外徵稅與收支表",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-revenue"
+      },
+      {
+        "waitFor": "#court-options"
+      }
+    ]
+  },
+  {
+    "name": "adjust-taxes",
+    "description": "調整賦稅：民心提示、五段稅率滑桿、稅率名稱與下次預計稅入",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-revenue"
+      },
+      {
+        "click": "#court-option-adjust-taxes"
+      },
+      {
+        "waitFor": "#tax-screen"
+      }
+    ]
+  },
+  {
+    "name": "extra-levy",
+    "description": "額外徵稅：可得稅銀與民心大減提示、徵收與返回",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-revenue"
+      },
+      {
+        "click": "#court-option-extra-levy"
+      },
+      {
+        "waitFor": "#levy-screen"
+      }
+    ]
+  },
+  {
+    "name": "extra-levy-result",
+    "description": "額外徵稅後：所得稅銀與返回宣政殿",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-revenue"
+      },
+      {
+        "click": "#court-option-extra-levy"
+      },
+      {
+        "waitFor": "#levy-screen"
+      },
+      {
+        "click": "#confirm-levy"
+      },
+      {
+        "waitFor": "#levy-result"
+      }
+    ]
+  },
+  {
+    "name": "revenue-levied",
+    "description": "宣政殿戶部：額外徵稅已徵",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-revenue"
+      },
+      {
+        "click": "#court-option-extra-levy"
+      },
+      {
+        "waitFor": "#levy-screen"
+      },
+      {
+        "click": "#confirm-levy"
+      },
+      {
+        "waitFor": "#levy-result"
+      },
+      {
+        "click": "#back-to-court"
+      },
+      {
+        "waitFor": "#court-option-extra-levy[disabled]"
+      }
+    ]
+  },
+  {
+    "name": "budget-sheet",
+    "description": "收支表：國庫、稅率、各地預計稅入與合計、半年宮廷用度、下次收稅",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-revenue"
+      },
+      {
+        "click": "#court-option-budget-sheet"
+      },
+      {
+        "waitFor": "#budget-screen"
+      }
+    ]
   }
 ]

@@ -17,9 +17,9 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-011 | 徵召工匠畫面：以一萬為單位選定人數後徵召；每次早朝限用一次 | implemented |
 | UC-WEB-012 | 遣散工匠畫面：以一萬為單位或全部遣散閒置工匠 | implemented |
 | UC-WEB-013 | 營建工程畫面：列出全部工程的簡介、所需工匠·半季與狀態，增減各工程的工匠 | implemented |
-| UC-WEB-014 | 調整賦稅畫面：五段滑桿選定稅率，拖動時顯示稅率名稱與下次預計稅入，放開即生效 | planned |
-| UC-WEB-015 | 額外徵稅畫面：提示可得稅銀與民心大減，確認後徵收並顯示所得；每次早朝限用一次 | planned |
-| UC-WEB-016 | 收支表畫面：國庫、稅率、各地下次預計稅入與合計、半年宮廷用度、下次收稅時節 | planned |
+| UC-WEB-014 | 調整賦稅畫面：五段滑桿選定稅率，拖動時顯示稅率名稱與下次預計稅入，放開即生效 | implemented |
+| UC-WEB-015 | 額外徵稅畫面：提示可得稅銀與民心大減，確認後徵收並顯示所得；每次早朝限用一次 | implemented |
+| UC-WEB-016 | 收支表畫面：國庫、稅率、各地下次預計稅入與合計、半年宮廷用度、下次收稅時節 | implemented |
 
 ## UC-WEB-001 Title screen
 The palace image fills the viewport width with its aspect ratio kept, never cropped or stretched. A decorative scroll sits over the top centre of the image, with the game title written on it. The scroll and title scale with the image. There is no animation.

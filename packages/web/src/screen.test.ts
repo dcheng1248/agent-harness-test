@@ -15,6 +15,8 @@ import {
   maxRecruit,
   canHoldExam,
   getReignYear,
+  levyAmount,
+  canLevy,
 } from '@emperor/core';
 import {
   acceptRecommendation,
@@ -27,6 +29,8 @@ import {
   changeAssignment,
   confirmExamPicks,
   confirmRecruit,
+  confirmLevy,
+  setTax,
   confirmRelease,
   examCandidates,
   maxCount,
@@ -768,3 +772,52 @@ function harnessSeedOf(): number {
   }
   return (bytes[0]! | (bytes[1]! << 8) | (bytes[2]! << 16) | (bytes[3]! << 24)) >>> 0;
 }
+
+describe('戶部 screens', () => {
+  const court = enterPalace(newState(), 'xuanzheng');
+  const play: Screen = { screen: 'play', state: court, department: 'revenue' };
+  const open = (id: 'adjust-taxes' | 'extra-levy' | 'budget-sheet'): Screen =>
+    chooseCourtOption(play, id, notables, names);
+
+  it('UC-WEB-007 戶部 options open their screens', () => {
+    expect(open('adjust-taxes')).toEqual({ screen: 'taxes', state: court });
+    expect(open('budget-sheet')).toEqual({ screen: 'budget', state: court });
+    expect(open('extra-levy')).toEqual({ screen: 'levy', state: court });
+    const used: Screen = { screen: 'play', state: { ...court, revenue: { ...court.revenue, leviedTurn: court.turn } } };
+    expect(chooseCourtOption(used, 'extra-levy', notables, names)).toBe(used);
+  });
+
+  it('UC-WEB-014 setTax saves the level and stays', () => {
+    const taxes = open('adjust-taxes');
+    for (const level of ['heavy', 'light'] as const) {
+      const next = setTax(taxes, level);
+      if (next.screen !== 'taxes') throw new Error('expected taxes');
+      expect(next.state.revenue.taxLevel).toBe(level);
+      expect(next.state.nation.treasury).toBe(court.nation.treasury);
+    }
+    const budget = open('budget-sheet');
+    expect(setTax(budget, 'heavy')).toBe(budget);
+    expect(setTax(taxes, 'bogus' as never)).toBe(taxes);
+  });
+
+  it('UC-WEB-015 confirmLevy levies once and records the amount', () => {
+    const levy = open('extra-levy');
+    const done = confirmLevy(levy);
+    if (done.screen !== 'levy') throw new Error('expected levy');
+    expect(done.gained).toBe(levyAmount(court));
+    expect(done.state.nation.treasury).toBe(court.nation.treasury + levyAmount(court));
+    expect(confirmLevy(done)).toBe(done);
+    const taxes = open('adjust-taxes');
+    expect(confirmLevy(taxes)).toBe(taxes);
+  });
+
+  it('UC-WEB-014 UC-WEB-015 UC-WEB-016 backToCourt opens 戶部', () => {
+    for (const id of ['adjust-taxes', 'extra-levy', 'budget-sheet'] as const) {
+      expect(backToCourt(open(id))).toEqual({ screen: 'play', state: court, department: 'revenue' });
+    }
+    const done = confirmLevy(open('extra-levy'));
+    const back = backToCourt(done);
+    if (back.screen !== 'play') throw new Error('expected play');
+    expect(canLevy(back.state)).toBe(false);
+  });
+});

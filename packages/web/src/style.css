@@ -78,7 +78,10 @@ button#start:hover {
 #exam-screen,
 #recruit-screen,
 #release-screen,
-#build-screen {
+#build-screen,
+#tax-screen,
+#levy-screen,
+#budget-screen {
   max-width: 32rem;
   margin: 0 auto;
   padding: 1rem;
@@ -630,4 +633,33 @@ button#start:hover {
 
 .assign-cell {
   white-space: nowrap;
+}
+
+#tax-slider {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0.75rem 0 0;
+}
+
+#tax-level-names {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+#budget-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+}
+
+#budget-table th,
+#budget-table td {
+  padding: 0.3em 0.5em;
+  text-align: left;
+  border-bottom: 1px solid #c9a227;
+}
+
+#budget-total {
+  font-weight: bold;
 }

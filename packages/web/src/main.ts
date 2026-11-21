@@ -1,11 +1,12 @@
 import { gameText, uiText } from '@emperor/content';
+import { TAX_LEVEL_IDS } from '@emperor/core';
 import type { ActionId, CourtOptionId, DepartmentId, OfficialStatId, PalaceId } from '@emperor/core';
 import titleImage from './assets/title-forbidden-city.webp';
 import mapImage from './assets/map-forbidden-city.webp';
 import scrollImage from './assets/title-scroll.webp';
 import { placeCourtOptions } from './courtOptions';
 import { PALACE_BACKGROUNDS } from './palaceBackgrounds';
-import { renderScreen } from './render';
+import { renderScreen, renderTaxPreview } from './render';
 import {
   acceptRecommendation,
   appoint,
@@ -16,6 +17,7 @@ import {
   chooseEraName,
   closeAtlas,
   confirmExamPicks,
+  confirmLevy,
   confirmRecruit,
   confirmRelease,
   continueToMap,
@@ -27,6 +29,7 @@ import {
   performAction,
   restart,
   selectPost,
+  setTax,
   sortExam,
   sortIdle,
   startGame,
@@ -124,6 +127,8 @@ if (root) {
       current = maxCount(current);
     } else if (hit('#confirm-recruit')) {
       current = confirmRecruit(current);
+    } else if (hit('#confirm-levy')) {
+      current = confirmLevy(current);
     } else if (hit('#confirm-release')) {
       current = confirmRelease(current);
     } else if (hit('[data-assign]')) {
@@ -145,6 +150,27 @@ if (root) {
       handled = false;
     }
     if (handled) draw();
+  });
+
+  const sliderLevel = (event: Event) => {
+    const target = event.target as Element;
+    if (target.id !== 'tax-slider' || current.screen !== 'taxes') return undefined;
+    return TAX_LEVEL_IDS[Number((target as HTMLInputElement).value)];
+  };
+  root.addEventListener('input', (event) => {
+    const level = sliderLevel(event);
+    if (level === undefined || current.screen !== 'taxes') return;
+    const preview = renderTaxPreview(current.state, level, uiText, gameText);
+    const levelLine = root.querySelector<HTMLElement>('#tax-level');
+    const expectedLine = root.querySelector<HTMLElement>('#tax-expected');
+    if (levelLine) levelLine.textContent = preview.level;
+    if (expectedLine) expectedLine.textContent = preview.expected;
+  });
+  root.addEventListener('change', (event) => {
+    const level = sliderLevel(event);
+    if (level === undefined) return;
+    current = setTax(current, level);
+    draw();
   });
 
   root.addEventListener('keydown', (event) => {
