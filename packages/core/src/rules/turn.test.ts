@@ -13,7 +13,7 @@ import {
   takeAction,
 } from "../index";
 import type { ActionId, Catalog, GameState, PalaceId } from "../index";
-import { TEST_NAMES } from "../testNames";
+import { TEST_BUILDINGS, TEST_NAMES } from "../testNames";
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return { ...createInitialState(1, "承平", [], TEST_NAMES), ...overrides };
@@ -304,9 +304,52 @@ describe("economy at turn end", () => {
     expect(out.turnEnd?.economy).toEqual({
       taxIncome: 0,
       upkeep: 0,
+      wages: 0,
       regionChanges: [],
     });
+    expect(out.turnEnd?.completed).toEqual([]);
     expect(out.state.nation).toEqual(state.nation);
     expect(out.state.regions).toEqual(state.regions);
+  });
+});
+
+describe("works at turn end", () => {
+  const FIXTURE = [
+    { id: "a", owner: "player", adjacent: [], start: { morale: 60, population: 5000000, prosperity: 60 } },
+  ];
+  function worked(over: Partial<GameState> = {}): GameState {
+    const base = createInitialState(1, "承平", FIXTURE, TEST_NAMES, TEST_BUILDINGS);
+    return {
+      ...base,
+      actionPoint: 3,
+      works: {
+        artisans: 100000,
+        recruitedTurn: null,
+        buildings: [
+          { id: "small", required: 30000, progress: 0, assigned: 30000 },
+          { id: "large", required: 100000, progress: 0, assigned: 20000 },
+        ],
+      },
+      ...over,
+    };
+  }
+
+  it("UC-CORE-020 progress is added, completions reported and wages paid", () => {
+    const out = act(worked(), "yangxin", "rest");
+    expect(out.turnEnd?.completed).toEqual(["small"]);
+    expect(out.turnEnd?.economy.wages).toBe(50000);
+    expect(out.state.works.buildings).toEqual([
+      { id: "small", required: 30000, progress: 30000, assigned: 0 },
+      { id: "large", required: 100000, progress: 20000, assigned: 20000 },
+    ]);
+  });
+
+  it("UC-CORE-020 dying of age pays no wages and makes no progress", () => {
+    const state = worked({ stats: { ...baseStats, health: 1 }, turn: 399 });
+    const out = act(state, "yanwu", "riding");
+    expect(out.state.dead).toBe(true);
+    expect(out.turnEnd?.completed).toEqual([]);
+    expect(out.turnEnd?.economy.wages).toBe(0);
+    expect(out.state.works.buildings).toEqual(state.works.buildings);
   });
 });

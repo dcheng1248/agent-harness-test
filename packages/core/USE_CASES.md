@@ -22,8 +22,8 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-016 | 每年人口隨民心與富庶增減 | implemented |
 | UC-CORE-017 | 舉薦人選：每次早朝一次，舉薦一名候選人（一般官員或名臣），錄用或婉拒 | implemented |
 | UC-CORE-018 | 開科取士：每三年一科，於該年一次早朝自一批應試者中擇人錄取 | implemented |
-| UC-CORE-019 | 工匠：早朝時徵召（每次早朝一次）與遣散閒置工匠，每半季由國庫支付工錢 | planned |
-| UC-CORE-020 | 營建工程：指派工匠至全國工程，累積工匠·半季直至落成 | planned |
+| UC-CORE-019 | 工匠：早朝時徵召（每次早朝一次）與遣散閒置工匠，每半季由國庫支付工錢 | implemented |
+| UC-CORE-020 | 營建工程：指派工匠至全國工程，累積工匠·半季直至落成 | implemented |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.

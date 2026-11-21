@@ -12,7 +12,7 @@ describe("court departments", () => {
     expect(DEPARTMENTS.rites.options).toEqual(["hold-sacrifice", "conduct-diplomacy"]);
     expect(DEPARTMENTS.war.options).toEqual(["conscript-soldiers", "drill-troops"]);
     expect(DEPARTMENTS.justice.options).toEqual(["grant-amnesty", "try-major-case"]);
-    expect(DEPARTMENTS.works.options).toEqual(["build", "forge-weapons"]);
+    expect(DEPARTMENTS.works.options).toEqual(["recruit-artisans", "release-artisans", "build", "forge-weapons"]);
   });
   it("lists each court option under exactly one department", () => {
     const all = DEPARTMENT_IDS.flatMap((d) => DEPARTMENTS[d].options);

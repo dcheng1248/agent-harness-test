@@ -6,11 +6,12 @@ import type { Exam } from "./exam";
 import { listPosts } from "./officials";
 import type { NamePool, Official } from "./officials";
 import type { Recommendation } from "./notables";
+import type { BuildingData, Works } from "./works";
 import { EMPEROR_STAT_IDS } from "./stats";
 import type { NationStatValues, StatValues } from "./stats";
 import type { RegionData, RegionState } from "./region";
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export type Location = "map" | PalaceId;
 
@@ -29,6 +30,7 @@ export interface GameState {
   officials: Official[];
   recommendation: Recommendation | null;
   exam: Exam | null;
+  works: Works;
   dead: boolean;
 }
 
@@ -41,6 +43,7 @@ export function createInitialState(
   eraName: string,
   regions: readonly RegionData[],
   names: NamePool,
+  buildings: readonly BuildingData[] = [],
 ): GameState {
   const { budget, min, max } = BALANCE.startingStats;
   let rngState = seed >>> 0;
@@ -105,6 +108,11 @@ export function createInitialState(
     officials,
     recommendation: null,
     exam: null,
+    works: {
+      artisans: 0,
+      recruitedTurn: null,
+      buildings: buildings.map((b) => ({ id: b.id, required: b.required, progress: 0, assigned: 0 })),
+    },
     dead: false,
   };
 }

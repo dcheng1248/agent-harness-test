@@ -8,6 +8,7 @@ import { EMPEROR_STAT_IDS, STAT_REGISTRY } from "../model/stats";
 import type { StatId, StatValues } from "../model/stats";
 import { settleEconomy } from "./economy";
 import type { EconomyReport } from "./economy";
+import { advanceBuildings } from "../model/works";
 import { randomInt } from "./random";
 
 export type ActionRejection =
@@ -16,6 +17,7 @@ export interface TurnEnd {
   aging: number;
   totals: StatChange[];
   economy: EconomyReport;
+  completed: string[];
 }
 export type ActionOutcome =
   | { ok: false; reason: ActionRejection; state: GameState }
@@ -145,7 +147,8 @@ export function takeAction(
     const turnEnd: TurnEnd = {
       aging,
       totals,
-      economy: { taxIncome: 0, upkeep: 0, regionChanges: [] },
+      economy: { taxIncome: 0, upkeep: 0, wages: 0, regionChanges: [] },
+      completed: [],
     };
     return {
       ok: true,
@@ -163,8 +166,10 @@ export function takeAction(
     state.nation,
     state.regions,
     HALF_SEASONS[(state.turn + 1) % BALANCE.turnsPerYear] as HalfSeasonId,
+    state.works.artisans,
   );
-  const turnEnd: TurnEnd = { aging, totals, economy: settled.report };
+  const advanced = advanceBuildings(state.works.buildings);
+  const turnEnd: TurnEnd = { aging, totals, economy: settled.report, completed: advanced.completed };
   const zero = { health: 0, learning: 0, arts: 0, resolve: 0 };
   return {
     ok: true,
@@ -173,6 +178,7 @@ export function takeAction(
       stats: agedStats,
       nation: settled.nation,
       regions: settled.regions,
+      works: { ...state.works, buildings: advanced.buildings },
       turn: state.turn + 1,
       actionPoint: 0,
       turnDeltas: zero,

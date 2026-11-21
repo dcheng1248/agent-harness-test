@@ -16,6 +16,8 @@ export const COURT_OPTION_IDS = [
   'drill-troops',
   'grant-amnesty',
   'try-major-case',
+  'recruit-artisans',
+  'release-artisans',
   'build',
   'forge-weapons',
 ] as const;
@@ -28,5 +30,5 @@ export const DEPARTMENTS: Record<DepartmentId, { options: readonly CourtOptionId
   rites: { options: ['hold-sacrifice', 'conduct-diplomacy'] },
   war: { options: ['conscript-soldiers', 'drill-troops'] },
   justice: { options: ['grant-amnesty', 'try-major-case'] },
-  works: { options: ['build', 'forge-weapons'] },
+  works: { options: ['recruit-artisans', 'release-artisans', 'build', 'forge-weapons'] },
 };
