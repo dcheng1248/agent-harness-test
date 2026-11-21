@@ -44,6 +44,7 @@ import {
   goToPalace,
   idleOfficials,
   openAtlas,
+  selectAtlasRegion,
   performAction,
   restart,
   selectPost,
@@ -213,6 +214,31 @@ describe('輿圖', () => {
       { screen: 'title' },
     ];
     for (const x of screens) expect(openAtlas(x)).toBe(x);
+  });
+
+  it('UC-WEB-006 selectAtlasRegion selects, switches and clears a region, keeping the state', () => {
+    const atlas = openAtlas(goToPalace(afterOneAction(), 'chongwen'));
+    if (atlas.screen !== 'atlas') throw new Error('unexpected');
+    const { state } = atlas;
+    const a = selectAtlasRegion(atlas, 'shangjing');
+    expect(a).toEqual({ screen: 'atlas', state, region: 'shangjing' });
+    if (a.screen !== 'atlas') throw new Error('unexpected');
+    expect(a.state).toBe(state);
+    const b = selectAtlasRegion(a, 'guanzhong');
+    expect(b).toEqual({ screen: 'atlas', state, region: 'guanzhong' });
+    const c = selectAtlasRegion(b, null);
+    expect(c).toEqual({ screen: 'atlas', state });
+    expect('region' in c).toBe(false);
+    expect(selectAtlasRegion(a, 'nope')).toBe(a);
+    const title: Screen = { screen: 'title' };
+    expect(selectAtlasRegion(title, 'shangjing')).toBe(title);
+  });
+
+  it('UC-WEB-006 closing 輿圖 drops the selected region', () => {
+    const play = goToPalace(afterOneAction(), 'chongwen');
+    const selected = selectAtlasRegion(openAtlas(play), 'shangjing');
+    expect(closeAtlas(selected)).toEqual(play);
+    expect('region' in openAtlas(closeAtlas(selected))).toBe(false);
   });
 
   it('UC-WEB-006 closeAtlas on another screen is unchanged', () => {

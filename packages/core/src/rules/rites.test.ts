@@ -13,9 +13,9 @@ import type { GameState } from "../index";
 import { TEST_BUILDINGS, TEST_NAMES } from "../testNames";
 
 const REGIONS = [
-  { id: "a", owner: "player", adjacent: [], start: { morale: 60, population: 20000000, prosperity: 60 } },
-  { id: "b", owner: "player", adjacent: [], start: { morale: 60, population: 10500000, prosperity: 60 } },
-  { id: "c", owner: "foreign", adjacent: [], start: { morale: 60, population: 9000000, prosperity: 60 } },
+  { id: "a", owner: "player", cell: { x: 0, y: 0 }, start: { morale: 60, population: 20000000, prosperity: 60 } },
+  { id: "b", owner: "player", cell: { x: 1, y: 0 }, start: { morale: 60, population: 10500000, prosperity: 60 } },
+  { id: "c", owner: "foreign", cell: { x: 2, y: 0 }, start: { morale: 60, population: 9000000, prosperity: 60 } },
 ];
 
 function base(): GameState {

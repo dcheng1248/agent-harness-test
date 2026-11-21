@@ -9,7 +9,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-003 | 年號畫面 | implemented |
 | UC-WEB-004 | 宮殿地圖、宮殿、行動結果與半季總結畫面（含國庫、稅入、用度與地域變化） | implemented |
 | UC-WEB-005 | 駕崩結局與再開新局 | implemented |
-| UC-WEB-006 | 輿圖畫面：自崇文館開啟，列出各地域的民心、人口、富庶，開啟不耗行動點 | implemented |
+| UC-WEB-006 | 輿圖畫面：自崇文館開啟的天下格狀地圖，各地域以歸屬國之色標示，點選地域顯示其歸屬與民心、人口、富庶，附圖例，開啟不耗行動點 | implemented |
 | UC-WEB-007 | 宣政殿：只在朝時開放的早朝，圖上內閣與六部按鈕，展開各部選項，退回宮城 | implemented |
 | UC-WEB-008 | 官員任命畫面：按中樞、六部、地方列出官位，選官位後自賦閑官員中任命 | implemented |
 | UC-WEB-009 | 舉薦人選畫面：顯示一名候選人（名臣另有標記），錄用或婉拒；每次早朝限用一次 | implemented |
@@ -40,9 +40,14 @@ Every game screen has a header with the date, the action point, the emperor's ag
 - Turn summary, shown instead of the action result after the last action of a turn: a heading naming the half-season that ended, the last action's changes, the half-season totals including aging, the treasury line (tax income when there was any, and upkeep), then, only when 工匠 were paid, a separate 工匠 wages line (`formatWages`), then, only when buildings were completed, a line naming them in building order, one line per region that changed (or a single "no change" line), and a button into the next half-season. The header then shows the new turn, with 國庫 after taxes, upkeep and wages.
 
 ## UC-WEB-006 輿圖
-Opened from 崇文館 only. Opening and closing it use no action point and do not change the `GameState`. It shows the header, a heading, and a table with one row per region in `state.regions` order: the region name (the capital marked as 京師), 民心, 人口 and 富庶. A button, whose text names 崇文館, returns to 崇文館.
+Opened from 崇文館 only. Opening and closing it, and selecting regions on it, use no action point and do not change the `GameState`. It is read-only: nothing on it gives orders.
 
-`openAtlas(screen)` goes from `play` in 崇文館 to `atlas`, keeping the same `state` object. From anywhere else (the map, another palace, or any other screen) it returns the screen unchanged. `closeAtlas(screen)` goes from `atlas` back to `play` with the same `state`, so the player is back in 崇文館.
+It shows the header, a heading, the world map, a legend, and a button, whose text names 崇文館, that returns to 崇文館.
+- **Map.** A grid of square cells covering every cell from the top-left corner to the furthest region on each axis. Each region in `state.regions` that has region data fills its own cell: a button showing the region's name, filled with its owner's colour from the nation list (UC-CONTENT-005), with name text that stays readable on every nation colour. The player's capital also shows the 京師 mark. Cells with no region get a plain background, are not buttons, and are hidden from screen readers. On a narrow screen the cells shrink so the whole map fits the width without scrolling sideways.
+- **Selecting.** Clicking a region selects it and opens a panel with its name, its owner's name, and its 民心, 人口 and 富庶 from the current state, formatted like elsewhere. Any region can be selected, foreign or the player's. Clicking another region switches the panel to it; the selected cell is marked as selected. The panel has a close button that clears the selection. With nothing selected, a hint line in its place tells the player to click a region. The atlas always opens with nothing selected.
+- **Legend.** One entry per nation in nation-list order, each a swatch of its colour and its name.
+
+`openAtlas(screen)` goes from `play` in 崇文館 to `atlas` with nothing selected, keeping the same `state` object. From anywhere else (the map, another palace, or any other screen) it returns the screen unchanged. `selectAtlasRegion(screen, region)` sets the selected region on an `atlas` screen to `region` when it is the ID of a region in `state.regions`, and clears it when `region` is `null`; any other ID, or any other screen, returns the screen unchanged. `closeAtlas(screen)` goes from `atlas` back to `play` with the same `state`, dropping the selection, so the player is back in 崇文館.
 
 ## UC-WEB-005 Ending
 Shown as soon as the emperor dies, after an action or after aging: a heading, the 年號, the reign length (the reign year of death, 元年 counting as 1), the age at death, and a button that returns to the title screen. There is no verdict or 諡號 yet.

@@ -24,6 +24,11 @@ export interface UiText {
   atlasHeading: string;
   closeAtlas: string;
   regionColumn: string;
+  ownerLabel: string;
+  atlasHint: string;
+  closeRegionPanel: string;
+  legendHeading: string;
+  atlasMapLabel: string;
   capitalMark: string;
   taelUnit: string;
   taxIncomeLabel: string;
@@ -120,6 +125,12 @@ export interface RegionEntry extends RegionData {
   capital: boolean;
 }
 
+export interface NationEntry {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export type BuildingCategory = 'palace' | 'ritual' | 'education' | 'garden' | 'water' | 'defense' | 'transport';
 
 export interface BuildingEntry extends BuildingData {
@@ -147,6 +158,7 @@ export interface GameText {
   ministryRanks: Record<MinistryRankId, { name: string }>;
   regionOffices: Record<RegionOfficeId, { name: string }>;
   eraNamePool: readonly string[];
+  nations: readonly NationEntry[];
   regions: readonly RegionEntry[];
   officialNames: NamePool;
   notables: readonly NotableData[];

@@ -14,9 +14,9 @@ import { drawOfficial } from "./officials";
 
 const start = { morale: 50, population: 100000, prosperity: 50 };
 const REGIONS: RegionData[] = [
-  { id: "a", owner: PLAYER_OWNER, adjacent: ["b"], start },
-  { id: "b", owner: "foreign", adjacent: ["a", "c"], start },
-  { id: "c", owner: PLAYER_OWNER, adjacent: ["b"], start },
+  { id: "a", owner: PLAYER_OWNER, cell: { x: 0, y: 0 }, start },
+  { id: "b", owner: "foreign", cell: { x: 1, y: 0 }, start },
+  { id: "c", owner: PLAYER_OWNER, cell: { x: 2, y: 0 }, start },
 ];
 const court = enterPalace(createInitialState(3, "承平", REGIONS, TEST_NAMES), "xuanzheng");
 

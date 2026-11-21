@@ -22,7 +22,8 @@ export type {
   OfficialStatValues,
 } from "./model/stats";
 export { PLAYER_OWNER } from "./model/region";
-export type { RegionData, RegionState } from "./model/region";
+export type { GridCell, RegionData, RegionState } from "./model/region";
+export { regionNeighbours } from "./rules/regions";
 export {
   HALF_SEASONS,
   ACTION_POINTS,

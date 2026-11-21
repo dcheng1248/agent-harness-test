@@ -65,7 +65,7 @@ export type Screen =
       economy: EconomyReport;
       completed: string[];
     }
-  | { screen: 'atlas'; state: GameState }
+  | { screen: 'atlas'; state: GameState; region?: string }
   | { screen: 'recommend'; state: GameState }
   | { screen: 'appoint'; state: GameState; post?: PostId; sort?: OfficialStatId }
   | { screen: 'exam'; state: GameState; picks: number[]; sort?: OfficialStatId }
@@ -350,6 +350,13 @@ export function performAction(screen: Screen, actionId: ActionId): Screen {
 export function openAtlas(screen: Screen): Screen {
   if (screen.screen !== 'play' || screen.state.location !== ATLAS_PALACE) return screen;
   return { screen: 'atlas', state: screen.state };
+}
+
+export function selectAtlasRegion(screen: Screen, region: string | null): Screen {
+  if (screen.screen !== 'atlas') return screen;
+  const { state } = screen;
+  if (region === null) return { screen: 'atlas', state };
+  return state.regions.some((r) => r.id === region) ? { screen: 'atlas', state, region } : screen;
 }
 
 export function closeAtlas(screen: Screen): Screen {

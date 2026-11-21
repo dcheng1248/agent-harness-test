@@ -27,6 +27,7 @@ import {
   goToPalace,
   maxCount,
   openAtlas,
+  selectAtlasRegion,
   performAction,
   restart,
   selectPost,
@@ -98,6 +99,10 @@ if (root) {
         gameText.notables,
         gameText.officialNames,
       );
+    } else if (hit('#atlas-map [data-region]')) {
+      current = selectAtlasRegion(current, hit('#atlas-map [data-region]')?.dataset.region ?? '');
+    } else if (hit('#close-region-panel')) {
+      current = selectAtlasRegion(current, null);
     } else if (hit('[data-post]')) {
       current = selectPost(current, hit('[data-post]')?.dataset.post ?? '');
     } else if (hit('[data-sort]')) {
