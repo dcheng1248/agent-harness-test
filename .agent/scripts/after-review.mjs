@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { applyActions, askForReview, runUrl, setCommitStatus } from './lib/actions.mjs';
-import { failedRound } from './lib/decide.mjs';
+import { failedRound, failureHint } from './lib/decide.mjs';
 import { REQUIRED_REVIEW_HELPERS, checkHelpers } from './lib/enforce.mjs';
 import { summarizeExecution } from './lib/metrics.mjs';
 import { addLabels, api, comment, gh, getState, labelNames, prFiles, removeLabel, repo, setStage, updateState } from './lib/github.mjs';
@@ -28,7 +28,7 @@ const problem = !['pass', 'changes'].includes(verdict?.verdict) ? 'Agent review 
 if (problem) {
   setCommitStatus(sha, 'failure', 'Agent review did not finish');
   addLabels(pr, ['needs-human']);
-  comment(pr, `${problem}\n\nTo retry, request changes on this PR.\n\nRun: ${runUrl()}`);
+  comment(pr, `${problem}\n\n${failureHint('agent review')}\n\nRun: ${runUrl()}`);
   process.exit(1);
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideDispatch, failedRound, issueFromBranch, parseReviewers, routeEvent } from '../lib/decide.mjs';
+import { decideDispatch, failedRound, failureHint, issueFromBranch, parseReviewers, routeEvent } from '../lib/decide.mjs';
 
 const reviewers = ['owner'];
 const issue = (number, extra = {}) => ({
@@ -224,5 +224,18 @@ describe('helpers', () => {
     expect(issueFromBranch('agent/issue-12')).toBe(12);
     expect(issueFromBranch('feature/x')).toBeNull();
     expect(parseReviewers(' Owner, other ,')).toEqual(['owner', 'other']);
+  });
+});
+
+describe('failureHint', () => {
+  it('points a failed agent review at /resume, not at a code revision', () => {
+    expect(failureHint('agent review')).toContain('/resume');
+    expect(failureHint('review')).toContain('/resume');
+  });
+
+  it('points a failed implementation at a change request and a failed plan at relabelling the issue', () => {
+    expect(failureHint('implement')).toContain('request changes');
+    expect(failureHint('plan')).toContain('ready-for-agent');
+    expect(failureHint('audit-retry')).toContain('ready-for-agent');
   });
 });
