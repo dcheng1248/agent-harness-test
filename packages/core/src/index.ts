@@ -51,6 +51,17 @@ export {
   takeAction,
 } from "./rules/turn";
 export type { ActionRejection, TurnEnd, ActionOutcome } from "./rules/turn";
+export { TAX_LEVEL_IDS } from "./model/revenue";
+export type { TaxLevelId, Revenue } from "./model/revenue";
+export {
+  expectedTax,
+  nextCollection,
+  setTaxLevel,
+  levyAmount,
+  canLevy,
+  levy,
+} from "./rules/revenue";
+export type { RevenueRejection, RevenueOutcome } from "./rules/revenue";
 export { regionTax, settleEconomy } from "./rules/economy";
 export type { RegionChange, EconomyReport } from "./rules/economy";
 export { buildingStatus, halfSeasonsToFinish } from "./model/works";

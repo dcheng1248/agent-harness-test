@@ -3,7 +3,8 @@ import type { StatChange } from "../model/balance";
 import type { HalfSeasonId } from "../model/calendar";
 import { PLAYER_OWNER } from "../model/region";
 import type { RegionState } from "../model/region";
-import { REGION_STAT_IDS } from "../model/stats";
+import type { TaxLevelId } from "../model/revenue";
+import { REGION_STAT_IDS, STAT_REGISTRY } from "../model/stats";
 import type { NationStatValues, RegionStatValues } from "../model/stats";
 
 export interface RegionChange {
@@ -17,9 +18,9 @@ export interface EconomyReport {
   regionChanges: RegionChange[];
 }
 
-export function regionTax(stats: RegionStatValues): number {
+export function regionTax(stats: RegionStatValues, level: TaxLevelId = "normal"): number {
   return Math.floor(
-    (stats.population * stats.prosperity * stats.morale) /
+    (stats.population * stats.prosperity * stats.morale * BALANCE.tax.levels[level].multiplier) /
       BALANCE.tax.halfYearDivisor,
   );
 }
@@ -38,6 +39,7 @@ export function settleEconomy(
   regions: readonly RegionState[],
   nextHalfSeason: HalfSeasonId,
   artisans = 0,
+  taxLevel: TaxLevelId = "normal",
 ): { nation: NationStatValues; regions: RegionState[]; report: EconomyReport } {
   const upkeep = BALANCE.upkeep;
   const wages = Math.floor(artisans * BALANCE.works.wagePerArtisan);
@@ -52,10 +54,20 @@ export function settleEconomy(
   let taxIncome = 0;
   if (BALANCE.tax.collectOn.includes(nextHalfSeason)) {
     for (const r of next) {
-      if (r.owner === PLAYER_OWNER) taxIncome += regionTax(r.stats);
+      if (r.owner === PLAYER_OWNER) taxIncome += regionTax(r.stats, taxLevel);
     }
   }
   treasury += taxIncome;
+
+  const levelMorale = BALANCE.tax.levels[taxLevel].morale;
+  if (levelMorale !== 0) {
+    const { min, max } = STAT_REGISTRY.find((d) => d.id === "morale")!;
+    for (const r of next) {
+      if (r.owner === PLAYER_OWNER) {
+        r.stats.morale = Math.min(max, Math.max(min, r.stats.morale + levelMorale));
+      }
+    }
+  }
 
   if (treasury < 0) {
     for (const r of next) {
