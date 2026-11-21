@@ -15,7 +15,7 @@ What changes for the player or caller, one or two lines each, describing the beh
 - 
 
 ## Risk
-`low`, `medium` or `high`, with one line of reasoning from `docs/harness/risk-rules.md`.
+`low`, `medium` or `high`, with one line of reasoning from `docs/harness/risk-rules.md`. If `GameState` or a schema changes, say whether the change is additive or breaking.
 
 ## Decisions to review
 Choices the issue left open that the plan made: values, placement, ordering, names. Give each choice and its reason in one line. Write "None" if there are none.

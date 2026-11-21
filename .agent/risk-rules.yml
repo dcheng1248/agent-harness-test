@@ -1,8 +1,8 @@
 # Minimum risk from the real diff. Explained in docs/harness/risk-rules.md.
 # Core paths in core-paths.yml are always at least medium.
-high_paths:
-  - packages/core/src/model/**
-  - packages/content/src/schema.ts
+# No path is high by itself: a path cannot tell an added field from a breaking change,
+# so the planner judges high. Harness changes are always high (rules.mjs). Add a
+# `high_paths:` list here only for a path that is risky whatever the change.
 medium_paths:
   - package.json
   - package-lock.json
