@@ -7,6 +7,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CONTENT-001 | 九州地域資料：名稱、相鄰地域、歸屬與初始數值 | implemented |
 | UC-CONTENT-002 | 官員姓名庫與官位名稱 | implemented |
 | UC-CONTENT-003 | 名臣名錄：歷代名臣的文武類型、四項屬性與登場門檻 | implemented |
+| UC-CONTENT-004 | 營建工程名錄：歷代全國性工程的名稱、簡介、類別與所需工匠·半季 | planned |
 
 ## UC-CONTENT-001 Regions
 - The nine home regions of 九州, each with a Chinese name, its adjacent regions, owner `PLAYER_OWNER`, and starting 民心, 人口 and 富庶. 關中 is the capital. Later slices add foreign regions with other owners.
@@ -24,6 +25,11 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - Gates are a minimum on one emperor stat, mostly 學識 for 文 and 魄力 for 武. Some gates are low enough that a 名臣 can appear early in a reign.
 - No 名臣 name can be generated as an ordinary official's name.
 
+## UC-CONTENT-004 營建工程
+- `buildings` lists about twenty-five real historical national works, central to the capital or the whole realm and tied to no region, one per line, grouped by category. Each has a unique ID, a unique Chinese name, a one-line description, a category tag (a `BuildingCategory`), and its required manpower in 工匠·半季.
+- Required manpower is a positive whole multiple of `BALANCE.works.step` and follows each work's scale: the largest, such as 長城, need about ten half-seasons of a large workforce, and the smallest can be finished in one half-season by one 徵召's worth of 工匠.
+- There are no prerequisites between buildings.
+
 ## Text rules
 - Every `core` registry entry has text, enforced by the types.
 - Every palace has a description except 宣政殿, which has no panel to show one.
@@ -37,5 +43,7 @@ Format functions in `src/format.ts` turn numbers and changes into player-facing 
 - `formatAmount(n)` uses Arabic digits with `,` every three digits, and `−` (U+2212) for negatives.
 - `formatChanges(changes)` lists stat changes with their labels and signs, in the given order, such as 「學識 +3，健康 −1」. An empty list gives the `noChange` text.
 - `formatTaels(n)` is `formatAmount(n)` followed by the tael unit.
-- `formatEconomy(report)` gives the tax income and the upkeep. The tax part appears only when `taxIncome` is above 0.
+- `formatEconomy(report)` gives the tax income and the upkeep. The tax part appears only when `taxIncome` is above 0. It leaves out the 工匠 wages, which have their own line.
+- `formatWages(wages)` gives the 工匠 wages line: its label and the amount in taels, shown as a loss.
+- `formatArtisans(n)` is `formatAmount(n)` followed by the unit for persons.
 - `formatReign(years)`, such as 「在位十二年」. `formatLifespan(age)`, such as 「享年五十八歲」.

@@ -18,10 +18,12 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-012 | 半季回合：在宮殿以行動點執行行動 | implemented |
 | UC-CORE-013 | 年老衰弱與駕崩 | implemented |
 | UC-CORE-014 | 九州地域：由資料載入地域，各有民心、人口、富庶與歸屬 | implemented |
-| UC-CORE-015 | 國庫：春上與秋上收稅、每半季支付宮廷用度、國庫虧空時各地民心下降 | implemented |
+| UC-CORE-015 | 國庫：春上與秋上收稅、每半季支付宮廷用度與工匠工錢、國庫虧空時各地民心下降 | implemented |
 | UC-CORE-016 | 每年人口隨民心與富庶增減 | implemented |
 | UC-CORE-017 | 舉薦人選：每次早朝一次，舉薦一名候選人（一般官員或名臣），錄用或婉拒 | implemented |
 | UC-CORE-018 | 開科取士：每三年一科，於該年一次早朝自一批應試者中擇人錄取 | implemented |
+| UC-CORE-019 | 工匠：早朝時徵召（每次早朝一次）與遣散閒置工匠，每半季由國庫支付工錢 | planned |
+| UC-CORE-020 | 營建工程：指派工匠至全國工程，累積工匠·半季直至落成 | planned |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.
@@ -38,7 +40,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 - `canEnterPalace(state, palaceId)` is true when the emperor is alive, on the map, the palace is in the catalog, and the palace is open now. Every palace is open at every action point except 宣政殿 (UC-CORE-003).
 - `takeAction(state, actionId, catalog = CATALOG)` is rejected, with the state unchanged, if the emperor is dead (`'dead'`), is on the map (`'not-in-palace'`), the palace does not offer the action (`'not-offered'`), or the action is not allowed in the current action point (`'not-allowed-now'`).
 - Otherwise it applies the action's effects from `BALANCE.actions`, with a seeded variance of up to `BALANCE.actionVariance` on the first effect. It clamps each stat to its range and reports the applied changes, leaving out zero changes. It adds them to `turnDeltas`, returns to the map, and uses the action point.
-- After the last action point of the turn, the turn ends: aging applies; if the emperor survives, the economy is settled (below); the emperor's turn totals (`turnDeltas` plus aging, in registry order, leaving out zeros) are reported; `turn` goes up by 1, `actionPoint` goes back to the first, and `turnDeltas` resets.
+- After the last action point of the turn, the turn ends: aging applies; if the emperor survives, the economy is settled (below), then building progress is added (UC-CORE-020); the emperor's turn totals (`turnDeltas` plus aging, in registry order, leaving out zeros) are reported; `turn` goes up by 1, `actionPoint` goes back to the first, and `turnDeltas` resets.
 
 ## UC-CORE-003 早朝
 - 宣政殿 is open only at 朝 (`COURT_ACTION_POINT`, the first action point of each half-season). At any other action point `canEnterPalace` is false and `enterPalace` returns the state unchanged.
@@ -92,15 +94,49 @@ The candidate has a name, four stats, and `notable` (the 名臣 ID, or `null`).
 
 **Confirming.** `confirmExam(state, picks)` takes the positions in `state.exam.candidates` of the accepted candidates. Each accepted candidate joins `officials` as 賦閑, in candidate order, with a new ID that no official has had and its `notable`. Repeated positions count once. An empty `picks` is allowed. Every other candidate is discarded: an ordinary one is gone for good, and a 名臣 stays eligible for later 舉薦 and exams. Confirming clears the candidates but keeps the turn stamp, so the exam stays used for the rest of the reign year. It draws no random numbers. It is rejected, with the state unchanged, when it is not 早朝 (`'not-in-court'`), when there are no candidates from this half-season (`'no-candidates'`), or when a position is not a candidate (`'unknown-candidate'`). Candidates left unconfirmed when the half-season moves on can no longer be accepted, and the exam still counts as held.
 
+## UC-CORE-019 工匠
+**Count.** The nation has a total of 工匠 (`GameState.works.artisans`). A new game starts with 0. Each 工匠 is either idle or assigned to one building (UC-CORE-020). Idle 工匠 (`idleArtisans(state)`) are the total minus everything assigned. 工匠 do not change region 人口, 民心 or taxes for now.
+
+**Free population.** `freePopulation(state)` is the total 人口 of the player-owned regions minus the total 工匠, never below 0. (士兵 will also be taken off once 兵部 exists.)
+
+**Steps.** Every 工匠 count the player chooses is a whole multiple of `BALANCE.works.step`, so totals and assignments always stay multiples of the step.
+
+**Recruiting (徵召).** `maxRecruit(state)` is `freePopulation` × `BALANCE.works.recruitPercent` percent, rounded to the nearest multiple of the step (halves round up). `canRecruit(state)` is true during 早朝 when 徵召 has not been used this half-season (`works.recruitedTurn` is not `turn`) and `maxRecruit` is above 0. `recruitArtisans(state, count)` adds `count` idle 工匠 and stamps the turn, so it can be used once per 早朝. It uses no action point and draws no random numbers. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), when already used this half-season (`'already-used'`), or when `count` is not a step multiple from one step up to `maxRecruit` (`'invalid-count'`, which also covers `maxRecruit` being 0). The checks run in that order.
+
+**Releasing (遣散).** `releaseArtisans(state, count)` removes `count` idle 工匠, free of charge. It may be used any number of times during one 早朝. It only takes idle 工匠: to release 工匠 working on a building, first lower that building's assignment. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when `count` is not a step multiple from one step up to the idle count (`'invalid-count'`). Releasing every idle 工匠 is `count` = `idleArtisans(state)`.
+
+**Wages.** Paid at the end of each half-season the emperor survives, together with upkeep (UC-CORE-015).
+
+## UC-CORE-020 營建工程
+**Buildings.** `content` passes the building list as `BuildingData` (see `ARCHITECTURE.md`, "Building data"): an ID and the required manpower in 工匠·半季. `createInitialState` copies them, in order, into `works.buildings` with progress 0 and no 工匠 assigned. There are no prerequisites between buildings and no material cost; wages are the only cost.
+
+**Status.** `buildingStatus(building)` is:
+- `'completed'` (已落成) once progress has reached the required manpower;
+- `'not-started'` (未動工) while progress and assignment are both 0;
+- `'in-progress'` (營建中) otherwise, including a paused building that has progress but no 工匠.
+
+`halfSeasonsToFinish(building)` is the number of half-seasons left at the current assignment, (required − progress) ÷ assigned rounded up, or `null` when nothing is assigned or the building is completed.
+
+**Assigning.** `assignArtisans(state, buildingId, count)` sets that building's assignment to `count`. Raising it draws from idle 工匠 and lowering it returns them to idle. Several buildings can be in progress at once. Setting 0 pauses the building and keeps its progress. It uses no action point, draws no random numbers, and may be repeated during one 早朝. It is rejected, with the state unchanged, when:
+- it is not 早朝, including when dead (`'not-in-court'`);
+- no building has that ID (`'unknown-building'`);
+- the building is completed (`'completed'`);
+- `count` is negative or not a whole multiple of the step (`'invalid-count'`);
+- the raise is more than the idle 工匠 (`'not-enough-idle'`), so the total assigned never exceeds the total 工匠.
+
+The checks run in that order.
+
+**Progress.** At the end of each half-season the emperor survives, after the economy is settled, each unfinished building adds its current assignment to its progress. Progress never goes past the required manpower. A building that reaches it becomes completed: its assignment drops to 0, so its 工匠 are idle again, and its ID is listed in `TurnEnd.completed`, in building order. A completed building cannot be assigned 工匠 again. When the emperor dies, nothing progresses and `completed` is empty. What a completed building does comes in a later slice.
+
 ## UC-CORE-013 Aging and death
 From `BALANCE.aging.startAge`, the emperor loses 健康 at the end of each turn. The loss starts at `BALANCE.aging.baseLoss` and grows by 1 every `BALANCE.aging.yearsPerStep` years of age. The emperor dies when 健康 reaches 0, checked after each action and again after aging at the end of the turn. On death `dead` becomes `true`, the turn does not advance, and the economy is not settled.
 
 ## UC-CORE-015 and UC-CORE-016 Economy
-`settleEconomy(nation, regions, nextHalfSeason)` runs at the end of every turn the emperor survives. `nextHalfSeason` is the half-season the game moves into. In order:
-1. Upkeep: 國庫 loses `BALANCE.upkeep`.
+`settleEconomy(nation, regions, nextHalfSeason, artisans)` runs at the end of every turn the emperor survives. `nextHalfSeason` is the half-season the game moves into, and `artisans` is the nation's total 工匠 (UC-CORE-019; `0` when left out). In order:
+1. Upkeep and wages: 國庫 loses `BALANCE.upkeep`, and also the 工匠 wages: `artisans` × `BALANCE.works.wagePerArtisan`, rounded down. Every 工匠 is paid, idle or assigned. The report gives the wages apart from the upkeep (`wages`, a positive number, `0` without 工匠).
 2. Population (UC-CORE-016), only when `nextHalfSeason` is 春上, so once a year: each player-owned region's 人口 grows by `BALANCE.population.ratePercent` percent (rounded down) when 民心 + 富庶 is at least `growAtOrAbove`, shrinks by the same amount when it is at most `shrinkAtOrBelow`, and otherwise stays. 人口 never goes below 0.
 3. Taxes (UC-CORE-015), only when `nextHalfSeason` is in `BALANCE.tax.collectOn`: 國庫 gains each player-owned region's `regionTax`, `floor(人口 × 富庶 × 民心 / BALANCE.tax.halfYearDivisor)`, computed from its 人口 after step 2. Taxes arrive as the game enters a collection half-season, so they are reported in the summary of the half-season before it. No tax is collected at game start.
-4. Bankruptcy: if 國庫 is now below 0, every player-owned region loses `BALANCE.bankruptcyMoraleLoss` 民心, never going below 0. The game goes on.
+4. Bankruptcy: if 國庫 is now below 0, including when wages pushed it there, every player-owned region loses `BALANCE.bankruptcyMoraleLoss` 民心, never going below 0. The game goes on.
 
 國庫 has no bounds. Regions with another owner pay no tax and are not changed.
 
@@ -113,11 +149,13 @@ stateDiagram-v2
   Court --> Court: appointOfficial
   Court --> Court: recommend, then acceptCandidate or declineCandidate
   Court --> Court: holdExam in an exam year, then confirmExam
+  Court --> Court: recruitArtisans once, releaseArtisans, assignArtisans
   Court --> Map: returnToMap, clock moves to 午
   Palace --> Map: takeAction, not the last action point
   Palace --> TurnEnd: takeAction, last action point
   TurnEnd --> Economy: aging, emperor alive
-  Economy --> Map: upkeep, population, taxes, bankruptcy, next turn
+  Economy --> Works: upkeep and wages, population, taxes, bankruptcy
+  Works --> Map: building progress and completions, next turn
   Palace --> Dead: 健康 reaches 0
   TurnEnd --> Dead: 健康 reaches 0 after aging
   Dead --> [*]
