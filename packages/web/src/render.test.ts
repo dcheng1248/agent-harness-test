@@ -6,6 +6,7 @@ import {
   maxRecruit,
   maxConscript,
   conscriptSoldiers,
+  startDrill,
   recruitArtisans,
   releaseArtisans,
   createInitialState,
@@ -179,7 +180,7 @@ describe('game screens', () => {
     const economy = { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, regionChanges: [] };
     const result = renderScreen({ screen: 'result', state, actionId: 'study', changes: [] }, uiText, gameText, images);
     const summary = renderScreen(
-      { screen: 'summary', state, actionId: 'study', changes: [], endedHalfSeason: 'spring-early', totals: [], economy, completed: [] },
+      { screen: 'summary', state, actionId: 'study', changes: [], endedHalfSeason: 'spring-early', totals: [], economy, completed: [], training: null },
       uiText,
       gameText,
       images,
@@ -219,6 +220,7 @@ describe('game screens', () => {
         screen: 'summary',
         state: { ...state, turn: 1 },
         actionId: 'study',
+        training: null,
         changes: [{ stat: 'learning', amount: 3 }],
         endedHalfSeason: 'spring-early',
         totals: [{ stat: 'learning', amount: 9 }, { stat: 'health', amount: -2 }],
@@ -266,6 +268,7 @@ describe('game screens', () => {
       endedHalfSeason: 'spring-early' as const,
       totals: [],
       completed: [] as string[],
+      training: null,
     };
     const html = renderSummaryScreen(
       {
@@ -692,7 +695,7 @@ describe('兵部', () => {
   };
   const war = (s: GameState): string => render({ screen: 'play', state: s, department: 'war' });
 
-  it('UC-WEB-007 兵部 lists 徵召士兵, 解甲歸田 and 操練軍隊 in order, the first two enabled', () => {
+  it('UC-WEB-007 兵部 lists 徵召士兵, 解甲歸田 and 操練軍隊 in order, all three enabled', () => {
     const html = war(court);
     let last = -1;
     for (const id of ['conscript-soldiers', 'release-soldiers', 'drill-troops']) {
@@ -700,9 +703,9 @@ describe('兵部', () => {
       expect(at).toBeGreaterThan(last);
       last = at;
     }
-    // 操練軍隊 is enabled by the drill screen (Task 5).
     expect(buttonOf(html, 'court-option-conscript-soldiers')).not.toContain('disabled');
     expect(buttonOf(html, 'court-option-release-soldiers')).not.toContain('disabled');
+    expect(buttonOf(html, 'court-option-drill-troops')).not.toContain('disabled');
   });
 
   it('UC-WEB-007 兵部 tags a used 徵召士兵, no recruits and no soldiers', () => {
@@ -745,6 +748,27 @@ describe('兵部', () => {
     expect(buttonOf(html, 'count-max')).toContain(`>${uiText.dischargeAll}`);
     expect(html).toContain('id="confirm-discharge"');
     expect(html).toContain('id="back-to-court"');
+  });
+
+  it('UC-WEB-020 idle drill screen', () => {
+    const html = render({ screen: 'drill', state: court });
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('<main id="drill-screen">'));
+    expect(html).toContain(`<h2>${uiText.drillHeading}</h2>`);
+    expect(html).toMatch(new RegExp(`id="soldier-total">[^<]*${formatArtisans(20000)}<`));
+    expect(html).toMatch(new RegExp(`id="soldier-training">[^<]*${uiText.trainingLabel}[^<]*50<`));
+    expect(html).toContain(`id="drill-hint">${uiText.drillHintPrefix}${formatTaels(BALANCE.army.drillCost)}${uiText.drillHintSuffix}<`);
+    expect(buttonOf(html, 'confirm-drill')).not.toContain('disabled');
+    expect(html).toContain('id="back-to-court"');
+  });
+
+  it('UC-WEB-020 running drill screen', () => {
+    const started = startDrill(court);
+    if (!started.ok) throw new Error('rejected');
+    const html = render({ screen: 'drill', state: started.state });
+    expect(html).not.toContain('drill-hint');
+    expect(html).toContain(`id="drill-remaining">${uiText.drillingPrefix}${formatChineseNumber(8)}${uiText.drillingSuffix}<`);
+    expect(html).toContain('操練中，尚餘八半季');
+    expect(buttonOf(html, 'confirm-drill')).toContain('disabled');
   });
 });
 
@@ -894,6 +918,7 @@ describe('工部', () => {
       changes: [],
       endedHalfSeason: 'spring-early' as const,
       totals: [],
+      training: null,
     };
     const none = renderSummaryScreen(
       { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, regionChanges: [] }, completed: [] },
@@ -910,6 +935,52 @@ describe('工部', () => {
     expect(html).toContain(`id="summary-wages">${formatWages(155000, 0)}<`);
     expect(html.indexOf('id="summary-wages"')).toBeGreaterThan(html.indexOf('id="summary-treasury"'));
     expect(html).toContain('id="summary-completed">落成：天壇、觀星臺<');
+  });
+
+  it('UC-WEB-004 the wages line shows 工匠 wages and 兵餉', () => {
+    const base = {
+      screen: 'summary' as const,
+      state: { ...state, turn: 1 },
+      actionId: 'study' as const,
+      changes: [],
+      endedHalfSeason: 'spring-early' as const,
+      totals: [],
+      completed: [] as string[],
+      training: null,
+    };
+    const both = renderSummaryScreen(
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 10000, regionChanges: [] } },
+      uiText,
+      gameText,
+    );
+    expect(both).toContain(`id="summary-wages">${formatWages(155000, 10000)}<`);
+    const zero = renderSummaryScreen(
+      { ...base, economy: { taxIncome: 0, upkeep: 1, wages: 0, soldierWages: 0, regionChanges: [] } },
+      uiText,
+      gameText,
+    );
+    expect(zero).not.toContain('summary-wages');
+  });
+
+  it('UC-WEB-004 the training line shows only while drilling', () => {
+    const base = {
+      screen: 'summary' as const,
+      state: { ...state, turn: 1 },
+      actionId: 'study' as const,
+      changes: [],
+      endedHalfSeason: 'spring-early' as const,
+      totals: [],
+      completed: ['observatory'],
+      economy: { taxIncome: 0, upkeep: 1, wages: 155000, soldierWages: 0, regionChanges: [] },
+    };
+    const html = renderSummaryScreen({ ...base, training: 2 }, uiText, gameText);
+    expect(html).toContain('id="summary-training">訓練 +2<');
+    const at = (id: string): number => html.indexOf(`id="${id}"`);
+    expect(at('summary-training')).toBeGreaterThan(at('summary-wages'));
+    expect(at('summary-training')).toBeLessThan(at('summary-completed'));
+    expect(at('summary-training')).toBeLessThan(at('summary-regions'));
+    expect(renderSummaryScreen({ ...base, training: 0 }, uiText, gameText)).toContain('id="summary-training">訓練 +0<');
+    expect(renderSummaryScreen({ ...base, training: null }, uiText, gameText)).not.toContain('summary-training');
   });
 });
 

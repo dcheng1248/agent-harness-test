@@ -15,6 +15,8 @@ import {
   conscriptSoldiers,
   maxConscript,
   releaseSoldiers,
+  canDrill,
+  startDrill,
   idleArtisans,
   maxRecruit,
   recruitArtisans,
@@ -68,6 +70,7 @@ export type Screen =
       totals: StatChange[];
       economy: EconomyReport;
       completed: string[];
+      training: number | null;
     }
   | { screen: 'atlas'; state: GameState; region?: string }
   | { screen: 'recommend'; state: GameState }
@@ -77,6 +80,7 @@ export type Screen =
   | { screen: 'release'; state: GameState; count: number }
   | { screen: 'conscript'; state: GameState; count: number }
   | { screen: 'discharge'; state: GameState; count: number }
+  | { screen: 'drill'; state: GameState }
   | { screen: 'build'; state: GameState }
   | { screen: 'taxes'; state: GameState }
   | { screen: 'levy'; state: GameState; gained?: number }
@@ -99,6 +103,7 @@ export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = [
   'release-artisans',
   'conscript-soldiers',
   'release-soldiers',
+  'drill-troops',
   'build',
   'adjust-taxes',
   'extra-levy',
@@ -177,6 +182,7 @@ export function chooseCourtOption(
   if (optionId === 'release-soldiers') {
     return screen.state.army.soldiers > 0 ? { screen: 'discharge', state: screen.state, count: BALANCE.army.step } : screen;
   }
+  if (optionId === 'drill-troops') return { screen: 'drill', state: screen.state };
   if (optionId === 'adjust-taxes') return { screen: 'taxes', state: screen.state };
   if (optionId === 'budget-sheet') return { screen: 'budget', state: screen.state };
   if (optionId === 'extra-levy') return canLevy(screen.state) ? { screen: 'levy', state: screen.state } : screen;
@@ -258,6 +264,12 @@ export function confirmDischarge(screen: Screen): Screen {
   return confirmArmy(screen, 'discharge');
 }
 
+export function confirmDrill(screen: Screen): Screen {
+  if (screen.screen !== 'drill' || !canDrill(screen.state)) return screen;
+  const outcome = startDrill(screen.state);
+  return outcome.ok ? { screen: 'drill', state: outcome.state } : screen;
+}
+
 export function changeAssignment(screen: Screen, buildingId: string, direction: 1 | -1): Screen {
   if (screen.screen !== 'build') return screen;
   if (direction !== 1 && direction !== -1) return screen;
@@ -332,7 +344,7 @@ export function backToCourt(screen: Screen): Screen {
   if (screen.screen === 'taxes' || screen.screen === 'levy' || screen.screen === 'budget') {
     return { screen: 'play', state: screen.state, department: 'revenue' };
   }
-  if (screen.screen === 'conscript' || screen.screen === 'discharge') {
+  if (screen.screen === 'conscript' || screen.screen === 'discharge' || screen.screen === 'drill') {
     return { screen: 'play', state: screen.state, department: 'war' };
   }
   if (screen.screen === 'recruit' || screen.screen === 'release' || screen.screen === 'build') {
@@ -396,6 +408,7 @@ export function performAction(screen: Screen, actionId: ActionId): Screen {
       totals: turnEnd.totals,
       economy: turnEnd.economy,
       completed: turnEnd.completed,
+      training: turnEnd.training,
     };
   }
   return { screen: 'result', state, actionId, changes };

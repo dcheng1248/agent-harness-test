@@ -3,6 +3,7 @@ import {
   formatAge,
   formatArtisans,
   formatWages,
+  formatTrainingChange,
   formatAmount,
   formatChineseNumber,
   formatChanges,
@@ -34,6 +35,7 @@ import {
   type TaxLevelId,
   canRecruit,
   canConscript,
+  drillTurnsLeft,
   maxConscript,
   canRecommend,
   freePopulation,
@@ -171,12 +173,13 @@ export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: G
           })
           .join('');
   const wages = screen.economy.wages + screen.economy.soldierWages > 0 ? `<p id="summary-wages">${formatWages(screen.economy.wages, screen.economy.soldierWages)}</p>` : '';
+  const training = screen.training === null ? '' : `<p id="summary-training">${formatTrainingChange(screen.training)}</p>`;
   const completedNames = screen.state.works.buildings
     .filter((b) => screen.completed.includes(b.id))
     .map((b) => escapeHtml(buildingName(game, b.id)));
   const completed =
     completedNames.length > 0 ? `<p id="summary-completed">${text.completedLabel}：${completedNames.join('、')}</p>` : '';
-  return `${renderHeader(screen.state, text, game)}<main id="turn-summary"><h2>${ended}${text.summarySuffix}</h2><p id="summary-action">${game.actions[screen.actionId].name}：${formatChanges(screen.changes)}</p><p id="summary-totals">${formatChanges(screen.totals)}</p><p id="summary-treasury">${formatEconomy(screen.economy)}</p>${wages}${completed}<ul id="summary-regions">${regionLines}</ul><button type="button" id="next-turn">${text.nextTurnPrefix}${next}</button></main>`;
+  return `${renderHeader(screen.state, text, game)}<main id="turn-summary"><h2>${ended}${text.summarySuffix}</h2><p id="summary-action">${game.actions[screen.actionId].name}：${formatChanges(screen.changes)}</p><p id="summary-totals">${formatChanges(screen.totals)}</p><p id="summary-treasury">${formatEconomy(screen.economy)}</p>${wages}${training}${completed}<ul id="summary-regions">${regionLines}</ul><button type="button" id="next-turn">${text.nextTurnPrefix}${next}</button></main>`;
 }
 
 export function renderAtlasScreen(screen: Of<'atlas'>, text: UiText, game: GameText): string {
@@ -333,6 +336,16 @@ export function renderConscriptScreen(screen: Of<'conscript'>, text: UiText, gam
   return `${renderHeader(state, text, game)}<main id="conscript-screen"><h2>${text.conscriptHeading}</h2><p id="soldier-total">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p><p id="free-population">${text.freePopulationLabel}：${formatArtisans(freePopulation(state))}</p><p id="conscript-max-line">${text.recruitMaxLabel}：${formatArtisans(max)}</p><p id="conscript-hint">${text.conscriptHint}</p>${renderPicker(count, max, countStep(screen), text.recruitMax, text)}<button type="button" id="confirm-conscript">${text.confirmConscript}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
 }
 
+export function renderDrillScreen(screen: Of<'drill'>, text: UiText, game: GameText): string {
+  const { state } = screen;
+  const left = drillTurnsLeft(state);
+  const status =
+    left > 0
+      ? `<p id="drill-remaining">${text.drillingPrefix}${formatChineseNumber(left)}${text.drillingSuffix}</p>`
+      : `<p id="drill-hint">${text.drillHintPrefix}${formatTaels(BALANCE.army.drillCost)}${text.drillHintSuffix}</p>`;
+  return `${renderHeader(state, text, game)}<main id="drill-screen"><h2>${text.drillHeading}</h2><p id="soldier-total">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p><p id="soldier-training">${text.trainingLabel}：${state.army.training}</p>${status}<button type="button" id="confirm-drill"${left > 0 ? ' disabled' : ''}>${text.confirmDrill}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
 export function renderDischargeScreen(screen: Of<'discharge'>, text: UiText, game: GameText): string {
   const { state, count } = screen;
   return `${renderHeader(state, text, game)}<main id="discharge-screen"><h2>${text.dischargeHeading}</h2><p id="soldier-total">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p>${renderPicker(count, state.army.soldiers, countStep(screen), text.dischargeAll, text)}<button type="button" id="confirm-discharge">${text.confirmDischarge}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
@@ -459,6 +472,8 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderConscriptScreen(screen, text, game);
     case 'discharge':
       return renderDischargeScreen(screen, text, game);
+    case 'drill':
+      return renderDrillScreen(screen, text, game);
     case 'build':
       return renderBuildScreen(screen, text, game);
     case 'taxes':

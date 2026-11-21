@@ -18,6 +18,7 @@ import {
   getReignYear,
   levyAmount,
   canLevy,
+  drillTurnsLeft,
 } from '@emperor/core';
 import {
   acceptRecommendation,
@@ -32,6 +33,7 @@ import {
   confirmRecruit,
   confirmConscript,
   confirmDischarge,
+  confirmDrill,
   confirmLevy,
   confirmSacrifice,
   setTax,
@@ -158,6 +160,7 @@ describe('palace loop', () => {
       totals: outcome.turnEnd.totals,
       economy: outcome.turnEnd.economy,
       completed: [],
+      training: null,
     });
     expect(outcome.state.turn).toBe(1);
     expect(continueToMap(summary)).toEqual(play(outcome.state));
@@ -950,5 +953,37 @@ describe('兵部', () => {
     expect(confirmConscript(w)).toBe(w);
     expect(confirmDischarge(w)).toBe(w);
     expect(confirmDischarge(c)).toBe(c);
+  });
+
+  const drillScreen = (): Extract<Screen, { screen: 'drill' }> => {
+    const s = chooseCourtOption(war(), 'drill-troops', notables, names);
+    if (s.screen !== 'drill') throw new Error('expected drill');
+    return s;
+  };
+
+  it('UC-WEB-020 操練軍隊 opens, confirms in place and refuses a second drill', () => {
+    const s = drillScreen();
+    const before = s.state.nation.treasury;
+    const done = confirmDrill(s);
+    if (done.screen !== 'drill') throw new Error('expected drill');
+    expect(done.state.nation.treasury).toBe(before - BALANCE.army.drillCost);
+    expect(drillTurnsLeft(done.state)).toBe(8);
+    expect(confirmDrill(done)).toBe(done);
+    expect(backToCourt(done)).toEqual({ screen: 'play', state: done.state, department: 'war' });
+    expect(chooseCourtOption(backToCourt(done), 'drill-troops', notables, names)).toMatchObject({ screen: 'drill' });
+    const w = war();
+    expect(confirmDrill(w)).toBe(w);
+  });
+
+  it('UC-WEB-004 the summary copies TurnEnd.training', () => {
+    const turnEnd = (start: Screen): Extract<Screen, { screen: 'summary' }> => {
+      let t: Screen = goToMap(backToCourt(start));
+      for (let i = 0; i < 2; i += 1) t = continueToMap(performAction(goToPalace(t, 'yangxin'), 'rest'));
+      const last = performAction(goToPalace(t, 'yangxin'), 'rest');
+      if (last.screen !== 'summary') throw new Error('expected summary');
+      return last;
+    };
+    expect(turnEnd(confirmDrill(drillScreen())).training).toBe(2);
+    expect(turnEnd(war()).training).toBeNull();
   });
 });

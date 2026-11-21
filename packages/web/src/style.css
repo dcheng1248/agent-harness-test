@@ -646,7 +646,8 @@ button#start:hover {
 }
 
 #count-picker button:disabled,
-#building-list button[data-assign]:disabled {
+#building-list button[data-assign]:disabled,
+#confirm-drill:disabled {
   opacity: 0.4;
   cursor: default;
 }
