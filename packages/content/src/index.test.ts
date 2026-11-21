@@ -66,6 +66,7 @@ describe('content', () => {
       'adjust-taxes': { name: '調整賦稅' }, 'extra-levy': { name: '額外徵稅' }, 'budget-sheet': { name: '收支表' },
       'hold-sacrifice': { name: '祭祀' }, 'conduct-diplomacy': { name: '外交' },
       'conscript-soldiers': { name: '徵召士兵' }, 'release-soldiers': { name: '解甲歸田' }, 'drill-troops': { name: '操練軍隊' },
+      'form-legion': { name: '組建軍團' }, 'deploy-legions': { name: '調兵遣將' },
       'grant-amnesty': { name: '大赦天下' }, 'try-major-case': { name: '審理要案' },
       'recruit-artisans': { name: '徵召工匠' }, 'release-artisans': { name: '遣散工匠' },
       build: { name: '營建工程' }, 'forge-weapons': { name: '打造兵器' },
