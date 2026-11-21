@@ -42,8 +42,15 @@ export function formatEconomy(report: EconomyReport): string {
   return parts.join('，');
 }
 
-export function formatWages(wages: number): string {
-  return `${uiText.wagesLabel} −${formatTaels(wages)}`;
+export function formatWages(artisanWages: number, soldierWages: number): string {
+  const parts: string[] = [];
+  if (artisanWages > 0) parts.push(`${uiText.wagesLabel} −${formatTaels(artisanWages)}`);
+  if (soldierWages > 0) parts.push(`${uiText.soldierWagesLabel} −${formatTaels(soldierWages)}`);
+  return parts.join('，');
+}
+
+export function formatTrainingChange(amount: number): string {
+  return `${uiText.trainingLabel} ${amount < 0 ? '−' : '+'}${formatAmount(Math.abs(amount))}`;
 }
 
 export function formatArtisans(n: number): string {

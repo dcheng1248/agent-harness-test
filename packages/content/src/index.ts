@@ -17,6 +17,7 @@ export {
   formatPostName,
   formatReign,
   formatTaels,
+  formatTrainingChange,
   formatWages,
   formatArtisans,
 } from './format';
@@ -139,6 +140,22 @@ export const uiText: UiText = {
   totalRow: '合計',
   halfYearUpkeepLabel: '半年宮廷用度',
   nextCollectionLabel: '下次收稅',
+  conscriptHeading: '徵召士兵',
+  dischargeHeading: '解甲歸田',
+  drillHeading: '操練軍隊',
+  soldierTotalLabel: '士兵總數',
+  trainingLabel: '訓練',
+  soldierWagesLabel: '兵餉',
+  conscriptHint: '新兵未經操練，徵召將拉低全軍訓練。',
+  confirmConscript: '徵召',
+  dischargeAll: '全部遣返',
+  confirmDischarge: '遣返',
+  noSoldiers: '無兵可遣',
+  drillHintPrefix: '操練為期一年，須一次預付國庫 ',
+  drillHintSuffix: '，期間每半季訓練漸增。',
+  confirmDrill: '開始操練',
+  drillingPrefix: '操練中，尚餘',
+  drillingSuffix: '半季',
 };
 
 export const gameText: GameText = {
