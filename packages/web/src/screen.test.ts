@@ -9,6 +9,9 @@ import {
   type DepartmentId,
   type GameState,
   type OfficialStatId,
+  BALANCE,
+  canHoldExam,
+  getReignYear,
 } from '@emperor/core';
 import {
   acceptRecommendation,
@@ -18,6 +21,10 @@ import {
   chooseCourtOption,
   chooseEraName,
   closeAtlas,
+  confirmExamPicks,
+  examCandidates,
+  sortExam,
+  toggleExamPick,
   continueToMap,
   declineRecommendation,
   goToMap,
@@ -457,5 +464,112 @@ describe('screenshot scenarios', () => {
       s = toggleDepartment(goToPalace(s, 'xuanzheng'), 'personnel');
     }
     expect(candidateOf(open(s)).notable).not.toBeNull();
+  });
+});
+
+describe('開科取士', () => {
+  type Exam = Extract<Screen, { screen: 'exam' }>;
+  const personnel = (): Screen => toggleDepartment(inCourt(), 'personnel');
+  function examScreen(): Exam {
+    const s = chooseCourtOption(personnel(), 'hold-exams', notables, names);
+    if (s.screen !== 'exam') throw new Error('unexpected');
+    return s;
+  }
+
+  it('UC-WEB-010 hold-exams opens the exam screen with the drawn candidates', () => {
+    const s = examScreen();
+    expect(s.picks).toEqual([]);
+    expect(s.state.exam?.candidates).toHaveLength(BALANCE.exam.candidates);
+  });
+
+  it('UC-WEB-007 hold-exams does nothing at turn 8 or once held this year', () => {
+    const late = personnel();
+    if (late.screen !== 'play') throw new Error('unexpected');
+    const t8: Screen = { ...late, state: { ...late.state, turn: 8 } };
+    expect(chooseCourtOption(t8, 'hold-exams', notables, names)).toBe(t8);
+    const done = confirmExamPicks(examScreen());
+    expect(chooseCourtOption(done, 'hold-exams', notables, names)).toBe(done);
+  });
+
+  it('UC-WEB-010 toggleExamPick adds in ascending order and removes on a second toggle', () => {
+    let s: Screen = examScreen();
+    s = toggleExamPick(s, 3);
+    s = toggleExamPick(s, 1);
+    expect((s as Exam).picks).toEqual([1, 3]);
+    s = toggleExamPick(s, 3);
+    expect((s as Exam).picks).toEqual([1]);
+  });
+
+  it('UC-WEB-010 toggleExamPick ignores bad input and other screens', () => {
+    const s = examScreen();
+    for (const bad of [NaN, -1, 30, 1.5]) expect(toggleExamPick(s, bad)).toBe(s);
+    expect(toggleExamPick(inCourt(), 0)).toEqual(inCourt());
+    const other = inCourt();
+    expect(toggleExamPick(other, 0)).toBe(other);
+  });
+
+  it('UC-WEB-010 sortExam keeps picks and ignores unknown stats and other screens', () => {
+    const s = toggleExamPick(examScreen(), 2);
+    const sorted = sortExam(s, 'military') as Exam;
+    expect(sorted.sort).toBe('military');
+    expect(sorted.picks).toEqual([2]);
+    expect(sortExam(s, 'bogus' as OfficialStatId)).toBe(s);
+    const other = inCourt();
+    expect(sortExam(other, 'military')).toBe(other);
+  });
+
+  it('UC-WEB-010 examCandidates orders by stat descending with ties by index', () => {
+    const { state } = examScreen();
+    const all = state.exam!.candidates!;
+    expect(examCandidates(state).map((c) => c.index)).toEqual(all.map((_, i) => i));
+    const sorted = examCandidates(state, 'military');
+    expect(sorted).toHaveLength(all.length);
+    for (let i = 1; i < sorted.length; i += 1) {
+      const a = sorted[i - 1]!;
+      const b = sorted[i]!;
+      expect(a.candidate.stats.military).toBeGreaterThanOrEqual(b.candidate.stats.military);
+      if (a.candidate.stats.military === b.candidate.stats.military) expect(a.index).toBeLessThan(b.index);
+    }
+    expect(examCandidates(newState())).toEqual([]);
+  });
+
+  it('UC-WEB-010 confirmExamPicks hires the picks and returns to 吏部', () => {
+    const s = toggleExamPick(toggleExamPick(examScreen(), 0), 2) as Exam;
+    const done = confirmExamPicks(s);
+    expect(done.screen).toBe('play');
+    if (done.screen !== 'play') throw new Error('unexpected');
+    expect(done.department).toBe('personnel');
+    expect(done.state.officials).toHaveLength(s.state.officials.length + 2);
+    expect(canHoldExam(done.state)).toBe(false);
+  });
+
+  it('UC-WEB-010 confirming with no picks hires nobody; core rejection keeps the screen', () => {
+    const s = examScreen();
+    const done = confirmExamPicks(s);
+    expect(done.screen).toBe('play');
+    if (done.screen !== 'play') throw new Error('unexpected');
+    expect(done.state.officials).toHaveLength(s.state.officials.length);
+    const empty: Exam = { ...s, state: { ...s.state, exam: null } };
+    expect(confirmExamPicks(empty)).toBe(empty);
+    const other = inCourt();
+    expect(confirmExamPicks(other)).toBe(other);
+  });
+
+  it('UC-WEB-010 backToCourt from exam returns to 宣政殿 吏部', () => {
+    const s = examScreen();
+    const back = backToCourt(s);
+    expect(back).toEqual({ screen: 'play', state: s.state, department: 'personnel' });
+  });
+
+  it('UC-WEB-010 the non-exam-year screenshot path reaches 二年', () => {
+    const regionsAll = gameText.regions;
+    let s = chooseEraName(startGame(42, gameText.eraNamePool), '承平', regionsAll, names);
+    for (let i = 0; i < 32; i += 1) {
+      s = continueToMap(performAction(goToPalace(s, 'yangxin'), 'rest'));
+    }
+    s = toggleDepartment(goToPalace(s, 'xuanzheng'), 'personnel');
+    if (s.screen !== 'play') throw new Error('unexpected');
+    expect(getReignYear(s.state)).toBe(2);
+    expect(canHoldExam(s.state)).toBe(false);
   });
 });

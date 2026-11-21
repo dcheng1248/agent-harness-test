@@ -709,7 +709,7 @@
   },
   {
     "name": "palace-xuanzheng-personnel",
-    "description": "宣政殿畫面：展開吏部，舉薦人選與官員任命可點選，開科取士尚未開放",
+    "description": "宣政殿畫面：展開吏部，舉薦人選、官員任命與開科取士皆可點選",
     "steps": [
       {
         "click": "#start"
@@ -1139,6 +1139,339 @@
       },
       {
         "waitFor": "#court-option-recommend-officials[disabled]"
+      }
+    ]
+  },
+  {
+    "name": "exam-checklist",
+    "description": "開科取士：三十名應試者清單，可勾選與依屬性排序",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "click": "#court-option-hold-exams"
+      },
+      {
+        "waitFor": "#exam-list"
+      }
+    ]
+  },
+  {
+    "name": "personnel-non-exam-year",
+    "description": "宣政殿吏部（二年）：非開科之年，開科取士停用並顯示下次開科",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#next-turn"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-personnel"
+      },
+      {
+        "waitFor": "#court-option-hold-exams[disabled]"
       }
     ]
   }
