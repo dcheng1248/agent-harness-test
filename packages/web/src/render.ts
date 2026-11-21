@@ -17,6 +17,7 @@ import {
 } from '@emperor/content';
 import {
   canEnterPalace,
+  findLegion,
   CATALOG,
   DEPARTMENT_IDS,
   DEPARTMENTS,
@@ -331,7 +332,7 @@ export function renderConscriptScreen(screen: Of<'conscript'>, text: UiText, gam
 }
 
 function renderLegionPanel(state: GameState, legionId: string, text: UiText, game: GameText): string {
-  const l = state.army.legions.find((x) => x.id === legionId);
+  const l = findLegion(state, legionId);
   if (!l) return '';
   const general = state.officials.find((o) => o.id === l.general);
   const regionName = game.regions.find((r) => r.id === l.region)?.name ?? l.region;
