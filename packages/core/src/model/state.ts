@@ -2,6 +2,7 @@ import { nextRandom } from "../rng";
 import { drawOfficial } from "../rules/officials";
 import { BALANCE } from "./balance";
 import type { PalaceId } from "./catalog";
+import type { Exam } from "./exam";
 import { listPosts } from "./officials";
 import type { NamePool, Official } from "./officials";
 import type { Recommendation } from "./notables";
@@ -9,7 +10,7 @@ import { EMPEROR_STAT_IDS } from "./stats";
 import type { NationStatValues, StatValues } from "./stats";
 import type { RegionData, RegionState } from "./region";
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export type Location = "map" | PalaceId;
 
@@ -27,6 +28,7 @@ export interface GameState {
   regions: RegionState[];
   officials: Official[];
   recommendation: Recommendation | null;
+  exam: Exam | null;
   dead: boolean;
 }
 
@@ -102,6 +104,7 @@ export function createInitialState(
     regions: regionStates,
     officials,
     recommendation: null,
+    exam: null,
     dead: false,
   };
 }

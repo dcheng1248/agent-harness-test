@@ -88,6 +88,8 @@ export {
   recommend,
   acceptCandidate,
   declineCandidate,
+  drawCandidate,
+  nextOfficialId,
 } from "./rules/recommend";
 export type {
   RecommendRejection,
@@ -95,3 +97,11 @@ export type {
   RecommendOutcome,
   CandidateOutcome,
 } from "./rules/recommend";
+export type { Exam } from "./model/exam";
+export { isExamYear, nextExamYear, canHoldExam, holdExam, confirmExam } from "./rules/exam";
+export type {
+  HoldExamRejection,
+  ConfirmExamRejection,
+  HoldExamOutcome,
+  ConfirmExamOutcome,
+} from "./rules/exam";

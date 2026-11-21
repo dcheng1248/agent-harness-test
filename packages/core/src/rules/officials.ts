@@ -4,7 +4,7 @@ import type { NamePool, Official, PostId } from "../model/officials";
 import { PLAYER_OWNER } from "../model/region";
 import type { GameState } from "../model/state";
 import { OFFICIAL_STAT_IDS } from "../model/stats";
-import type { OfficialStatValues } from "../model/stats";
+import type { OfficialStatId, OfficialStatValues } from "../model/stats";
 import { nextRandom } from "../rng";
 import { isMorningCourt } from "./turn";
 import { randomInt } from "./random";
@@ -24,13 +24,14 @@ export function drawOfficial(
   id: string,
   names: NamePool,
   taken: ReadonlySet<string>,
+  ordinary: Record<OfficialStatId, { min: number; max: number }> = BALANCE.officials.ordinary,
 ): { official: Official; rngState: number } {
   const roll = nextRandom(rngState);
   let rng = roll.rngState;
   const table =
     roll.value < BALANCE.officials.outlierChance
       ? BALANCE.officials.outlier
-      : BALANCE.officials.ordinary;
+      : ordinary;
   const stats = {} as OfficialStatValues;
   for (const stat of OFFICIAL_STAT_IDS) {
     const draw = randomInt(rng, table[stat].min, table[stat].max);
