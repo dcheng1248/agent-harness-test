@@ -8,7 +8,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CONTENT-002 | 官員姓名庫與官位名稱 | implemented |
 | UC-CONTENT-003 | 名臣名錄：歷代名臣的文武類型、四項屬性與登場門檻 | implemented |
 | UC-CONTENT-004 | 營建工程名錄：歷代全國性工程的名稱、簡介、類別與所需工匠·半季 | implemented |
-| UC-CONTENT-005 | 諸國名錄：本朝與契丹、吐蕃、高麗、南詔的名稱與輿圖顏色 | planned |
+| UC-CONTENT-005 | 諸國名錄：本朝與契丹、吐蕃、高麗、南詔的名稱與輿圖顏色 | implemented |
 
 ## UC-CONTENT-001 Regions
 - The list starts with the nine home regions of 九州, in their existing order, each with owner `PLAYER_OWNER`. 關中 is the capital, and it is the only region marked as a capital.

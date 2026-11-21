@@ -1,10 +1,11 @@
 import { buildings } from './buildings';
 import { notables } from './notables';
+import { nations } from './nations';
 import { officialNames } from './officialNames';
 import { regions } from './regions';
 import type { GameText, UiText } from './schema';
 
-export type { BuildingCategory, BuildingEntry, GameText, RegionEntry, UiText } from './schema';
+export type { BuildingCategory, BuildingEntry, GameText, NationEntry, RegionEntry, UiText } from './schema';
 export {
   formatAge,
   formatAmount,
@@ -44,6 +45,11 @@ export const uiText: UiText = {
   atlasHeading: '輿圖',
   closeAtlas: '返回崇文館',
   regionColumn: '地域',
+  ownerLabel: '歸屬',
+  atlasHint: '點選地域，以觀其歸屬、民心、人口與富庶。',
+  closeRegionPanel: '關閉',
+  legendHeading: '圖例',
+  atlasMapLabel: '天下輿圖',
   capitalMark: '京師',
   taelUnit: '兩',
   taxIncomeLabel: '稅入',
@@ -197,6 +203,7 @@ export const gameText: GameText = {
     '承平', '景和', '永綏', '昭寧', '嘉穗', '鴻熙', '安瀾', '崇禧', '德輝', '清晏',
     '隆祚', '熙載', '紹元', '康衢', '泰寧', '明昶', '天祿', '文昭', '靖和', '瑞曦',
   ],
+  nations,
   regions,
   officialNames,
   notables,
