@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { formatPostName, gameText, uiText } from '@emperor/content';
+import { formatChineseNumber, formatPostName, gameText, uiText } from '@emperor/content';
 import {
   createInitialState,
   DEPARTMENT_IDS,
   DEPARTMENTS,
   EMPEROR_STAT_IDS,
   enterPalace,
+  holdExam,
+  nextExamYear,
+  getReignYear,
+  confirmExam,
   listPosts,
   OFFICIAL_STAT_IDS,
   PALACE_IDS,
@@ -26,7 +30,7 @@ import {
   renderTitleScreen,
 } from './render';
 import { PALACE_ANCHORS } from './palaceMap';
-import { COURT_PALACE, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
+import { COURT_PALACE, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 
 const images = { palace: '/img/palace.webp', scroll: '/img/scroll.webp', map: '/img/map.webp',
   backgrounds: {
@@ -326,7 +330,7 @@ describe('宣政殿', () => {
     expect(html.indexOf(leave)).toBeGreaterThan(last);
   });
 
-  it('UC-WEB-007 an open department is highlighted and lists its options, only 官員任命 enabled', () => {
+  it('UC-WEB-007 an open department is highlighted and lists its options, 開科取士 and 舉薦人選 and 官員任命 enabled', () => {
     const html = renderPlayScreen({ screen: 'play', state: court, department: 'personnel' }, uiText, gameText, images);
     for (const id of DEPARTMENT_IDS) expect(html).toContain(departmentButton(id, id === 'personnel'));
     expect(html).toContain('<div id="court-options">');
@@ -501,5 +505,102 @@ describe('舉薦人選', () => {
       `<button type="button" id="court-option-recommend-officials" data-court-option="recommend-officials">${gameText.courtOptions['recommend-officials'].name}</button>`,
     );
     expect(older).not.toContain(uiText.recommendUsed);
+  });
+});
+
+describe('開科取士', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const held = (): GameState => {
+    const outcome = holdExam(court, gameText.notables, gameText.officialNames);
+    if (!outcome.ok) throw new Error('unexpected');
+    return outcome.state;
+  };
+  const render = (s: Extract<Screen, { screen: 'exam' }>): string => renderScreen(s, uiText, gameText, images);
+  const view = (s: GameState): string =>
+    renderPlayScreen({ screen: 'play', state: s, department: 'personnel' }, uiText, gameText, images);
+  const examButton = (s: GameState): string => {
+    const html = view(s);
+    const at = html.indexOf('<button type="button" id="court-option-hold-exams"');
+    return html.slice(at, html.indexOf('</button>', at) + 9);
+  };
+
+  it('UC-WEB-010 renders heading, count and rows in candidate order', () => {
+    const s = held();
+    const html = render({ screen: 'exam', state: s, picks: [] });
+    expect(html.indexOf('<header id="game-header"')).toBeLessThan(html.indexOf('<main id="exam-screen">'));
+    expect(html).toContain(`<h2>${uiText.examHeading}</h2>`);
+    expect(html).toContain(`id="exam-picked">${uiText.examPicked}：0</`);
+    expect(html).toContain('id="exam-list"');
+    expect(html).toContain('id="confirm-exam"');
+    let last = -1;
+    for (const { index, candidate } of examCandidates(s)) {
+      const at = html.indexOf(`<tr data-exam-row="${index}"`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+      const row = html.slice(at, html.indexOf('</tr>', at));
+      expect(row).toContain(`id="exam-pick-${index}" data-exam-pick="${index}" aria-label="${escapeHtml(candidate.name)}">`);
+      expect(row).not.toContain('checked');
+      expect(row).toContain(escapeHtml(candidate.name));
+      for (const stat of OFFICIAL_STAT_IDS) expect(row).toContain(`<td>${candidate.stats[stat]}</td>`);
+    }
+  });
+
+  it('UC-WEB-010 a 名臣 row carries data-notable and the mark; others do not', () => {
+    const s = held();
+    const cands = s.exam!.candidates!.map((c, i) => (i === 1 ? { ...c, name: '某<臣>', notable: 'guan-zhong' } : { ...c, notable: null }));
+    const html = render({ screen: 'exam', state: { ...s, exam: { turn: s.turn, candidates: cands } }, picks: [] });
+    expect(html).toContain('<tr data-exam-row="1" data-notable="guan-zhong">');
+    expect(html).toContain(`某&lt;臣&gt;<span class="notable-mark">${uiText.notableMark}</span>`);
+    expect(html.split('data-notable').length).toBe(2);
+    expect(html.split('notable-mark').length).toBe(2);
+  });
+
+  it('UC-WEB-010 sorted rows, pressed sort button and ticks', () => {
+    const s = held();
+    const html = render({ screen: 'exam', state: s, picks: [0, 2], sort: 'military' });
+    expect(html).toContain(`id="exam-picked">${uiText.examPicked}：2</`);
+    let last = -1;
+    for (const { index } of examCandidates(s, 'military')) {
+      const at = html.indexOf(`<tr data-exam-row="${index}"`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+    }
+    for (const stat of OFFICIAL_STAT_IDS) {
+      expect(html).toContain(`id="exam-sort-${stat}" data-exam-sort="${stat}" aria-pressed="${stat === 'military'}"`);
+    }
+    expect(html).toMatch(/id="exam-pick-0" data-exam-pick="0" aria-label="[^"]*" checked>/);
+    expect(html).toMatch(/id="exam-pick-2" data-exam-pick="2" aria-label="[^"]*" checked>/);
+    expect(html).not.toMatch(/id="exam-pick-1"[^>]*checked/);
+  });
+
+  it('UC-WEB-010 with no pending candidates only a way back is shown', () => {
+    const html = render({ screen: 'exam', state: court, picks: [] });
+    expect(html).toContain(`<p id="no-exam-candidates">${uiText.noExamCandidates}</p>`);
+    expect(html).toContain('id="back-to-court"');
+    expect(html).not.toContain('id="confirm-exam"');
+    expect(html).not.toContain('id="exam-list"');
+  });
+
+  it('UC-WEB-007 開科取士 is enabled at turn 0, tagged 已開科 once held', () => {
+    expect(examButton(court)).toBe(
+      `<button type="button" id="court-option-hold-exams" data-court-option="hold-exams">${gameText.courtOptions['hold-exams'].name}</button>`,
+    );
+    const s = held();
+    const done = confirmExam(s, []);
+    if (!done.ok) throw new Error('unexpected');
+    expect(examButton(done.state)).toBe(
+      `<button type="button" id="court-option-hold-exams" data-court-option="hold-exams" disabled>${gameText.courtOptions['hold-exams'].name}<span class="court-option-tag">${uiText.examHeld}</span></button>`,
+    );
+  });
+
+  it.each([
+    [8, '二'],
+    [16, '一'],
+  ])('UC-WEB-007 at turn %i the tag counts the years to the next exam', (turn, years) => {
+    const s = { ...court, turn };
+    expect(formatChineseNumber(nextExamYear(s) - getReignYear(s))).toBe(years);
+    expect(examButton(s)).toBe(
+      `<button type="button" id="court-option-hold-exams" data-court-option="hold-exams" disabled>${gameText.courtOptions['hold-exams'].name}<span class="court-option-tag">${uiText.nextExamPrefix}${years}${uiText.nextExamSuffix}</span></button>`,
+    );
   });
 });

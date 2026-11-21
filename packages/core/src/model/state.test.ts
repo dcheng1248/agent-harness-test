@@ -65,7 +65,7 @@ describe("initial state", () => {
   it("UC-CORE-001 initial state starts at 元年春上, 朝, age 16, on the map", () => {
     const state = createInitialState(7, "承平", FIXTURE, TEST_NAMES);
     expect(state).toMatchObject({
-      schemaVersion: 5,
+      schemaVersion: 6,
       seed: 7,
       eraName: "承平",
       turn: 0,
@@ -112,7 +112,7 @@ describe("initial state", () => {
       },
     ]);
     expect(state.nation).toEqual({ treasury: 500000 });
-    expect(state.schemaVersion).toBe(5);
+    expect(state.schemaVersion).toBe(6);
     expect(JSON.parse(JSON.stringify(state))).toEqual(state);
   });
 
@@ -143,6 +143,7 @@ describe("initial state", () => {
     for (const o of s.officials) expect(TEST_NAMES.surnames.some((x) => o.name.startsWith(x) && TEST_NAMES.givenNames.includes(o.name.slice(x.length)))).toBe(true);
     expect(s.officials.every((o) => o.notable === null)).toBe(true);
     expect(s.recommendation).toBeNull();
+    expect(s.exam).toBeNull(); // UC-CORE-018
     expect(JSON.parse(JSON.stringify(s))).toEqual(s);
   });
 

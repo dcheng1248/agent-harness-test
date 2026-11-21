@@ -2,6 +2,7 @@ import type { GameText, UiText } from '@emperor/content';
 import {
   formatAge,
   formatAmount,
+  formatChineseNumber,
   formatChanges,
   formatDate,
   formatEconomy,
@@ -21,7 +22,10 @@ import {
   getAge,
   getHalfSeason,
   getReignYear,
+  canHoldExam,
   canRecommend,
+  isExamYear,
+  nextExamYear,
   listPosts,
   OFFICIAL_STAT_IDS,
   type DepartmentId,
@@ -31,7 +35,7 @@ import {
   type PostInfo,
 } from '@emperor/core';
 import { PALACE_ANCHORS } from './palaceMap';
-import { ATLAS_PALACE, COURT_PALACE, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
+import { ATLAS_PALACE, COURT_PALACE, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 
 type Of<K extends Screen['screen']> = Extract<Screen, { screen: K }>;
 
@@ -90,6 +94,11 @@ export function renderPlayScreen(screen: Of<'play'>, text: UiText, game: GameTex
   return `<main id="palace-view"><div id="palace-stage" class="image-stage">${header}<img id="palace-image" src="${images.backgrounds[state.location]}" alt="${palace.imageAlt}"></div><div id="palace-panel"><h2>${palace.name}</h2>${palace.description ? `<p id="palace-description">${palace.description}</p>` : ''}${actions}<div id="palace-nav">${atlasButton}<button type="button" id="back-to-map">${text.backToMap}</button></div></div></main>`;
 }
 
+function examTag(state: GameState, text: UiText): string {
+  if (isExamYear(state)) return text.examHeld;
+  return `${text.nextExamPrefix}${formatChineseNumber(nextExamYear(state) - getReignYear(state))}${text.nextExamSuffix}`;
+}
+
 function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game: GameText, images: ScreenImages): string {
   const palace = game.palaces[COURT_PALACE];
   const open = screen.department;
@@ -98,6 +107,8 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
       .map((option) =>
         option === 'recommend-officials' && !canRecommend(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.recommendUsed}</span></button>`
+          : option === 'hold-exams' && !canHoldExam(screen.state)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${examTag(screen.state, text)}</span></button>`
           : OPEN_COURT_OPTIONS.includes(option)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}">${game.courtOptions[option].name}</button>`
           : `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.notYetOpen}</span></button>`,
@@ -217,6 +228,31 @@ export function renderRecommendScreen(screen: Of<'recommend'>, text: UiText, gam
   return `${renderHeader(state, text, game)}<main id="recommend-screen"><h2>${text.recommendHeading}</h2>${body}</main>`;
 }
 
+export function renderExamScreen(screen: Of<'exam'>, text: UiText, game: GameText): string {
+  const { state, picks, sort } = screen;
+  const candidates = examCandidates(state, sort);
+  let body: string;
+  if (candidates.length === 0) {
+    body = `<p id="no-exam-candidates">${text.noExamCandidates}</p><button type="button" id="back-to-court">${text.backToCourt}</button>`;
+  } else {
+    const head = `<tr><th>${text.examPickColumn}</th><th>${text.nameColumn}</th>${OFFICIAL_STAT_IDS.map(
+      (stat) =>
+        `<th><button type="button" id="exam-sort-${stat}" data-exam-sort="${stat}" aria-pressed="${stat === sort}">${game.statLabels[stat]}</button></th>`,
+    ).join('')}</tr>`;
+    const rows = candidates
+      .map(({ index, candidate }) => {
+        const name = escapeHtml(candidate.name);
+        const data = candidate.notable === null ? '' : ` data-notable="${escapeHtml(candidate.notable)}"`;
+        const mark = candidate.notable === null ? '' : `<span class="notable-mark">${text.notableMark}</span>`;
+        const checked = picks.includes(index) ? ' checked' : '';
+        return `<tr data-exam-row="${index}"${data}><td><input type="checkbox" id="exam-pick-${index}" data-exam-pick="${index}" aria-label="${name}"${checked}></td><th scope="row">${name}${mark}</th>${OFFICIAL_STAT_IDS.map((stat) => `<td>${candidate.stats[stat]}</td>`).join('')}</tr>`;
+      })
+      .join('');
+    body = `<p id="exam-picked">${text.examPicked}：${picks.length}</p><div class="table-scroll"><table id="exam-list"><thead>${head}</thead><tbody>${rows}</tbody></table></div><button type="button" id="confirm-exam">${text.confirmExamButton}</button>`;
+  }
+  return `${renderHeader(state, text, game)}<main id="exam-screen"><h2>${text.examHeading}</h2>${body}</main>`;
+}
+
 export function renderEndingScreen(screen: Of<'ending'>, text: UiText, _game?: GameText): string {
   const { state } = screen;
   return `<main id="ending"><h1>${text.endingHeading}</h1><p id="ending-era">${text.eraLabel}：${escapeHtml(state.eraName)}</p><p id="ending-reign">${formatReign(getReignYear(state))}</p><p id="ending-age">${formatLifespan(getAge(state))}</p><button type="button" id="restart">${text.restartButton}</button></main>`;
@@ -240,6 +276,8 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderAppointScreen(screen, text, game);
     case 'recommend':
       return renderRecommendScreen(screen, text, game);
+    case 'exam':
+      return renderExamScreen(screen, text, game);
     case 'ending':
       return renderEndingScreen(screen, text, game);
   }

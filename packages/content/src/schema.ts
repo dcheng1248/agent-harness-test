@@ -50,6 +50,14 @@ export interface UiText {
   declineCandidate: string;
   recommendUsed: string;
   noCandidate: string;
+  examHeading: string;
+  examPickColumn: string;
+  examPicked: string;
+  confirmExamButton: string;
+  examHeld: string;
+  nextExamPrefix: string;
+  nextExamSuffix: string;
+  noExamCandidates: string;
 }
 
 export interface RegionEntry extends RegionData {

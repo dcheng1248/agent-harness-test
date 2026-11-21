@@ -13,6 +13,7 @@ import {
   chooseCourtOption,
   chooseEraName,
   closeAtlas,
+  confirmExamPicks,
   continueToMap,
   declineRecommendation,
   goToMap,
@@ -21,9 +22,11 @@ import {
   performAction,
   restart,
   selectPost,
+  sortExam,
   sortIdle,
   startGame,
   toggleDepartment,
+  toggleExamPick,
   type Screen,
 } from './screen';
 import './style.css';
@@ -83,6 +86,12 @@ if (root) {
       current = backToCourt(current);
     } else if (hit('#leave-court')) {
       current = goToMap(current);
+    } else if (hit('[data-exam-pick]')) {
+      current = toggleExamPick(current, Number(hit('[data-exam-pick]')?.dataset.examPick));
+    } else if (hit('[data-exam-sort]')) {
+      current = sortExam(current, hit('[data-exam-sort]')?.dataset.examSort as OfficialStatId);
+    } else if (hit('#confirm-exam')) {
+      current = confirmExamPicks(current);
     } else if (hit('[data-action]')) {
       current = performAction(current, hit('[data-action]')?.dataset.action as ActionId);
     } else if (hit('#open-atlas')) {

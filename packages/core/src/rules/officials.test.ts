@@ -9,6 +9,8 @@ import {
 } from "../index";
 import type { AppointRejection, GameState, RegionData } from "../index";
 import { TEST_NAMES } from "../testNames";
+import { BALANCE, nextRandom } from "../index";
+import { drawOfficial } from "./officials";
 
 const start = { morale: 50, population: 100000, prosperity: 50 };
 const REGIONS: RegionData[] = [
@@ -60,5 +62,24 @@ describe("officials", () => {
     ];
     for (const [s, post, official, reason] of cases)
       expect(appointOfficial(s, post, official)).toEqual({ ok: false, reason, state: s });
+  });
+});
+
+describe("drawOfficial table", () => {
+  const whereFirst = (pred: (v: number) => boolean) => {
+    for (let r = 0; ; r += 1) if (pred(nextRandom(r).value)) return r;
+  };
+  it("UC-CORE-018 drawOfficial uses the given ordinary table unless the outlier roll hits", () => {
+    const miss = whereFirst((v) => v >= BALANCE.officials.outlierChance);
+    const { official } = drawOfficial(miss, "x", TEST_NAMES, new Set(), BALANCE.exam.ordinary);
+    for (const [stat, v] of Object.entries(official.stats)) {
+      const range = BALANCE.exam.ordinary[stat as keyof typeof BALANCE.exam.ordinary];
+      expect(v).toBeGreaterThanOrEqual(range.min);
+      expect(v).toBeLessThanOrEqual(range.max);
+    }
+    const hit = whereFirst((v) => v < BALANCE.officials.outlierChance);
+    expect(drawOfficial(hit, "x", TEST_NAMES, new Set(), BALANCE.exam.ordinary)).toEqual(
+      drawOfficial(hit, "x", TEST_NAMES, new Set()),
+    );
   });
 });

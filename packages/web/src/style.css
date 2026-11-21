@@ -74,7 +74,8 @@ button#start:hover {
 #atlas,
 #ending,
 #appoint-screen,
-#recommend-screen {
+#recommend-screen,
+#exam-screen {
   max-width: 32rem;
   margin: 0 auto;
   padding: 1rem;
@@ -82,7 +83,8 @@ button#start:hover {
   line-height: 1.6;
 }
 
-#appoint-screen {
+#appoint-screen,
+#exam-screen {
   max-width: 48rem;
 }
 
@@ -138,7 +140,9 @@ button#start:hover {
 #back-to-posts,
 #back-to-court,
 #accept-candidate,
-#decline-candidate {
+#decline-candidate,
+#confirm-exam,
+#exam-picked {
   min-width: 44px;
   min-height: 44px;
   margin-top: 0.5rem;
@@ -161,7 +165,8 @@ button#start:hover {
 #back-to-posts:hover,
 #back-to-court:hover,
 #accept-candidate:hover,
-#decline-candidate:hover {
+#decline-candidate:hover,
+#confirm-exam:hover {
   background: #922424;
 }
 
@@ -191,7 +196,8 @@ button#start:hover {
 }
 
 .post-table,
-#idle-list {
+#idle-list,
+#exam-list {
   width: 100%;
   border-collapse: collapse;
 }
@@ -199,7 +205,9 @@ button#start:hover {
 .post-table th,
 .post-table td,
 #idle-list th,
-#idle-list td {
+#idle-list td,
+#exam-list th,
+#exam-list td {
   padding: 0.4rem 0.6rem;
   border-bottom: 1px solid #c9a227;
   text-align: right;
@@ -208,7 +216,10 @@ button#start:hover {
 
 .post-table th:first-child,
 .post-table td:nth-child(2),
-#idle-list th:first-child {
+#idle-list th:first-child,
+#exam-list th:first-child,
+#exam-list th:nth-child(2),
+#exam-list td:first-child {
   text-align: left;
 }
 
@@ -218,7 +229,8 @@ button#start:hover {
 
 .post-table button[data-post],
 #idle-list button[data-sort],
-#idle-list button[data-official] {
+#idle-list button[data-official],
+#exam-list button[data-exam-sort] {
   min-width: 44px;
   min-height: 44px;
   padding: 0.3em 0.8em;
@@ -232,13 +244,21 @@ button#start:hover {
 
 .post-table button[data-post]:hover,
 #idle-list button[data-sort]:hover,
-#idle-list button[data-official]:hover {
+#idle-list button[data-official]:hover,
+#exam-list button[data-exam-sort]:hover {
   background: #922424;
 }
 
-#idle-list button[data-sort][aria-pressed="true"] {
+#idle-list button[data-sort][aria-pressed="true"],
+#exam-list button[data-exam-sort][aria-pressed="true"] {
   color: #24140a;
   background: #c9a227;
+}
+
+#exam-list input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
 }
 
 .visually-hidden {
@@ -530,4 +550,9 @@ button#start:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+#exam-picked {
+  display: inline-block;
+  cursor: default;
 }

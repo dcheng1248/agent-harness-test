@@ -1,7 +1,10 @@
 import {
   acceptCandidate,
   appointOfficial,
+  canHoldExam,
   canRecommend,
+  confirmExam,
+  holdExam,
   COURT_PALACE_ID,
   createInitialState,
   declineCandidate,
@@ -18,6 +21,7 @@ import {
   returnToMap,
   takeAction,
   type ActionId,
+  type Candidate,
   type CourtOptionId,
   type DepartmentId,
   type EconomyReport,
@@ -49,6 +53,7 @@ export type Screen =
   | { screen: 'atlas'; state: GameState }
   | { screen: 'recommend'; state: GameState }
   | { screen: 'appoint'; state: GameState; post?: PostId; sort?: OfficialStatId }
+  | { screen: 'exam'; state: GameState; picks: number[]; sort?: OfficialStatId }
   | { screen: 'ending'; state: GameState };
 
 /** The palace that offers the 輿圖. */
@@ -58,7 +63,7 @@ export const ATLAS_PALACE: PalaceId = 'chongwen';
 export const COURT_PALACE: PalaceId = COURT_PALACE_ID;
 
 /** The court options that open a screen; every other option is not yet open. */
-export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = ['recommend-officials', 'appoint-officials'];
+export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = ['recommend-officials', 'appoint-officials', 'hold-exams'];
 
 export function startGame(seed: number, pool: readonly string[]): Screen {
   return {
@@ -113,6 +118,11 @@ export function chooseCourtOption(
     const outcome = recommend(screen.state, notables, names);
     return outcome.ok ? { screen: 'recommend', state: outcome.state } : screen;
   }
+  if (optionId === 'hold-exams') {
+    if (!canHoldExam(screen.state)) return screen;
+    const outcome = holdExam(screen.state, notables, names);
+    return outcome.ok ? { screen: 'exam', state: outcome.state, picks: [] } : screen;
+  }
   return { screen: 'appoint', state: screen.state };
 }
 
@@ -159,8 +169,39 @@ export function cancelPost(screen: Screen): Screen {
 }
 
 export function backToCourt(screen: Screen): Screen {
-  if (screen.screen !== 'appoint' && screen.screen !== 'recommend') return screen;
+  if (screen.screen !== 'appoint' && screen.screen !== 'recommend' && screen.screen !== 'exam') return screen;
   return { screen: 'play', state: screen.state, department: 'personnel' };
+}
+
+/** The candidates of this half-season's exam with their positions, in list order or sorted by `sort`, highest first. */
+export function examCandidates(state: GameState, sort?: OfficialStatId): { index: number; candidate: Candidate }[] {
+  const exam = state.exam;
+  if (exam === null || exam.turn !== state.turn || exam.candidates === null) return [];
+  const all = exam.candidates.map((candidate, index) => ({ index, candidate }));
+  if (sort === undefined) return all;
+  return all.sort((a, b) => b.candidate.stats[sort] - a.candidate.stats[sort] || a.index - b.index);
+}
+
+export function toggleExamPick(screen: Screen, index: number): Screen {
+  if (screen.screen !== 'exam') return screen;
+  const count = screen.state.exam?.candidates?.length ?? 0;
+  if (!Number.isInteger(index) || index < 0 || index >= count) return screen;
+  const picks = screen.picks.includes(index)
+    ? screen.picks.filter((p) => p !== index)
+    : [...screen.picks, index].sort((a, b) => a - b);
+  return { ...screen, picks };
+}
+
+export function sortExam(screen: Screen, stat: OfficialStatId): Screen {
+  if (screen.screen !== 'exam' || !OFFICIAL_STAT_IDS.includes(stat)) return screen;
+  return { ...screen, sort: stat };
+}
+
+export function confirmExamPicks(screen: Screen): Screen {
+  if (screen.screen !== 'exam') return screen;
+  const outcome = confirmExam(screen.state, screen.picks);
+  if (!outcome.ok) return screen;
+  return { screen: 'play', state: outcome.state, department: 'personnel' };
 }
 
 /** The 賦閑 officials, in `officials` order or sorted by `sort`, highest first. */

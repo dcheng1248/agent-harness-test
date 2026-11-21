@@ -1,6 +1,7 @@
 import { BALANCE } from "../model/balance";
-import type { Candidate, NotableData } from "../model/notables";
-import type { NamePool } from "../model/officials";
+import type { Candidate, NotableData, NotableType } from "../model/notables";
+import type { NamePool, Official } from "../model/officials";
+import type { OfficialStatId } from "../model/stats";
 import type { GameState } from "../model/state";
 import { nextRandom } from "../rng";
 import { drawOfficial } from "./officials";
@@ -27,25 +28,37 @@ function weight(state: GameState, notable: NotableData): number {
   return learning + resolve;
 }
 
-/** Draws this half-season's candidate from the random stream and stores it. */
-export function recommend(
+export interface DrawCandidateOptions {
+  types: readonly NotableType[];
+  exclude: ReadonlySet<string>;
+  taken: ReadonlySet<string>;
+  table: Record<OfficialStatId, { min: number; max: number }>;
+}
+
+/**
+ * Draws one candidate: the 名臣 chance roll, then (on a hit) a weighted 名臣 pick among
+ * the eligible ones, otherwise an ordinary official from `opts.table`.
+ */
+export function drawCandidate(
   state: GameState,
+  rngState: number,
   notables: readonly NotableData[],
   names: NamePool,
-): RecommendOutcome {
-  if (!isMorningCourt(state)) return { ok: false, reason: "not-in-court", state };
-  if (!canRecommend(state)) return { ok: false, reason: "already-used", state };
-
-  const roll = nextRandom(state.rngState);
+  opts: DrawCandidateOptions,
+): { candidate: Candidate; rngState: number } {
+  const roll = nextRandom(rngState);
   let rng = roll.rngState;
   const { notableBase, notableBonus } = BALANCE.recommendation;
   const chance = notableBase + (notableBonus * (state.stats.learning + state.stats.resolve)) / 200;
 
-  let candidate: Candidate | null = null;
   if (roll.value < chance) {
     const held = new Set(state.officials.map((o) => o.notable));
     const eligible = notables.filter(
-      (n) => state.stats[n.gate.stat] >= n.gate.min && !held.has(n.id),
+      (n) =>
+        state.stats[n.gate.stat] >= n.gate.min &&
+        !held.has(n.id) &&
+        opts.types.includes(n.type) &&
+        !opts.exclude.has(n.id),
     );
     const total = eligible.reduce((sum, n) => sum + weight(state, n), 0);
     if (total > 0) {
@@ -55,24 +68,47 @@ export function recommend(
       let running = 0;
       for (const n of eligible) {
         running += weight(state, n);
-        if (running > target) {
-          candidate = { name: n.name, stats: { ...n.stats }, notable: n.id };
-          break;
-        }
+        if (running > target)
+          return {
+            candidate: { name: n.name, stats: { ...n.stats }, notable: n.id },
+            rngState: rng,
+          };
       }
     }
   }
-  if (candidate === null) {
-    const taken = new Set(state.officials.map((o) => o.name));
-    const draw = drawOfficial(rng, "", names, taken);
-    rng = draw.rngState;
-    candidate = { name: draw.official.name, stats: draw.official.stats, notable: null };
-  }
+  const draw = drawOfficial(rng, "", names, opts.taken, opts.table);
+  return {
+    candidate: { name: draw.official.name, stats: draw.official.stats, notable: null },
+    rngState: draw.rngState,
+  };
+}
+
+/** Draws this half-season's candidate from the random stream and stores it. */
+export function recommend(
+  state: GameState,
+  notables: readonly NotableData[],
+  names: NamePool,
+): RecommendOutcome {
+  if (!isMorningCourt(state)) return { ok: false, reason: "not-in-court", state };
+  if (!canRecommend(state)) return { ok: false, reason: "already-used", state };
+
+  const { candidate, rngState } = drawCandidate(state, state.rngState, notables, names, {
+    types: ["civil", "military", "both"],
+    exclude: new Set(),
+    taken: new Set(state.officials.map((o) => o.name)),
+    table: BALANCE.officials.ordinary,
+  });
   return {
     ok: true,
     candidate,
-    state: { ...state, rngState: rng, recommendation: { turn: state.turn, candidate } },
+    state: { ...state, rngState, recommendation: { turn: state.turn, candidate } },
   };
+}
+
+/** Returns a generator of fresh official IDs: `official-${highest + n}` for n = 1, 2, ... */
+export function nextOfficialId(officials: readonly Official[]): (n: number) => string {
+  const highest = Math.max(0, ...officials.map((o) => Number(o.id.replace("official-", "")) || 0));
+  return (n) => `official-${highest + n}`;
 }
 
 function pending(state: GameState): CandidateRejection | Candidate {
@@ -86,7 +122,7 @@ function pending(state: GameState): CandidateRejection | Candidate {
 export function acceptCandidate(state: GameState): CandidateOutcome {
   const candidate = pending(state);
   if (typeof candidate === "string") return { ok: false, reason: candidate, state };
-  const highest = Math.max(0, ...state.officials.map((o) => Number(o.id.replace("official-", "")) || 0));
+  const newId = nextOfficialId(state.officials);
   return {
     ok: true,
     state: {
@@ -94,7 +130,7 @@ export function acceptCandidate(state: GameState): CandidateOutcome {
       officials: [
         ...state.officials,
         {
-          id: `official-${highest + 1}`,
+          id: newId(1),
           name: candidate.name,
           stats: candidate.stats,
           post: null,
