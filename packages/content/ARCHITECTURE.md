@@ -4,7 +4,7 @@ Owns Traditional Chinese text and event data. `src/schema.ts` defines the shapes
 
 Behaviour is described in `USE_CASES.md`. The text itself, and all data values, live in the source files and are not repeated in docs.
 
-Data flow: content is plain data and text formatting, read by `web`. Text for `core` registries is keyed by the `core` IDs (`StatId`, `PalaceId`, `ActionId`, `ActionPointId`, `HalfSeasonId`, `DepartmentId`, `CourtOptionId`), with `Record<Id, …>` types, so a new registry entry without text fails the type check. Region data is typed with `core`'s `RegionData`, and the official name pool with `core`'s `NamePool`; `web` passes both to `createInitialState`. The 名臣 list is typed with `core`'s `NotableData`; `web` passes it, with the name pool, to `core`'s `recommend`. Post text is keyed by `core`'s post registry IDs (`CentralPostId`, `MinistryRankId`, `RegionOfficeId`).
+Data flow: content is plain data and text formatting, read by `web`. Text for `core` registries is keyed by the `core` IDs (`StatId`, `PalaceId`, `ActionId`, `ActionPointId`, `HalfSeasonId`, `DepartmentId`, `CourtOptionId`), with `Record<Id, …>` types, so a new registry entry without text fails the type check. Region data is typed with `core`'s `RegionData`, and the official name pool with `core`'s `NamePool`; `web` passes both to `createInitialState`. The 名臣 list is typed with `core`'s `NotableData`; `web` passes it, with the name pool, to `core`'s `recommend` and `holdExam`. Post text is keyed by `core`'s post registry IDs (`CentralPostId`, `MinistryRankId`, `RegionOfficeId`).
 
 ```mermaid
 flowchart LR

@@ -21,6 +21,7 @@ classDiagram
     RegionState[] regions
     Official[] officials
     Recommendation or null recommendation
+    Exam or null exam
     boolean dead
   }
   class Official {
@@ -38,6 +39,10 @@ classDiagram
     string name
     OfficialStatValues stats
     string or null notable
+  }
+  class Exam {
+    number turn
+    Candidate[] or null candidates
   }
   class NotableData {
     string id
@@ -70,6 +75,10 @@ classDiagram
   Recommendation "1" *-- "0..1" Candidate
   NotableData ..> Candidate : recommend draws
   Candidate ..> Official : acceptCandidate adds
+  GameState "1" *-- "0..1" Exam
+  Exam "1" *-- "many" Candidate
+  NotableData ..> Exam : holdExam draws
+  Exam ..> Official : confirmExam adds
 ```
 
 `StatValues` is `Record<EmperorStatId, number>`, `NationStatValues` is `Record<NationStatId, number>`, `RegionStatValues` is `Record<RegionStatId, number>`, and `OfficialStatValues` is `Record<OfficialStatId, number>`. `PostId` is a string (see "Posts"). `Location` is `'map' | PalaceId`.
@@ -84,6 +93,7 @@ classDiagram
 - `regions` holds one entry per region, in the order of the region data passed to `createInitialState`. The player's regions have owner `PLAYER_OWNER`. Any other owner is a foreign power. Adjacency is static data and is not stored in the state.
 - `officials` holds every official, in the order they were generated. IDs are unique and never reused. `post` is the `PostId` the official holds, or `null` for 賦閑. At most one official holds each post. Who holds a post is found by searching `officials`; it is not stored twice. `notable` is the 名臣 ID of a 名臣, or `null` for an ordinary official; whether a 名臣 is at court is found by searching `officials`.
 - `recommendation` is the last 舉薦: the `turn` it was used in, and the `candidate` waiting for a decision, or `null` once accepted or declined. It is `null` until the first 舉薦. 舉薦 is used this half-season when its `turn` equals `turn`.
+- `exam` is the last 開科取士: the `turn` it was held in, and the `candidates` waiting for confirmation, or `null` once confirmed. It is `null` until the first exam. An exam has been held this reign year when the reign year of its `turn` equals the current one.
 - `dead` is set when the emperor dies. A dead state accepts no action.
 
 Derived values are never stored:
@@ -137,7 +147,13 @@ interface Candidate { name: string; stats: OfficialStatValues; notable: string |
 interface Recommendation { turn: number; candidate: Candidate | null }
 ```
 
-Adding a 名臣 means adding one data entry and nothing in `core`. `content` also puts every 名臣 name in `NamePool.reserved`, so generated officials never take one.
+`Exam` lives in `src/model/exam.ts`:
+
+```ts
+interface Exam { turn: number; candidates: Candidate[] | null }
+```
+
+`recommend` and `holdExam` share one candidate-drawing helper in `src/rules/recommend.ts`. It takes the 名臣 types allowed, the 名臣 to leave out, the names taken and the ordinary stat table. Adding a 名臣 means adding one data entry and nothing in `core`. `content` also puts every 名臣 name in `NamePool.reserved`, so generated officials never take one.
 
 ## Posts
 Posts are derived, not stored: `listPosts(state)` builds them from the post registries and the player's regions. A `PostId` is one of:
@@ -190,6 +206,14 @@ type RecommendOutcome =
 type CandidateOutcome =
   | { ok: false; reason: CandidateRejection; state: GameState }
   | { ok: true; state: GameState };
+type HoldExamRejection = 'not-in-court' | 'not-exam-year' | 'already-held';
+type ConfirmExamRejection = 'not-in-court' | 'no-candidates' | 'unknown-candidate';
+type HoldExamOutcome =
+  | { ok: false; reason: HoldExamRejection; state: GameState }
+  | { ok: true; state: GameState; candidates: Candidate[] };
+type ConfirmExamOutcome =
+  | { ok: false; reason: ConfirmExamRejection; state: GameState }
+  | { ok: true; state: GameState };
 interface StatChange { stat: StatId; amount: number }
 interface RegionChange { region: string; changes: StatChange[] }
 interface EconomyReport { taxIncome: number; upkeep: number; regionChanges: RegionChange[] }
@@ -207,6 +231,11 @@ function canRecommend(state: GameState): boolean;
 function recommend(state: GameState, notables: readonly NotableData[], names: NamePool): RecommendOutcome;
 function acceptCandidate(state: GameState): CandidateOutcome;
 function declineCandidate(state: GameState): CandidateOutcome;
+function isExamYear(state: Pick<GameState, 'turn'>): boolean;
+function nextExamYear(state: Pick<GameState, 'turn'>): number;
+function canHoldExam(state: GameState): boolean;
+function holdExam(state: GameState, notables: readonly NotableData[], names: NamePool): HoldExamOutcome;
+function confirmExam(state: GameState, picks: readonly number[]): ConfirmExamOutcome;
 function regionTax(stats: RegionStatValues): number;
 function settleEconomy(
   nation: NationStatValues,
