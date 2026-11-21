@@ -32,6 +32,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 
 ## Text rules
 - Every `core` registry entry has text, enforced by the types.
+- Every tax level in `TAX_LEVEL_IDS` has a name: 極輕, 輕, 平, 重, 極重.
 - Every palace has a description except 宣政殿, which has no panel to show one.
 - `eraNamePool` entries are original, and each passes `isValidEraName`.
 

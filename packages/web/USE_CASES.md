@@ -17,6 +17,9 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-011 | 徵召工匠畫面：以一萬為單位選定人數後徵召；每次早朝限用一次 | implemented |
 | UC-WEB-012 | 遣散工匠畫面：以一萬為單位或全部遣散閒置工匠 | implemented |
 | UC-WEB-013 | 營建工程畫面：列出全部工程的簡介、所需工匠·半季與狀態，增減各工程的工匠 | implemented |
+| UC-WEB-014 | 調整賦稅畫面：五段滑桿選定稅率，拖動時顯示稅率名稱與下次預計稅入，放開即生效 | planned |
+| UC-WEB-015 | 額外徵稅畫面：提示可得稅銀與民心大減，確認後徵收並顯示所得；每次早朝限用一次 | planned |
+| UC-WEB-016 | 收支表畫面：國庫、稅率、各地下次預計稅入與合計、半年宮廷用度、下次收稅時節 | planned |
 
 ## UC-WEB-001 Title screen
 The palace image fills the viewport width with its aspect ratio kept, never cropped or stretched. A decorative scroll sits over the top centre of the image, with the game title written on it. The scroll and title scale with the image. There is no animation.
@@ -29,7 +32,7 @@ A heading and prompt, three suggested 年號 buttons, a labelled text input, and
 
 ## UC-WEB-004 Game screens
 Every game screen has a header with the date, the action point, the emperor's age, the four emperor stats in registry order (emperor-owned stats only), and 國庫 in taels.
-- Header placement: on the screens built on an image (the palace map and the palace views), the header is a banner over the top edge of the image: a semi-transparent dark band with gold text that takes no space above the image. Its contents and order do not change. On the screens without an image (action result, turn summary, 輿圖, 官員任命, 舉薦人選, 開科取士, 徵召工匠, 遣散工匠, 營建工程) the header is a bar above the content, as before.
+- Header placement: on the screens built on an image (the palace map and the palace views), the header is a banner over the top edge of the image: a semi-transparent dark band with gold text that takes no space above the image. Its contents and order do not change. On the screens without an image (action result, turn summary, 輿圖, 官員任命, 舉薦人選, 開科取士, 徵召工匠, 遣散工匠, 營建工程, 調整賦稅, 額外徵稅, 收支表) the header is a bar above the content, as before.
 - Palace map: the illustrated palace map, laid out like the title screen: it fills the viewport width, is never upscaled past its native width, keeps its aspect ratio, and is never cropped. The 宮城 heading stays in the markup for screen readers but is visually hidden. Each palace, in catalog order, is a button placed on the image and centred on that palace's anchor, so the button is also the label for its place and stays on it at any size. The buttons scale with the image, keep a comfortable tap target, and stay above the header banner where the two meet. Every palace in the catalog has an anchor inside the image. A palace that `canEnterPalace` refuses right now (宣政殿 at any action point but 朝) keeps its place but is a disabled button, visibly dimmed, and clicking it does nothing. The map has no 輿圖 button and nothing below the image.
 - Palace: each palace shows its own background image, laid out like the map (full viewport width, never upscaled past its native width, aspect ratio kept, never cropped), with alt text from `content`. Every palace in the catalog has a background. A semi-transparent panel over the lower part of the image holds the palace name and description, one button per action it offers, and a button back to the map; text stays readable on every background. A palace that offers no actions shows a "nothing to do here" line instead of the action list. 崇文館 also shows the 輿圖 button (UC-WEB-006), styled and placed apart from the action buttons because it is not an action. When the viewport is too narrow for the banner and the panel to both fit over the image, the banner stays over the image and the panel moves below it. Entering and leaving use no action point. 宣政殿 is the exception: it is open only at 朝, uses that action point, and has the same image and banner but no panel (UC-WEB-007).
 - Action result: the action name, its changes, and a button to continue to the map.
@@ -49,10 +52,39 @@ Entered from its button on the palace map, only at 朝 (UC-CORE-003); at other a
 - Over the lower right of the image sits one horizontal row of buttons that scales with the image: 內閣 and the six 部 in `core` registry order (`DEPARTMENT_IDS`), then 退. Each department button shows its short name and is announced by its full name, both from `content`. 退 is set apart from the departments by a gap and a different style.
 - 退 returns to the map, and the 朝 action point is now spent: the map shows 午.
 - Clicking a department highlights it and opens its options, in registry order, as a vertical list directly above the clicked department, with the list's right edge lined up with that button's right edge. If that would push the list past the image's left edge (such as 內閣 on a narrow viewport), the list shifts right just enough to stay inside the image. A small downward caret under the list points at the centre of the clicked button, and stays on the button even when the list has shifted. The list follows its department button in the markup, so keyboard and screen-reader order goes from a department to its options to the next department. Clicking another department switches the list to that department. Clicking the open department closes the list. Leaving 宣政殿 closes it, so it is closed on the next visit.
-- Open options (`OPEN_COURT_OPTIONS` in `src/screen.ts`; for now 吏部's 舉薦人選, 官員任命 and 開科取士, and 工部's 徵召工匠, 遣散工匠 and 營建工程) are enabled buttons with their name and no tag. Clicking one opens its screen (UC-WEB-009, UC-WEB-008, UC-WEB-010, UC-WEB-011, UC-WEB-012, UC-WEB-013). 工部's options are, in order, 徵召工匠, 遣散工匠, 營建工程 (formerly named 建造) and 打造兵器, which stays "not yet open". 徵召工匠 is enabled only when `canRecruit` is true: once used this 早朝 it is a disabled button with an "already recruited" tag, and when `maxRecruit` is 0 a disabled button with a "no one to recruit" tag. 遣散工匠 is enabled only when there are idle 工匠, and otherwise is a disabled button with a "no idle 工匠" tag. 營建工程 is always enabled during 早朝. These tags are styled like the "not yet open" tag. Once 舉薦 has been used this 早朝 (`canRecommend` is false), 舉薦人選 is a disabled button with its name and a small "already recommended" tag, styled like the "not yet open" tag, until the next 早朝. 開科取士 is enabled only when `canHoldExam` is true. In an exam year after the exam is held, it is a disabled button with an "already held" tag. In any other year it is a disabled button with a tag saying how many years remain until the next exam (`nextExamYear` minus the current reign year), in Chinese numerals, such as "in two years". Both tags are styled like the "not yet open" tag. Every other option is a disabled button with its name and a small "not yet open" tag; clicking a disabled option does nothing.
+- Open options (`OPEN_COURT_OPTIONS` in `src/screen.ts`; for now 吏部's 舉薦人選, 官員任命 and 開科取士, 戶部's 調整賦稅, 額外徵稅 and 收支表, and 工部's 徵召工匠, 遣散工匠 and 營建工程) are enabled buttons with their name and no tag. Clicking one opens its screen (UC-WEB-009, UC-WEB-008, UC-WEB-010, UC-WEB-014, UC-WEB-015, UC-WEB-016, UC-WEB-011, UC-WEB-012, UC-WEB-013). 戶部's options are, in order, 調整賦稅, 額外徵稅 and 收支表. 調整賦稅 and 收支表 are always enabled during 早朝. 額外徵稅 is enabled only when `canLevy` is true: once used this 早朝 it is a disabled button with an "already levied" tag, styled like the "not yet open" tag, until the next 早朝. 工部's options are, in order, 徵召工匠, 遣散工匠, 營建工程 (formerly named 建造) and 打造兵器, which stays "not yet open". 徵召工匠 is enabled only when `canRecruit` is true: once used this 早朝 it is a disabled button with an "already recruited" tag, and when `maxRecruit` is 0 a disabled button with a "no one to recruit" tag. 遣散工匠 is enabled only when there are idle 工匠, and otherwise is a disabled button with a "no idle 工匠" tag. 營建工程 is always enabled during 早朝. These tags are styled like the "not yet open" tag. Once 舉薦 has been used this 早朝 (`canRecommend` is false), 舉薦人選 is a disabled button with its name and a small "already recommended" tag, styled like the "not yet open" tag, until the next 早朝. 開科取士 is enabled only when `canHoldExam` is true. In an exam year after the exam is held, it is a disabled button with an "already held" tag. In any other year it is a disabled button with a tag saying how many years remain until the next exam (`nextExamYear` minus the current reign year), in Chinese numerals, such as "in two years". Both tags are styled like the "not yet open" tag. Every other option is a disabled button with its name and a small "not yet open" tag; clicking a disabled option does nothing.
 - Which department is open is `web` screen state only. Opening, switching and closing keep the same `GameState` object and use no action point.
 
-`toggleDepartment(screen, departmentId)` applies only to `play` in 宣政殿 (`COURT_PALACE`). From anywhere else, or with an ID that is not a department, it returns the screen unchanged. `chooseCourtOption(screen, optionId, notables, names)` applies only to `play` in 宣政殿 with an open option; for 舉薦人選 it also needs `canRecommend`, for 開科取士 `canHoldExam`, for 徵召工匠 `canRecruit`, and for 遣散工匠 at least one idle 工匠. Otherwise it returns the screen unchanged.
+`toggleDepartment(screen, departmentId)` applies only to `play` in 宣政殿 (`COURT_PALACE`). From anywhere else, or with an ID that is not a department, it returns the screen unchanged. `chooseCourtOption(screen, optionId, notables, names)` applies only to `play` in 宣政殿 with an open option; for 舉薦人選 it also needs `canRecommend`, for 開科取士 `canHoldExam`, for 徵召工匠 `canRecruit`, for 遣散工匠 at least one idle 工匠, and for 額外徵稅 `canLevy`. Otherwise it returns the screen unchanged.
+
+## UC-WEB-014 調整賦稅
+Opened from 戶部 → 調整賦稅 during 早朝. It can be opened any number of times in one 早朝. Nothing on this screen uses an action point, and the header keeps showing 朝.
+
+- The screen has the header bar, a heading, and a one-line hint at the top saying the tax rate affects 民心. It shows no 民心 numbers.
+- A slider with five notches, one per tax level in `TAX_LEVEL_IDS` order, lightest on the left. It snaps to the notches and starts at the current tax rate. The five level names are written under the notches.
+- Below it, the selected level's name and the expected total tax at the next collection at that level (the sum of `expectedTax`), in taels. Both update while the slider is dragged, without changing the `GameState`.
+- On release the level is saved through `setTaxLevel`; there is no confirm button. The header, which shows 國庫, does not change.
+- A button returns to 宣政殿 with 戶部's options open.
+
+`setTax(screen, level)` applies only to `taxes` and saves the level, staying on `taxes`. A rejection by `core`, any other input, or a call from another screen returns the screen unchanged. `renderTaxPreview(state, level, text, game)` gives the level name and the expected-total line for any level, for `main.ts` to write while dragging. `backToCourt(screen)` returns from `taxes`, `levy` and `budget` to `play` in 宣政殿 with 戶部 open.
+
+## UC-WEB-015 額外徵稅
+Opened from 戶部 → 額外徵稅 during 早朝, when `canLevy` is true. Nothing on this screen uses an action point.
+
+- The screen has the header bar, a heading, and one line of hint giving the amount the levy will bring in (`levyAmount`, in taels) and saying it will greatly lower 民心. It shows no 民心 numbers.
+- 徵收 calls `levy`. The screen then shows, in place of the hint and the two buttons, a result line with the taels gained and a single button back to 宣政殿 with 戶部 open, where 額外徵稅 now shows as already levied. The header shows 國庫 with the levy added.
+- 返回 goes back to 宣政殿 with 戶部 open without levying.
+
+`confirmLevy(screen)` applies only to `levy` before it is done, and sets `gained`. A rejection by `core`, or a call from another screen, returns the screen unchanged.
+
+## UC-WEB-016 收支表
+Opened from 戶部 → 收支表 during 早朝, any number of times. It is read-only and uses no action point.
+
+- The screen has the header bar, a heading, and lines with the current 國庫 and the current tax level's name.
+- A table with one row per player-owned region, in region order: its name and its expected tax at the next collection at the current level (`expectedTax`), in taels, then a total row.
+- A line with the court upkeep per half a year: `BALANCE.upkeep` times half of `BALANCE.turnsPerYear`. This is display only; upkeep is still paid every half-season. 工匠 wages are not on this sheet.
+- A line naming the half-season of the next collection (`nextCollection`).
+- A button returns to 宣政殿 with 戶部 open.
 
 ## UC-WEB-011 徵召工匠
 Opened from 工部 → 徵召工匠 during 早朝, when `canRecruit` is true. Nothing on this screen uses an action point, and the header keeps showing 朝.
@@ -144,6 +176,14 @@ stateDiagram-v2
   play --> build: 營建工程, in 宣政殿
   build --> build: raise or lower an assignment
   build --> play: back to 宣政殿
+  play --> taxes: 調整賦稅, in 宣政殿
+  taxes --> taxes: drag, release saves the level
+  taxes --> play: back to 宣政殿
+  play --> levy: 額外徵稅, in 宣政殿, once per 早朝
+  levy --> levy: 徵收, shows the amount gained
+  levy --> play: 返回, or back after levying, to 宣政殿
+  play --> budget: 收支表, in 宣政殿
+  budget --> play: back to 宣政殿
   play --> atlas: 輿圖, in 崇文館
   atlas --> play: back to 崇文館
   play --> result: not the last action of the turn
