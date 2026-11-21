@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PLAYER_OWNER } from "../model/region";
 import type { RegionData } from "../model/region";
-import { regionNeighbours } from "./regions";
+import { capitalRegion, regionNeighbours } from "./regions";
 
 const start = { morale: 60, population: 1000000, prosperity: 60 };
 const region = (id: string, x: number, y: number, owner: string): RegionData =>
@@ -48,5 +48,13 @@ describe("regionNeighbours", () => {
         expect(regionNeighbours(fx, a.id).includes(b.id)).toBe(regionNeighbours(fx, b.id).includes(a.id));
       }
     }
+  });
+});
+
+describe("capitalRegion", () => {
+  it("UC-CORE-014 capitalRegion finds the flagged region", () => {
+    const regions = [region("x", 0, 0, PLAYER_OWNER), { ...region("cap", 1, 0, PLAYER_OWNER), capital: true }];
+    expect(capitalRegion(regions)).toBe("cap");
+    expect(capitalRegion(regions.slice(0, 1))).toBeNull();
   });
 });

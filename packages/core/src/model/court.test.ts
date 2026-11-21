@@ -10,7 +10,7 @@ describe("court departments", () => {
     expect(DEPARTMENTS.personnel.options).toEqual(["recommend-officials", "appoint-officials", "hold-exams"]);
     expect(DEPARTMENTS.revenue.options).toEqual(["adjust-taxes", "extra-levy", "budget-sheet"]);
     expect(DEPARTMENTS.rites.options).toEqual(["hold-sacrifice", "conduct-diplomacy"]);
-    expect(DEPARTMENTS.war.options).toEqual(["conscript-soldiers", "release-soldiers", "drill-troops"]);
+    expect(DEPARTMENTS.war.options).toEqual(["conscript-soldiers", "release-soldiers", "drill-troops", "form-legion", "deploy-legions"]);
     expect(DEPARTMENTS.justice.options).toEqual(["grant-amnesty", "try-major-case"]);
     expect(DEPARTMENTS.works.options).toEqual(["recruit-artisans", "release-artisans", "build", "forge-weapons"]);
   });

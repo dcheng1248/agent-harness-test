@@ -23,7 +23,7 @@ export type {
 } from "./model/stats";
 export { PLAYER_OWNER } from "./model/region";
 export type { GridCell, RegionData, RegionState } from "./model/region";
-export { regionNeighbours } from "./rules/regions";
+export { regionNeighbours, capitalRegion } from "./rules/regions";
 export {
   HALF_SEASONS,
   ACTION_POINTS,
@@ -80,7 +80,7 @@ export {
   assignArtisans,
 } from "./rules/works";
 export type { WorksRejection, WorksOutcome } from "./rules/works";
-export type { Army } from "./model/army";
+export type { Army, Legion } from "./model/army";
 export { maxConscript, canConscript, conscriptSoldiers, releaseSoldiers, drillTurnsLeft, canDrill, startDrill } from "./rules/army";
 export type { ArmyRejection, ArmyOutcome } from "./rules/army";
 export { nextRandom } from "./rng";
@@ -104,7 +104,7 @@ export type {
   Official,
   NamePool,
 } from "./model/officials";
-export { appointOfficial } from "./rules/officials";
+export { appointOfficial, isIdleOfficial } from "./rules/officials";
 export type { AppointRejection, AppointOutcome } from "./rules/officials";
 export type {
   NotableType,
@@ -135,3 +135,13 @@ export type {
   HoldExamOutcome,
   ConfirmExamOutcome,
 } from "./rules/exam";
+export {
+  legionSoldiers,
+  maxLegionSoldiers,
+  isValidLegionName,
+  drawLegionNameSuggestions,
+  stationedLegion,
+  canFormLegion,
+  formLegion,
+} from "./rules/legions";
+export type { LegionRejection, LegionOutcome } from "./rules/legions";

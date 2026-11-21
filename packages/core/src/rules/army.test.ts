@@ -46,8 +46,8 @@ function ok(outcome: { ok: boolean; state: GameState }): GameState {
 describe("UC-CORE-024 army state and pool", () => {
   it("UC-CORE-024 a new game has the starting army", () => {
     const state = createInitialState(1, "承平", REGIONS, TEST_NAMES, TEST_BUILDINGS);
-    expect(state.army).toEqual({ soldiers: 20000, training: 50, conscriptedTurn: null, drillStartTurn: null });
-    expect(state.schemaVersion).toBe(10);
+    expect(state.army).toEqual({ soldiers: 20000, training: 50, conscriptedTurn: null, drillStartTurn: null, legions: [], legionsFormed: 0 });
+    expect(state.schemaVersion).toBe(11);
   });
   it("UC-CORE-024 free population subtracts soldiers and 工匠", () => {
     expect(freePopulation(court())).toBe(30480000);

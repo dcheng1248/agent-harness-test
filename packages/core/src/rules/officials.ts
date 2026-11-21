@@ -49,6 +49,13 @@ export function drawOfficial(
   throw new Error("official name pool exhausted");
 }
 
+/** An official is 賦閑 when they hold no post and lead no 軍團. */
+export function isIdleOfficial(state: Pick<GameState, "officials" | "army">, officialId: string): boolean {
+  const official = state.officials.find((o) => o.id === officialId);
+  if (!official || official.post !== null) return false;
+  return !state.army.legions.some((l) => l.general === officialId);
+}
+
 /** Puts a 賦閑 official into a post during 早朝; the previous holder becomes 賦閑. */
 export function appointOfficial(
   state: GameState,
@@ -66,7 +73,7 @@ export function appointOfficial(
     return { ok: false, reason: "unknown-post", state };
   const official = state.officials.find((o) => o.id === officialId);
   if (!official) return { ok: false, reason: "unknown-official", state };
-  if (official.post !== null) return { ok: false, reason: "not-idle", state };
+  if (!isIdleOfficial(state, officialId)) return { ok: false, reason: "not-idle", state };
   return {
     ok: true,
     state: {

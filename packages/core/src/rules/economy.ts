@@ -16,6 +16,7 @@ export interface EconomyReport {
   upkeep: number;
   wages: number;
   soldierWages: number;
+  legionWages: number;
   regionChanges: RegionChange[];
 }
 
@@ -42,11 +43,15 @@ export function settleEconomy(
   artisans = 0,
   taxLevel: TaxLevelId = "normal",
   soldiers = 0,
+  legionSoldiers = 0,
 ): { nation: NationStatValues; regions: RegionState[]; report: EconomyReport } {
   const upkeep = BALANCE.upkeep;
   const wages = Math.floor(artisans * BALANCE.works.wagePerArtisan);
   const soldierWages = Math.floor(soldiers * BALANCE.army.wagePerSoldier);
-  let treasury = nation.treasury - upkeep - wages - soldierWages;
+  const legionWages = Math.floor(
+    legionSoldiers * BALANCE.army.wagePerSoldier * BALANCE.army.legionWageMultiplier,
+  );
+  let treasury = nation.treasury - upkeep - wages - soldierWages - legionWages;
 
   const next: RegionState[] = regions.map((r) => {
     if (r.owner !== PLAYER_OWNER || nextHalfSeason !== "spring-early")
@@ -98,6 +103,6 @@ export function settleEconomy(
   return {
     nation: { ...nation, treasury },
     regions: next,
-    report: { taxIncome, upkeep, wages, soldierWages, regionChanges },
+    report: { taxIncome, upkeep, wages, soldierWages, legionWages, regionChanges },
   };
 }

@@ -6,6 +6,7 @@ import {
   conscriptSoldiers,
   createInitialState,
   enterPalace,
+  formLegion,
   getAge,
   getHalfSeason,
   getReignYear,
@@ -300,6 +301,22 @@ describe("economy at turn end", () => {
     expect(state.nation.treasury).toBe(370000);
   });
 
+  it("UC-CORE-026 the turn loop pays 軍團 wages", () => {
+    const regions = [{ ...FIXTURE[0]!, capital: true }];
+    const court = enterPalace(createInitialState(1, "承平", regions, TEST_NAMES), "xuanzheng");
+    const general = court.officials.find((o) => o.post === null)!;
+    const formed = formLegion(court, regions, general.id, 10000, "征西");
+    if (!formed.ok) throw new Error(formed.reason);
+    let state = returnToMap(formed.state);
+    let last = act(state, "yangxin", "rest");
+    for (let i = 0; i < 2; i += 1) {
+      state = last.state;
+      last = act(state, "yangxin", "rest");
+    }
+    expect(last.turnEnd?.economy.soldierWages).toBe(5000);
+    expect(last.turnEnd?.economy.legionWages).toBe(10000);
+  });
+
   it("UC-CORE-015 the summary of 夏下 reports the 秋上 tax", () => {
     let state = createInitialState(1, "承平", FIXTURE, TEST_NAMES);
     let last = act(state, "yangxin", "rest");
@@ -326,6 +343,7 @@ describe("economy at turn end", () => {
       upkeep: 0,
       wages: 0,
       soldierWages: 0,
+      legionWages: 0,
       regionChanges: [],
     });
     expect(out.turnEnd?.completed).toEqual([]);

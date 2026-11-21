@@ -6,6 +6,7 @@ import type { ActionId, Catalog, PalaceId } from "../model/catalog";
 import type { GameState } from "../model/state";
 import { EMPEROR_STAT_IDS, STAT_REGISTRY } from "../model/stats";
 import type { StatId, StatValues } from "../model/stats";
+import { legionSoldiers } from "./legions";
 import { settleEconomy } from "./economy";
 import type { EconomyReport } from "./economy";
 import { advanceBuildings } from "../model/works";
@@ -154,7 +155,7 @@ export function takeAction(
     const turnEnd: TurnEnd = {
       aging,
       totals,
-      economy: { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, regionChanges: [] },
+      economy: { taxIncome: 0, upkeep: 0, wages: 0, soldierWages: 0, legionWages: 0, regionChanges: [] },
       completed: [],
       training: null,
     };
@@ -177,6 +178,7 @@ export function takeAction(
     state.works.artisans,
     state.revenue.taxLevel,
     state.army.soldiers,
+    legionSoldiers(state),
   );
   const advanced = advanceBuildings(state.works.buildings);
   const drilling = drillTurnsLeft(state) > 0;

@@ -34,6 +34,16 @@ describe("settleEconomy soldier wages", () => {
   });
 });
 
+describe("settleEconomy 軍團 wages", () => {
+  it("UC-CORE-026 軍團 soldiers cost double", () => {
+    const { report, nation } = settleEconomy({ treasury: 1000000 }, [A], "summer-early", 0, "normal", 10000, 10000);
+    expect(report.soldierWages).toBe(5000);
+    expect(report.legionWages).toBe(10000);
+    expect(nation.treasury).toBe(1000000 - 120000 - 15000);
+    expect(settleEconomy({ treasury: 1000000 }, [A], "summer-early", 0, "normal", 10000).report.legionWages).toBe(0);
+  });
+});
+
 describe("settleEconomy wages", () => {
   it("UC-CORE-015 pays wages with upkeep and reports them", () => {
     const { report, nation } = settleEconomy({ treasury: 1000000 }, [A], "summer-early", 100000);
