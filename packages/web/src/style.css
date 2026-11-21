@@ -78,7 +78,10 @@ button#start:hover {
 #exam-screen,
 #recruit-screen,
 #release-screen,
-#build-screen {
+#build-screen,
+#tax-screen,
+#levy-screen,
+#budget-screen {
   max-width: 32rem;
   margin: 0 auto;
   padding: 1rem;
@@ -148,6 +151,7 @@ button#start:hover {
 #confirm-exam,
 #confirm-recruit,
 #confirm-release,
+#confirm-levy,
 #exam-picked {
   min-width: 44px;
   min-height: 44px;
@@ -174,7 +178,8 @@ button#start:hover {
 #decline-candidate:hover,
 #confirm-exam:hover,
 #confirm-recruit:hover,
-#confirm-release:hover {
+#confirm-release:hover,
+#confirm-levy:hover {
   background: #922424;
 }
 
@@ -630,4 +635,33 @@ button#start:hover {
 
 .assign-cell {
   white-space: nowrap;
+}
+
+#tax-slider {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0.75rem 0 0;
+}
+
+#tax-level-names {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+#budget-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+}
+
+#budget-table th,
+#budget-table td {
+  padding: 0.3em 0.5em;
+  text-align: left;
+  border-bottom: 1px solid #c9a227;
+}
+
+#budget-total {
+  font-weight: bold;
 }

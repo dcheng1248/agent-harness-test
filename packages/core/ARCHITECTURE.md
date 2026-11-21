@@ -23,7 +23,12 @@ classDiagram
     Recommendation or null recommendation
     Exam or null exam
     Works works
+    Revenue revenue
     boolean dead
+  }
+  class Revenue {
+    TaxLevelId taxLevel
+    number or null leviedTurn
   }
   class Works {
     number artisans
@@ -98,9 +103,10 @@ classDiagram
   GameState "1" *-- "1" Works
   Works "1" *-- "many" BuildingState
   BuildingData ..> BuildingState : createInitialState copies
+  GameState "1" *-- "1" Revenue
 ```
 
-`StatValues` is `Record<EmperorStatId, number>`, `NationStatValues` is `Record<NationStatId, number>`, `RegionStatValues` is `Record<RegionStatId, number>`, and `OfficialStatValues` is `Record<OfficialStatId, number>`. `PostId` is a string (see "Posts"). `Location` is `'map' | PalaceId`.
+`StatValues` is `Record<EmperorStatId, number>`, `NationStatValues` is `Record<NationStatId, number>`, `RegionStatValues` is `Record<RegionStatId, number>`, and `OfficialStatValues` is `Record<OfficialStatId, number>`. `PostId` is a string (see "Posts"). `TaxLevelId` is one of `TAX_LEVEL_IDS` (see "Registries"). `Location` is `'map' | PalaceId`.
 
 - `schemaVersion` goes up whenever the shape of `GameState` changes. There are no saves yet, so nothing migrates.
 - `turn` counts half-seasons since ascension. `0` is 元年 春上.
@@ -114,6 +120,7 @@ classDiagram
 - `recommendation` is the last 舉薦: the `turn` it was used in, and the `candidate` waiting for a decision, or `null` once accepted or declined. It is `null` until the first 舉薦. 舉薦 is used this half-season when its `turn` equals `turn`.
 - `exam` is the last 開科取士: the `turn` it was held in, and the `candidates` waiting for confirmation, or `null` once confirmed. It is `null` until the first exam. An exam has been held this reign year when the reign year of its `turn` equals the current one.
 - `works` holds 工部's state. `artisans` is the nation's total 工匠. `recruitedTurn` is the `turn` of the last 徵召, or `null` before the first; 徵召 is used this half-season when it equals `turn`. `buildings` holds one entry per building, in the order of the building data passed to `createInitialState`: its `id`, its `required` manpower in 工匠·半季 (copied from the data), its `progress` so far, and the 工匠 `assigned` to it now. Idle 工匠 (`artisans` minus the sum of `assigned`) and each building's status are derived, not stored.
+- `revenue` holds 戶部's state. `taxLevel` is the national tax rate, a `TaxLevelId`; a new game starts at `'normal'` (平). `leviedTurn` is the `turn` of the last 額外徵稅, or `null` before the first; 額外徵稅 is used this half-season when it equals `turn`. The rules live in `src/rules/revenue.ts`.
 - `dead` is set when the emperor dies. A dead state accepts no action.
 
 Derived values are never stored:
@@ -216,6 +223,7 @@ Registries are data. Adding a stat, palace, action, department or court option m
 | `CATALOG.actions` | Each action and the action points it is allowed in |
 | `DEPARTMENTS` | Each court department (`DEPARTMENT_IDS`) and the court options it lists (`COURT_OPTION_IDS`), in `src/model/court.ts`. |
 | `COURT_PALACE_ID`, `COURT_ACTION_POINT` | The palace that holds 早朝, and the only action point it is open in, in `src/model/catalog.ts` |
+| `TAX_LEVEL_IDS` | The tax levels, lightest to heaviest, in `src/model/revenue.ts`. Each level's tax multiplier and 民心 change are in `BALANCE.tax.levels`. |
 | `CENTRAL_POST_IDS`, `MINISTRY_DEPARTMENT_IDS`, `MINISTRY_RANKS`, `REGION_OFFICES` | The post registries, in `src/model/officials.ts`. `MINISTRY_DEPARTMENT_IDS` is the six 部 of `DEPARTMENT_IDS`, without 內閣. |
 
 Registry order is the display order. Infinite bounds are never stored in a `GameState`.
@@ -252,6 +260,10 @@ type WorksRejection = 'not-in-court' | 'already-used' | 'invalid-count' | 'unkno
 type WorksOutcome =
   | { ok: false; reason: WorksRejection; state: GameState }
   | { ok: true; state: GameState };
+type RevenueRejection = 'not-in-court' | 'unknown-level' | 'already-used';
+type RevenueOutcome =
+  | { ok: false; reason: RevenueRejection; state: GameState }
+  | { ok: true; state: GameState; amount: number }; // taels gained; 0 for setTaxLevel
 interface EconomyReport { taxIncome: number; upkeep: number; wages: number; regionChanges: RegionChange[] }
 interface TurnEnd { aging: number; totals: StatChange[]; economy: EconomyReport; completed: string[] }
 type ActionOutcome =
@@ -281,12 +293,19 @@ function releaseArtisans(state: GameState, count: number): WorksOutcome;
 function assignArtisans(state: GameState, buildingId: string, count: number): WorksOutcome;
 function buildingStatus(building: BuildingState): BuildingStatus;
 function halfSeasonsToFinish(building: BuildingState): number | null;
-function regionTax(stats: RegionStatValues): number;
+function regionTax(stats: RegionStatValues, level?: TaxLevelId): number; // level defaults to 'normal'
+function expectedTax(state: GameState, level?: TaxLevelId): { region: string; tax: number }[]; // level defaults to state.revenue.taxLevel
+function nextCollection(state: Pick<GameState, 'turn'>): HalfSeasonId;
+function setTaxLevel(state: GameState, level: TaxLevelId): RevenueOutcome;
+function levyAmount(state: GameState): number;
+function canLevy(state: GameState): boolean;
+function levy(state: GameState): RevenueOutcome;
 function settleEconomy(
   nation: NationStatValues,
   regions: readonly RegionState[],
   nextHalfSeason: HalfSeasonId,
   artisans?: number, // defaults to 0
+  taxLevel?: TaxLevelId, // defaults to 'normal'
 ): { nation: NationStatValues; regions: RegionState[]; report: EconomyReport };
 ```
 

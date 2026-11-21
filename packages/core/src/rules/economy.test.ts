@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BALANCE, HALF_SEASONS, regionTax, settleEconomy } from "../index";
-import type { HalfSeasonId, RegionState, RegionStatValues } from "../index";
+import type { HalfSeasonId, RegionState, RegionStatValues, TaxLevelId } from "../index";
 
 function region(
   id: string,
@@ -171,5 +171,63 @@ describe("settleEconomy population", () => {
     expect(report.taxIncome).toBe(
       regionTax({ morale: 70, population: 1020000, prosperity: 60 }),
     );
+  });
+});
+
+describe("tax level", () => {
+  const withMorale = (morale: number, owner = "player") =>
+    region("A", { morale, population: 5000000, prosperity: 60 }, owner);
+  const morale = (r: { regions: RegionState[] }) => r.regions[0]?.stats.morale;
+
+  it("UC-CORE-021 regionTax scales by the level", () => {
+    const levels: TaxLevelId[] = ["very-light", "light", "normal", "heavy", "very-heavy"];
+    expect(levels.map((l) => regionTax(A.stats, l))).toEqual([45000, 67500, 90000, 112500, 135000]);
+    expect(regionTax(A.stats)).toBe(regionTax(A.stats, "normal"));
+  });
+
+  it("UC-CORE-021 collection uses the level and moves 民心 after the tax", () => {
+    const heavy = settleEconomy({ treasury: 1000000 }, [A], "autumn-early", 0, "heavy");
+    expect(heavy.report.taxIncome).toBe(112500);
+    expect(morale(heavy)).toBe(59);
+    const light = settleEconomy({ treasury: 1000000 }, [A], "autumn-early", 0, "very-light");
+    expect(light.report.taxIncome).toBe(45000);
+    expect(morale(light)).toBe(62);
+    const normal = settleEconomy({ treasury: 1000000 }, [A], "autumn-early", 0, "normal");
+    expect(morale(normal)).toBe(60);
+    expect(normal.report.regionChanges).toEqual([]);
+  });
+
+  it("UC-CORE-021 民心 changes every half-season", () => {
+    const heavy = settleEconomy({ treasury: 1000000 }, [A], "summer-early", 0, "very-heavy");
+    expect(heavy.report.taxIncome).toBe(0);
+    expect(morale(heavy)).toBe(58);
+    expect(heavy.report.regionChanges).toEqual([{ region: "a", changes: [{ stat: "morale", amount: -2 }] }]);
+    expect(morale(settleEconomy({ treasury: 1000000 }, [A], "summer-early", 0, "light"))).toBe(61);
+    const normal = settleEconomy({ treasury: 1000000 }, [A], "summer-early", 0, "normal");
+    expect(morale(normal)).toBe(60);
+    expect(normal.report.regionChanges).toEqual([]);
+  });
+
+  it("UC-CORE-021 clamps 民心 at turn end", () => {
+    for (const next of ["autumn-early", "summer-early"] as const) {
+      expect(morale(settleEconomy({ treasury: 1000000 }, [withMorale(100)], next, 0, "very-light"))).toBe(100);
+      expect(morale(settleEconomy({ treasury: 1000000 }, [withMorale(1)], next, 0, "very-heavy"))).toBe(0);
+    }
+  });
+
+  it("UC-CORE-021 foreign regions are untouched", () => {
+    for (const next of ["autumn-early", "summer-early"] as const) {
+      const out = settleEconomy({ treasury: 1000000 }, [withMorale(60, "foreign")], next, 0, "very-heavy");
+      expect(morale(out)).toBe(60);
+    }
+  });
+
+  it("UC-CORE-021 bankruptcy follows the level change", () => {
+    const poor = region("A", { morale: 60, population: 1000, prosperity: 60 });
+    const run = (next: HalfSeasonId, level: TaxLevelId) =>
+      morale(settleEconomy({ treasury: 0 }, [poor], next, 0, level));
+    expect(run("autumn-early", "very-light")).toBe(59);
+    expect(run("summer-early", "very-heavy")).toBe(55);
+    expect(run("summer-early", "very-light")).toBe(59);
   });
 });

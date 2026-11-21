@@ -18,12 +18,14 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-CORE-012 | 半季回合：在宮殿以行動點執行行動 | implemented |
 | UC-CORE-013 | 年老衰弱與駕崩 | implemented |
 | UC-CORE-014 | 九州地域：由資料載入地域，各有民心、人口、富庶與歸屬 | implemented |
-| UC-CORE-015 | 國庫：春上與秋上收稅、每半季支付宮廷用度與工匠工錢、國庫虧空時各地民心下降 | implemented |
+| UC-CORE-015 | 國庫：春上與秋上依稅率收稅、每半季依稅率調整民心並支付宮廷用度與工匠工錢、國庫虧空時各地民心下降 | implemented |
 | UC-CORE-016 | 每年人口隨民心與富庶增減 | implemented |
 | UC-CORE-017 | 舉薦人選：每次早朝一次，舉薦一名候選人（一般官員或名臣），錄用或婉拒 | implemented |
 | UC-CORE-018 | 開科取士：每三年一科，於該年一次早朝自一批應試者中擇人錄取 | implemented |
 | UC-CORE-019 | 工匠：早朝時徵召（每次早朝一次）與遣散閒置工匠，每半季由國庫支付工錢 | implemented |
 | UC-CORE-020 | 營建工程：指派工匠至全國工程，累積工匠·半季直至落成 | implemented |
+| UC-CORE-021 | 調整賦稅：全國稅率分極輕、輕、平、重、極重五等，收稅時影響稅入，每半季影響各地民心；早朝時可隨時調整 | implemented |
+| UC-CORE-022 | 額外徵稅：每次早朝一次，向各地加徵約半次稅收，各地民心大降 | implemented |
 
 ## UC-CORE-011 年號
 - `isValidEraName(name)` is true only for exactly two Han characters. It does not trim.
@@ -128,15 +130,32 @@ The checks run in that order.
 
 **Progress.** At the end of each half-season the emperor survives, after the economy is settled, each unfinished building adds its current assignment to its progress. Progress never goes past the required manpower. A building that reaches it becomes completed: its assignment drops to 0, so its 工匠 are idle again, and its ID is listed in `TurnEnd.completed`, in building order. A completed building cannot be assigned 工匠 again. When the emperor dies, nothing progresses and `completed` is empty. What a completed building does comes in a later slice.
 
+## UC-CORE-021 調整賦稅
+**Levels.** The nation has one tax rate, `GameState.revenue.taxLevel`, one of `TAX_LEVEL_IDS`, from lightest to heaviest: 極輕 `very-light`, 輕 `light`, 平 `normal`, 重 `heavy`, 極重 `very-heavy`. A new game starts at 平. Each level has a tax multiplier and a 民心 change in `BALANCE.tax.levels`. Lighter levels have a smaller multiplier and a positive 民心 change, heavier levels a larger multiplier and a negative change. 平 has multiplier 1 and change 0, so it collects exactly what the plain formula gives and leaves 民心 alone. Officials, including 戶部尚書, have no effect on tax.
+
+**Setting.** `setTaxLevel(state, level)` sets the tax rate. It uses no action point, draws no random numbers, and may be repeated any number of times during one 早朝. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when `level` is not in `TAX_LEVEL_IDS` (`'unknown-level'`). The checks run in that order. Setting the level it already has succeeds and changes nothing. Its `amount` is 0.
+
+**Effect.** Each collection uses the level set at that moment (UC-CORE-015, step 3). At the end of every half-season, collection or not, every player-owned region's 民心 changes by the level set at that moment (UC-CORE-015, step 4), so a heavy rate slowly erodes its own income.
+
+**Forecast.** `expectedTax(state, level)` lists, in region order, each player-owned region with `regionTax` of its current stats at `level` (the current tax rate when left out). It is a forecast from today's stats: it does not project the 人口 change or the bankruptcy that may come before the collection. `nextCollection(state)` is the half-season of the next collection: the first half-season after the current one that is in `BALANCE.tax.collectOn`. During 春上 it is 秋上, and during 冬下 it is 春上.
+
+## UC-CORE-022 額外徵稅
+**Amount.** `levyAmount(state)` is, for each player-owned region, `regionTax` of its current stats at the current tax rate times `BALANCE.tax.levyFraction`, rounded down, added up over the regions. With no player regions it is 0.
+
+**Once per 早朝.** `canLevy(state)` is true during 早朝 when 額外徵稅 has not been used this half-season (`revenue.leviedTurn` is not `turn`). It opens again at the next 早朝.
+
+**Levying.** `levy(state)` adds `levyAmount` to 國庫 at once, takes `BALANCE.tax.levyMoraleLoss` 民心 from every player-owned region (never below 0), and stamps `revenue.leviedTurn` with the turn. Its `amount` is the taels gained. It is allowed when the amount is 0. It uses no action point and draws no random numbers. The tax level's 民心 change is not applied by the levy; it comes only at turn end. It is rejected, with the state unchanged, when it is not 早朝, including when dead (`'not-in-court'`), or when already used this half-season (`'already-used'`). The checks run in that order.
+
 ## UC-CORE-013 Aging and death
 From `BALANCE.aging.startAge`, the emperor loses 健康 at the end of each turn. The loss starts at `BALANCE.aging.baseLoss` and grows by 1 every `BALANCE.aging.yearsPerStep` years of age. The emperor dies when 健康 reaches 0, checked after each action and again after aging at the end of the turn. On death `dead` becomes `true`, the turn does not advance, and the economy is not settled.
 
 ## UC-CORE-015 and UC-CORE-016 Economy
-`settleEconomy(nation, regions, nextHalfSeason, artisans)` runs at the end of every turn the emperor survives. `nextHalfSeason` is the half-season the game moves into, and `artisans` is the nation's total 工匠 (UC-CORE-019; `0` when left out). In order:
+`settleEconomy(nation, regions, nextHalfSeason, artisans, taxLevel)` runs at the end of every turn the emperor survives. `nextHalfSeason` is the half-season the game moves into, `artisans` is the nation's total 工匠 (UC-CORE-019; `0` when left out), and `taxLevel` is the current tax rate (UC-CORE-021; `'normal'` when left out). The turn loop passes `state.revenue.taxLevel`. In order:
 1. Upkeep and wages: 國庫 loses `BALANCE.upkeep`, and also the 工匠 wages: `artisans` × `BALANCE.works.wagePerArtisan`, rounded down. Every 工匠 is paid, idle or assigned. The report gives the wages apart from the upkeep (`wages`, a positive number, `0` without 工匠).
 2. Population (UC-CORE-016), only when `nextHalfSeason` is 春上, so once a year: each player-owned region's 人口 grows by `BALANCE.population.ratePercent` percent (rounded down) when 民心 + 富庶 is at least `growAtOrAbove`, shrinks by the same amount when it is at most `shrinkAtOrBelow`, and otherwise stays. 人口 never goes below 0.
-3. Taxes (UC-CORE-015), only when `nextHalfSeason` is in `BALANCE.tax.collectOn`: 國庫 gains each player-owned region's `regionTax`, `floor(人口 × 富庶 × 民心 / BALANCE.tax.halfYearDivisor)`, computed from its 人口 after step 2. Taxes arrive as the game enters a collection half-season, so they are reported in the summary of the half-season before it. No tax is collected at game start.
-4. Bankruptcy: if 國庫 is now below 0, including when wages pushed it there, every player-owned region loses `BALANCE.bankruptcyMoraleLoss` 民心, never going below 0. The game goes on.
+3. Taxes (UC-CORE-015), only when `nextHalfSeason` is in `BALANCE.tax.collectOn`: 國庫 gains each player-owned region's `regionTax(stats, taxLevel)`, `floor(人口 × 富庶 × 民心 × multiplier / BALANCE.tax.halfYearDivisor)` with the level's multiplier from `BALANCE.tax.levels`, computed from its 人口 after step 2. Taxes arrive as the game enters a collection half-season, so they are reported in the summary of the half-season before it. No tax is collected at game start.
+4. Tax level (UC-CORE-021), at every turn end, collection or not: every player-owned region's 民心 changes by `taxLevel`'s 民心 change from `BALANCE.tax.levels`, kept within its `STAT_REGISTRY` bounds. At a collection the tax in step 3 is computed from 民心 before this change.
+5. Bankruptcy: if 國庫 is now below 0, including when wages pushed it there, every player-owned region loses `BALANCE.bankruptcyMoraleLoss` 民心, never going below 0. The game goes on.
 
 國庫 has no bounds. Regions with another owner pay no tax and are not changed.
 
@@ -150,11 +169,12 @@ stateDiagram-v2
   Court --> Court: recommend, then acceptCandidate or declineCandidate
   Court --> Court: holdExam in an exam year, then confirmExam
   Court --> Court: recruitArtisans once, releaseArtisans, assignArtisans
+  Court --> Court: setTaxLevel, levy once
   Court --> Map: returnToMap, clock moves to 午
   Palace --> Map: takeAction, not the last action point
   Palace --> TurnEnd: takeAction, last action point
   TurnEnd --> Economy: aging, emperor alive
-  Economy --> Works: upkeep and wages, population, taxes, bankruptcy
+  Economy --> Works: upkeep and wages, population, taxes, tax level 民心, bankruptcy
   Works --> Map: building progress and completions, next turn
   Palace --> Dead: 健康 reaches 0
   TurnEnd --> Dead: 健康 reaches 0 after aging

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatAmount, formatArtisans, formatChineseNumber, formatPostName, formatWages, gameText, uiText } from '@emperor/content';
+import { formatAmount, formatArtisans, formatChineseNumber, formatPostName, formatTaels, formatWages, gameText, uiText } from '@emperor/content';
 import {
   BALANCE,
   freePopulation,
@@ -20,6 +20,9 @@ import {
   PALACE_IDS,
   type CourtOptionId,
   type GameState,
+  expectedTax,
+  levyAmount,
+  nextCollection,
 } from '@emperor/core';
 import {
   escapeHtml,
@@ -27,6 +30,7 @@ import {
   renderEndingScreen,
   renderEraScreen,
   renderHeader,
+  renderTaxPreview,
   renderPlayScreen,
   renderRecommendScreen,
   renderResultScreen,
@@ -35,6 +39,7 @@ import {
   renderTitleScreen,
 } from './render';
 import { PALACE_ANCHORS } from './palaceMap';
+import { confirmLevy } from './screen';
 import { COURT_PALACE, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 import { idleArtisans } from '@emperor/core';
 
@@ -178,7 +183,8 @@ describe('game screens', () => {
       images,
     );
     const atlas = renderScreen({ screen: 'atlas', state }, uiText, gameText, images);
-    for (const html of [result, summary, atlas]) expect(html.startsWith('<header id="game-header"')).toBe(true);
+    const extra = (['taxes', 'levy', 'budget'] as const).map((k) => renderScreen({ screen: k, state }, uiText, gameText, images));
+    for (const html of [result, summary, atlas, ...extra]) expect(html.startsWith('<header id="game-header"')).toBe(true);
   });
 
   it('UC-WEB-004 a palace with no actions shows the empty line instead of an action list', () => {
@@ -780,5 +786,86 @@ describe('工部', () => {
     expect(html).toContain(`id="summary-wages">${formatWages(155000)}<`);
     expect(html.indexOf('id="summary-wages"')).toBeGreaterThan(html.indexOf('id="summary-treasury"'));
     expect(html).toContain('id="summary-completed">落成：天壇、觀星臺<');
+  });
+});
+
+describe('戶部 screens', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const render = (screen: Screen): string => renderScreen(screen, uiText, gameText, images);
+  const sum = (s: GameState, level = s.revenue.taxLevel): number => expectedTax(s, level).reduce((a, e) => a + e.tax, 0);
+  const buttonOf = (html: string, id: string): string => {
+    const at = html.indexOf(`<button type="button" id="${id}"`);
+    return html.slice(at, html.indexOf('</button>', at));
+  };
+
+  it('UC-WEB-007 戶部 lists its three options in order, all enabled', () => {
+    const html = render({ screen: 'play', state: court, department: 'revenue' });
+    let last = -1;
+    for (const id of ['adjust-taxes', 'extra-levy', 'budget-sheet']) {
+      const at = html.indexOf(`id="court-option-${id}"`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+      expect(buttonOf(html, `court-option-${id}`)).not.toContain('disabled');
+      expect(buttonOf(html, `court-option-${id}`)).not.toContain('court-option-tag');
+    }
+    const levied = confirmLevy({ screen: 'levy', state: court });
+    if (levied.screen !== 'levy') throw new Error('expected levy');
+    const after = render({ screen: 'play', state: levied.state, department: 'revenue' });
+    expect(buttonOf(after, 'court-option-extra-levy')).toContain('disabled');
+    expect(buttonOf(after, 'court-option-extra-levy')).toContain(`<span class="court-option-tag">${uiText.levyUsed}</span>`);
+  });
+
+  it('UC-WEB-014 tax screen', () => {
+    const html = render({ screen: 'taxes', state: court });
+    expect(html).toContain('id="tax-screen"');
+    expect(html).toContain(`<p id="tax-hint">${uiText.taxHint}</p>`);
+    expect(html).toMatch(/<input type="range" id="tax-slider" min="0" max="4" step="1" value="2"/);
+    let last = -1;
+    for (const id of ['very-light', 'light', 'normal', 'heavy', 'very-heavy'] as const) {
+      const at = html.indexOf(`<span>${gameText.taxLevels[id].name}</span>`);
+      expect(at).toBeGreaterThan(last);
+      last = at;
+    }
+    expect(html).toContain(`<p id="tax-level">${uiText.taxLevelLabel}：平</p>`);
+    expect(html).toContain(`<p id="tax-expected">${uiText.expectedTaxLabel}：${formatTaels(sum(court))}</p>`);
+    expect(html).not.toMatch(new RegExp(`${gameText.statLabels.morale}[ ：]*\\d`));
+  });
+
+  it('UC-WEB-014 renderTaxPreview', () => {
+    const preview = renderTaxPreview(court, 'very-heavy', uiText, gameText);
+    expect(preview.level).toBe('稅率：極重');
+    expect(preview.expected).toBe(`${uiText.expectedTaxLabel}：${formatTaels(sum(court, 'very-heavy'))}`);
+    expect(court.revenue.taxLevel).toBe('normal');
+  });
+
+  it('UC-WEB-015 levy screen', () => {
+    const before = render({ screen: 'levy', state: court });
+    expect(before).toContain(`${formatTaels(levyAmount(court))}${uiText.levyHintSuffix}`);
+    expect(before).toContain('id="confirm-levy"');
+    expect(before).toContain('id="back-to-court"');
+    expect(before).not.toMatch(new RegExp(`${gameText.statLabels.morale}[ ：]*\\d`));
+    const done = confirmLevy({ screen: 'levy', state: court });
+    const after = render(done);
+    expect(after).toContain(`<p id="levy-result">${uiText.levyResultLabel}：${formatTaels(levyAmount(court))}</p>`);
+    expect(after).toContain('id="back-to-court"');
+    expect(after).not.toContain('confirm-levy');
+    expect(after).not.toContain('levy-hint');
+  });
+
+  it('UC-WEB-016 budget sheet', () => {
+    const html = render({ screen: 'budget', state: court });
+    expect(html).toContain(`<p id="budget-treasury">${gameText.statLabels.treasury}：${formatTaels(court.nation.treasury)}</p>`);
+    expect(html).toContain(`<p id="budget-level">${uiText.currentTaxLabel}：平</p>`);
+    for (const { region, tax } of expectedTax(court)) {
+      const row = html.slice(html.indexOf(`<tr data-region="${region}">`));
+      expect(row.slice(0, row.indexOf('</tr>'))).toContain(formatTaels(tax));
+    }
+    expect(html.match(/data-region=/g)?.length).toBe(expectedTax(court).length);
+    const total = html.slice(html.indexOf('id="budget-total"'));
+    expect(total.slice(0, total.indexOf('</tr>'))).toContain(formatTaels(sum(court)));
+    expect(html).toContain(`<p id="budget-upkeep">${uiText.halfYearUpkeepLabel}：${formatTaels((BALANCE.upkeep * BALANCE.turnsPerYear) / 2)}</p>`);
+    expect(nextCollection(court)).toBe('autumn-early');
+    expect(html).toContain(`<p id="budget-next">${uiText.nextCollectionLabel}：${gameText.halfSeasonLabels[nextCollection(court)]}</p>`);
+    expect(gameText.halfSeasonLabels['autumn-early']).toBe('秋上');
   });
 });

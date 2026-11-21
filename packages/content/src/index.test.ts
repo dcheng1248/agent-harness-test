@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTION_IDS, ACTION_POINTS, COURT_OPTION_IDS, DEPARTMENTS, DEPARTMENT_IDS, HALF_SEASONS, PALACE_IDS, STAT_IDS, isValidEraName } from '@emperor/core';
+import { ACTION_IDS, ACTION_POINTS, COURT_OPTION_IDS, DEPARTMENTS, DEPARTMENT_IDS, HALF_SEASONS, PALACE_IDS, STAT_IDS, TAX_LEVEL_IDS, isValidEraName } from '@emperor/core';
 import { gameText, uiText } from './index';
 
 const han = /\p{Script=Han}/u;
@@ -63,7 +63,7 @@ describe('content', () => {
     expect(gameText.courtOptions).toEqual({
       'name-heir': { name: '冊立太子' }, 'change-era': { name: '改元' },
       'recommend-officials': { name: '舉薦人選' }, 'appoint-officials': { name: '官員任命' }, 'hold-exams': { name: '開科取士' },
-      'take-census': { name: '戶口普查' }, 'adjust-taxes': { name: '調整賦稅' }, 'relieve-disaster': { name: '賑濟災民' },
+      'adjust-taxes': { name: '調整賦稅' }, 'extra-levy': { name: '額外徵稅' }, 'budget-sheet': { name: '收支表' },
       'hold-sacrifice': { name: '祭祀' }, 'conduct-diplomacy': { name: '外交' },
       'conscript-soldiers': { name: '徵召士兵' }, 'drill-troops': { name: '操練軍隊' },
       'grant-amnesty': { name: '大赦天下' }, 'try-major-case': { name: '審理要案' },
@@ -117,5 +117,13 @@ describe('content', () => {
       statusNotStarted: '未動工', statusInProgress: '營建中', statusCompleted: '已落成', pausedMark: '停工',
       etaPrefix: '約', etaSuffix: '半季', wagesLabel: '工匠工錢', completedLabel: '落成',
     });
+  });
+
+  it('UC-WEB-014 UC-WEB-015 UC-WEB-016 戶部 text', () => {
+    expect(DEPARTMENTS.revenue.options.map((id) => gameText.courtOptions[id].name)).toEqual(['調整賦稅', '額外徵稅', '收支表']);
+    expect(TAX_LEVEL_IDS.map((id) => gameText.taxLevels[id].name)).toEqual(['極輕', '輕', '平', '重', '極重']);
+    expect(Object.keys(gameText.taxLevels)).toEqual([...TAX_LEVEL_IDS]);
+    expect(uiText.levyUsed).toBe('已徵');
+    expect(uiText.confirmLevy).toBe('徵收');
   });
 });

@@ -8,11 +8,15 @@ describe("court departments", () => {
     expect(Object.keys(DEPARTMENTS)).toEqual([...DEPARTMENT_IDS]);
     expect(DEPARTMENTS.cabinet.options).toEqual(["name-heir", "change-era"]);
     expect(DEPARTMENTS.personnel.options).toEqual(["recommend-officials", "appoint-officials", "hold-exams"]);
-    expect(DEPARTMENTS.revenue.options).toEqual(["take-census", "adjust-taxes", "relieve-disaster"]);
+    expect(DEPARTMENTS.revenue.options).toEqual(["adjust-taxes", "extra-levy", "budget-sheet"]);
     expect(DEPARTMENTS.rites.options).toEqual(["hold-sacrifice", "conduct-diplomacy"]);
     expect(DEPARTMENTS.war.options).toEqual(["conscript-soldiers", "drill-troops"]);
     expect(DEPARTMENTS.justice.options).toEqual(["grant-amnesty", "try-major-case"]);
     expect(DEPARTMENTS.works.options).toEqual(["recruit-artisans", "release-artisans", "build", "forge-weapons"]);
+  });
+  it("drops the census and relief options", () => {
+    expect(COURT_OPTION_IDS).not.toContain("take-census");
+    expect(COURT_OPTION_IDS).not.toContain("relieve-disaster");
   });
   it("lists each court option under exactly one department", () => {
     const all = DEPARTMENT_IDS.flatMap((d) => DEPARTMENTS[d].options);

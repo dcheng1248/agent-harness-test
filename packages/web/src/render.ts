@@ -25,6 +25,12 @@ import {
   getHalfSeason,
   getReignYear,
   canHoldExam,
+  canLevy,
+  expectedTax,
+  levyAmount,
+  nextCollection,
+  TAX_LEVEL_IDS,
+  type TaxLevelId,
   canRecruit,
   canRecommend,
   freePopulation,
@@ -114,7 +120,9 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
   const optionList = (id: DepartmentId): string =>
     `<div id="court-options">${DEPARTMENTS[id].options
       .map((option) =>
-        option === 'recruit-artisans' && !canRecruit(screen.state)
+        option === 'extra-levy' && !canLevy(screen.state)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.levyUsed}</span></button>`
+          : option === 'recruit-artisans' && !canRecruit(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${screen.state.works.recruitedTurn === screen.state.turn ? text.recruitUsed : text.noRecruits}</span></button>`
           : option === 'release-artisans' && idleArtisans(screen.state) <= 0
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.noIdleArtisans}</span></button>`
@@ -322,6 +330,55 @@ export function renderBuildScreen(screen: Of<'build'>, text: UiText, game: GameT
   return `${renderHeader(state, text, game)}<main id="build-screen"><h2>${text.buildHeading}</h2><p id="artisan-total">${text.artisanTotalLabel}：${formatArtisans(state.works.artisans)}</p><p id="artisan-idle">${text.idleArtisansLabel}：${formatArtisans(idle)}</p><div class="table-scroll"><table id="building-list"><thead>${head}</thead><tbody>${rows}</tbody></table></div><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
 }
 
+function sumTaels(rows: { tax: number }[]): number {
+  return rows.reduce((total, row) => total + row.tax, 0);
+}
+
+export function renderTaxPreview(
+  state: GameState,
+  level: TaxLevelId,
+  text: UiText,
+  game: GameText,
+): { level: string; expected: string } {
+  return {
+    level: `${text.taxLevelLabel}：${game.taxLevels[level].name}`,
+    expected: `${text.expectedTaxLabel}：${formatTaels(sumTaels(expectedTax(state, level)))}`,
+  };
+}
+
+export function renderTaxScreen(screen: Of<'taxes'>, text: UiText, game: GameText): string {
+  const { state } = screen;
+  const level = state.revenue.taxLevel;
+  const preview = renderTaxPreview(state, level, text, game);
+  const notches = TAX_LEVEL_IDS.map((_, i) => `<option value="${i}"></option>`).join('');
+  const names = TAX_LEVEL_IDS.map((id) => `<span>${game.taxLevels[id].name}</span>`).join('');
+  return `${renderHeader(state, text, game)}<main id="tax-screen"><h2>${text.taxHeading}</h2><p id="tax-hint">${text.taxHint}</p><input type="range" id="tax-slider" min="0" max="${TAX_LEVEL_IDS.length - 1}" step="1" value="${TAX_LEVEL_IDS.indexOf(level)}" list="tax-notches" aria-label="${text.taxSliderLabel}"><datalist id="tax-notches">${notches}</datalist><div id="tax-level-names">${names}</div><p id="tax-level">${preview.level}</p><p id="tax-expected">${preview.expected}</p><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
+export function renderLevyScreen(screen: Of<'levy'>, text: UiText, game: GameText): string {
+  const { state, gained } = screen;
+  const body =
+    gained === undefined
+      ? `<p id="levy-hint">${text.levyHintPrefix}${formatTaels(levyAmount(state))}${text.levyHintSuffix}</p><button type="button" id="confirm-levy">${text.confirmLevy}</button><button type="button" id="back-to-court">${text.levyBack}</button>`
+      : `<p id="levy-result">${text.levyResultLabel}：${formatTaels(gained)}</p><button type="button" id="back-to-court">${text.backToCourt}</button>`;
+  return `${renderHeader(state, text, game)}<main id="levy-screen"><h2>${text.levyHeading}</h2>${body}</main>`;
+}
+
+export function renderBudgetScreen(screen: Of<'budget'>, text: UiText, game: GameText): string {
+  const { state } = screen;
+  const rows = expectedTax(state);
+  const body = rows
+    .map(({ region, tax }) => {
+      const name = game.regions.find((g) => g.id === region)?.name ?? region;
+      return `<tr data-region="${escapeHtml(region)}"><th scope="row">${escapeHtml(name)}</th><td>${formatTaels(tax)}</td></tr>`;
+    })
+    .join('');
+  const head = `<tr><th>${text.regionColumn}</th><th>${text.expectedTaxColumn}</th></tr>`;
+  const total = `<tr id="budget-total"><th scope="row">${text.totalRow}</th><td>${formatTaels(sumTaels(rows))}</td></tr>`;
+  const upkeep = formatTaels((BALANCE.upkeep * BALANCE.turnsPerYear) / 2);
+  return `${renderHeader(state, text, game)}<main id="budget-screen"><h2>${text.budgetHeading}</h2><p id="budget-treasury">${game.statLabels.treasury}：${formatTaels(state.nation.treasury)}</p><p id="budget-level">${text.currentTaxLabel}：${game.taxLevels[state.revenue.taxLevel].name}</p><table id="budget-table"><thead>${head}</thead><tbody>${body}${total}</tbody></table><p id="budget-upkeep">${text.halfYearUpkeepLabel}：${upkeep}</p><p id="budget-next">${text.nextCollectionLabel}：${game.halfSeasonLabels[nextCollection(state)]}</p><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
 export function renderEndingScreen(screen: Of<'ending'>, text: UiText, _game?: GameText): string {
   const { state } = screen;
   return `<main id="ending"><h1>${text.endingHeading}</h1><p id="ending-era">${text.eraLabel}：${escapeHtml(state.eraName)}</p><p id="ending-reign">${formatReign(getReignYear(state))}</p><p id="ending-age">${formatLifespan(getAge(state))}</p><button type="button" id="restart">${text.restartButton}</button></main>`;
@@ -353,6 +410,12 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderReleaseScreen(screen, text, game);
     case 'build':
       return renderBuildScreen(screen, text, game);
+    case 'taxes':
+      return renderTaxScreen(screen, text, game);
+    case 'levy':
+      return renderLevyScreen(screen, text, game);
+    case 'budget':
+      return renderBudgetScreen(screen, text, game);
     case 'ending':
       return renderEndingScreen(screen, text, game);
   }

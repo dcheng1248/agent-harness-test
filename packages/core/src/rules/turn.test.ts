@@ -9,6 +9,7 @@ import {
   getHalfSeason,
   getReignYear,
   isMorningCourt,
+  regionTax,
   returnToMap,
   takeAction,
 } from "../index";
@@ -351,5 +352,47 @@ describe("works at turn end", () => {
     expect(out.turnEnd?.completed).toEqual([]);
     expect(out.turnEnd?.economy.wages).toBe(0);
     expect(out.state.works.buildings).toEqual(state.works.buildings);
+  });
+});
+
+describe("tax level in the turn loop", () => {
+  const FIXTURE = [
+    { id: "a", owner: "player", adjacent: [], start: { morale: 60, population: 5000000, prosperity: 60 } },
+    { id: "f", owner: "foreign", adjacent: [], start: { morale: 60, population: 5000000, prosperity: 60 } },
+  ];
+  function fourActions(start: GameState) {
+    let state = start;
+    let last = act(state, "yangxin", "rest");
+    state = last.state;
+    for (let i = 0; i < 3; i += 1) {
+      last = act(state, "yangxin", "rest");
+      state = last.state;
+    }
+    return { last, state };
+  }
+
+  it("UC-CORE-021 the turn loop collects at the current level", () => {
+    const start = {
+      ...createInitialState(1, "承平", FIXTURE, TEST_NAMES),
+      turn: 3,
+      revenue: { taxLevel: "heavy" as const, leviedTurn: null },
+    };
+    const { last, state } = fourActions(start);
+    expect(last.turnEnd?.economy.taxIncome).toBe(
+      start.regions.filter((r) => r.owner === "player").reduce((s, r) => s + regionTax(r.stats, "heavy"), 0),
+    );
+    expect(state.regions[0]?.stats.morale).toBe(59);
+    expect(state.regions[1]?.stats.morale).toBe(60);
+  });
+
+  it("UC-CORE-021 the turn loop moves 民心 by the level outside collections", () => {
+    const start = {
+      ...createInitialState(1, "承平", FIXTURE, TEST_NAMES),
+      turn: 1,
+      revenue: { taxLevel: "very-light" as const, leviedTurn: null },
+    };
+    const { last, state } = fourActions(start);
+    expect(last.turnEnd?.economy.taxIncome).toBe(0);
+    expect(state.regions[0]?.stats.morale).toBe(62);
   });
 });

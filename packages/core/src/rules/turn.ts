@@ -167,6 +167,7 @@ export function takeAction(
     state.regions,
     HALF_SEASONS[(state.turn + 1) % BALANCE.turnsPerYear] as HalfSeasonId,
     state.works.artisans,
+    state.revenue.taxLevel,
   );
   const advanced = advanceBuildings(state.works.buildings);
   const turnEnd: TurnEnd = { aging, totals, economy: settled.report, completed: advanced.completed };

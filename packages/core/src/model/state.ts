@@ -6,12 +6,13 @@ import type { Exam } from "./exam";
 import { listPosts } from "./officials";
 import type { NamePool, Official } from "./officials";
 import type { Recommendation } from "./notables";
+import type { Revenue } from "./revenue";
 import type { BuildingData, Works } from "./works";
 import { EMPEROR_STAT_IDS } from "./stats";
 import type { NationStatValues, StatValues } from "./stats";
 import type { RegionData, RegionState } from "./region";
 
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 export type Location = "map" | PalaceId;
 
@@ -31,6 +32,7 @@ export interface GameState {
   recommendation: Recommendation | null;
   exam: Exam | null;
   works: Works;
+  revenue: Revenue;
   dead: boolean;
 }
 
@@ -113,6 +115,7 @@ export function createInitialState(
       recruitedTurn: null,
       buildings: buildings.map((b) => ({ id: b.id, required: b.required, progress: 0, assigned: 0 })),
     },
+    revenue: { taxLevel: "normal", leviedTurn: null },
     dead: false,
   };
 }

@@ -4,6 +4,10 @@ import {
   assignArtisans,
   BALANCE,
   canHoldExam,
+  canLevy,
+  levy,
+  setTaxLevel,
+  type TaxLevelId,
   canRecruit,
   idleArtisans,
   maxRecruit,
@@ -66,6 +70,9 @@ export type Screen =
   | { screen: 'recruit'; state: GameState; count: number }
   | { screen: 'release'; state: GameState; count: number }
   | { screen: 'build'; state: GameState }
+  | { screen: 'taxes'; state: GameState }
+  | { screen: 'levy'; state: GameState; gained?: number }
+  | { screen: 'budget'; state: GameState }
   | { screen: 'ending'; state: GameState };
 
 /** The palace that offers the 輿圖. */
@@ -82,6 +89,9 @@ export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = [
   'recruit-artisans',
   'release-artisans',
   'build',
+  'adjust-taxes',
+  'extra-levy',
+  'budget-sheet',
 ];
 
 export function startGame(seed: number, pool: readonly string[]): Screen {
@@ -149,6 +159,9 @@ export function chooseCourtOption(
   if (optionId === 'release-artisans') {
     return idleArtisans(screen.state) > 0 ? { screen: 'release', state: screen.state, count: BALANCE.works.step } : screen;
   }
+  if (optionId === 'adjust-taxes') return { screen: 'taxes', state: screen.state };
+  if (optionId === 'budget-sheet') return { screen: 'budget', state: screen.state };
+  if (optionId === 'extra-levy') return canLevy(screen.state) ? { screen: 'levy', state: screen.state } : screen;
   if (optionId === 'build') return { screen: 'build', state: screen.state };
   return { screen: 'appoint', state: screen.state };
 }
@@ -238,7 +251,22 @@ export function cancelPost(screen: Screen): Screen {
   return rest;
 }
 
+export function setTax(screen: Screen, level: TaxLevelId): Screen {
+  if (screen.screen !== 'taxes') return screen;
+  const outcome = setTaxLevel(screen.state, level);
+  return outcome.ok ? { screen: 'taxes', state: outcome.state } : screen;
+}
+
+export function confirmLevy(screen: Screen): Screen {
+  if (screen.screen !== 'levy' || screen.gained !== undefined) return screen;
+  const outcome = levy(screen.state);
+  return outcome.ok ? { screen: 'levy', state: outcome.state, gained: outcome.amount } : screen;
+}
+
 export function backToCourt(screen: Screen): Screen {
+  if (screen.screen === 'taxes' || screen.screen === 'levy' || screen.screen === 'budget') {
+    return { screen: 'play', state: screen.state, department: 'revenue' };
+  }
   if (screen.screen === 'recruit' || screen.screen === 'release' || screen.screen === 'build') {
     return { screen: 'play', state: screen.state, department: 'works' };
   }

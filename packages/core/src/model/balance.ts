@@ -1,5 +1,6 @@
 import type { HalfSeasonId } from "./calendar";
 import type { ActionId } from "./catalog";
+import type { TaxLevelId } from "./revenue";
 import type { EmperorStatId, OfficialStatId, StatId } from "./stats";
 
 export interface StatChange {
@@ -41,6 +42,15 @@ export const BALANCE = {
   tax: {
     halfYearDivisor: 200000,
     collectOn: ["spring-early", "autumn-early"] as readonly HalfSeasonId[],
+    levels: {
+      "very-light": { multiplier: 0.5, morale: 2 },
+      light: { multiplier: 0.75, morale: 1 },
+      normal: { multiplier: 1, morale: 0 },
+      heavy: { multiplier: 1.25, morale: -1 },
+      "very-heavy": { multiplier: 1.5, morale: -2 },
+    } as Record<TaxLevelId, { multiplier: number; morale: number }>,
+    levyFraction: 0.5,
+    levyMoraleLoss: 10,
   },
   upkeep: 120000,
   works: { step: 10000, recruitPercent: 1, wagePerArtisan: 0.5 },
