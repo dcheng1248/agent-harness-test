@@ -9,7 +9,7 @@ You are a fresh reviewer and did not write this plan. Change nothing. Read `.age
 
 Fail the audit if any of these is true:
 1. `tasks.md` or the doc changes contain an important change the brief omits: a schema or interface change, a new dependency, a core path, a behaviour change, or a new or changed use case.
-2. A path in `.agent/core-paths.yml` will change but is missing from "## Core paths" in the brief.
+2. A path in `.agent/core-paths.yml` will change but is missing from "## Core paths" in the brief. A test file such as `state.test.ts` counts as listed when the file it tests (`state.ts`) is listed, as in `check-core-paths`. Only flag a test file whose tested file is not listed.
 3. The plan guesses at something the issue and answers leave open.
 4. The plan misses a requirement in the issue or adds work nobody asked for.
 5. The risk rating is lower than `docs/harness/risk-rules.md` allows.
