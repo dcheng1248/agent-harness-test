@@ -2005,5 +2005,53 @@
         "waitFor": "#palace-xuanzheng[disabled]"
       }
     ]
+  },
+  {
+    "name": "conscript-soldiers",
+    "description": "徵召士兵：士兵總數、可徵人口、此次至多與人數選擇",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-conscript-soldiers"
+      },
+      {
+        "waitFor": "#conscript-screen"
+      }
+    ]
+  },
+  {
+    "name": "discharge-soldiers",
+    "description": "解甲歸田：士兵總數與人數選擇",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-release-soldiers"
+      },
+      {
+        "waitFor": "#discharge-screen"
+      }
+    ]
   }
 ]

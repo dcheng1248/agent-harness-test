@@ -21,8 +21,8 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-015 | 額外徵稅畫面：提示可得稅銀與民心大減，確認後徵收並顯示所得；每次早朝限用一次 | implemented |
 | UC-WEB-016 | 收支表畫面：國庫、稅率、各地下次預計稅入與合計、半年宮廷用度、下次收稅時節 | implemented |
 | UC-WEB-017 | 祭祀畫面：提示耗國庫、耗用午時、可減低本年天災之虞，舉行或返回；每個在位年限一次 | implemented |
-| UC-WEB-018 | 徵召士兵畫面：顯示士兵總數、可徵人口與此次至多，按級距選定人數後徵召；每次早朝限用一次 | planned |
-| UC-WEB-019 | 解甲歸田畫面：顯示士兵總數，按級距或全部遣返士兵 | planned |
+| UC-WEB-018 | 徵召士兵畫面：顯示士兵總數、可徵人口與此次至多，按級距選定人數後徵召；每次早朝限用一次 | implemented |
+| UC-WEB-019 | 解甲歸田畫面：顯示士兵總數，按級距或全部遣返士兵 | implemented |
 | UC-WEB-020 | 操練軍隊畫面：顯示士兵總數與訓練，提示耗費與為期一年，確認後開始；操練期間按鈕停用並顯示尚餘半季 | planned |
 
 ## UC-WEB-001 Title screen

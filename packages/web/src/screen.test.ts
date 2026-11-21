@@ -11,6 +11,7 @@ import {
   type OfficialStatId,
   BALANCE,
   canRecruit,
+  maxConscript,
   idleArtisans,
   maxRecruit,
   canHoldExam,
@@ -29,6 +30,8 @@ import {
   changeAssignment,
   confirmExamPicks,
   confirmRecruit,
+  confirmConscript,
+  confirmDischarge,
   confirmLevy,
   confirmSacrifice,
   setTax,
@@ -785,7 +788,7 @@ describe('工部', () => {
     const last = performAction(goToPalace(s, 'yangxin'), 'rest');
     if (last.screen !== 'summary') throw new Error('expected summary');
     expect(last.completed).toEqual(['observatory']);
-    expect(last.economy.wages).toBe(155000);
+    expect(last.economy.wages).toBe(150000);
   });
 });
 
@@ -891,5 +894,61 @@ describe('祭祀 screens', () => {
     const done = confirmSacrifice(sacrificeScreen);
     expect(chooseCourtOption(done, 'adjust-taxes', notables, names).screen).toBe('taxes');
     expect(chooseCourtOption(done, 'hold-sacrifice', notables, names)).toBe(done);
+  });
+});
+
+describe('兵部', () => {
+  const army = BALANCE.army.step;
+  const war = (): Screen => toggleDepartment(goToPalace(play(newState()), 'xuanzheng'), 'war');
+  const conscriptScreen = (): Extract<Screen, { screen: 'conscript' }> => {
+    const s = chooseCourtOption(war(), 'conscript-soldiers', notables, names);
+    if (s.screen !== 'conscript') throw new Error('expected conscript');
+    return s;
+  };
+  const dischargeScreen = (): Extract<Screen, { screen: 'discharge' }> => {
+    const s = chooseCourtOption(war(), 'release-soldiers', notables, names);
+    if (s.screen !== 'discharge') throw new Error('expected discharge');
+    return s;
+  };
+
+  it('UC-WEB-018 opens 徵召士兵 at one step and confirms back to 兵部', () => {
+    const s = conscriptScreen();
+    expect(s.count).toBe(army);
+    expect(stepCount(s, 1)).toMatchObject({ screen: 'conscript', count: 2 * army });
+    expect(maxCount(s)).toMatchObject({ count: maxConscript(s.state) });
+    const done = confirmConscript(s);
+    if (done.screen !== 'play') throw new Error('unexpected');
+    expect(done.department).toBe('war');
+    expect(done.state.army.soldiers).toBe(30000);
+    expect(chooseCourtOption(done, 'conscript-soldiers', notables, names)).toBe(done);
+    expect(backToCourt(s)).toEqual({ screen: 'play', state: s.state, department: 'war' });
+    expect(backToCourt(s)).toMatchObject({ state: s.state });
+  });
+
+  it('UC-WEB-019 解甲歸田 opens at one step and releases all soldiers', () => {
+    const s = dischargeScreen();
+    expect(s.count).toBe(army);
+    expect(maxCount(s)).toMatchObject({ count: 20000 });
+    const done = confirmDischarge(maxCount(s));
+    if (done.screen !== 'play') throw new Error('unexpected');
+    expect(done.department).toBe('war');
+    expect(done.state.army.soldiers).toBe(0);
+    expect(chooseCourtOption(done, 'release-soldiers', notables, names)).toBe(done);
+    expect(backToCourt(s)).toEqual({ screen: 'play', state: s.state, department: 'war' });
+  });
+
+  it('UC-WEB-018 stepCount past either end is unchanged, and other screens ignore the confirms', () => {
+    const c = conscriptScreen();
+    expect(stepCount(c, -1)).toBe(c);
+    const top = maxCount(c);
+    expect(stepCount(top, 1)).toBe(top);
+    const d = dischargeScreen();
+    expect(stepCount(d, -1)).toBe(d);
+    const dTop = maxCount(d);
+    expect(stepCount(dTop, 1)).toBe(dTop);
+    const w = war();
+    expect(confirmConscript(w)).toBe(w);
+    expect(confirmDischarge(w)).toBe(w);
+    expect(confirmDischarge(c)).toBe(c);
   });
 });

@@ -20,6 +20,8 @@ import {
   confirmLevy,
   confirmSacrifice,
   confirmRecruit,
+  confirmConscript,
+  confirmDischarge,
   confirmRelease,
   continueToMap,
   declineRecommendation,
@@ -133,6 +135,10 @@ if (root) {
       current = maxCount(current);
     } else if (hit('#confirm-recruit')) {
       current = confirmRecruit(current);
+    } else if (hit('#confirm-conscript')) {
+      current = confirmConscript(current);
+    } else if (hit('#confirm-discharge')) {
+      current = confirmDischarge(current);
     } else if (hit('#confirm-levy')) {
       current = confirmLevy(current);
     } else if (hit('#confirm-sacrifice')) {

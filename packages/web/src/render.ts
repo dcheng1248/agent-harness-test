@@ -33,6 +33,8 @@ import {
   TAX_LEVEL_IDS,
   type TaxLevelId,
   canRecruit,
+  canConscript,
+  maxConscript,
   canRecommend,
   freePopulation,
   halfSeasonsToFinish,
@@ -51,7 +53,7 @@ import {
   type PostInfo,
 } from '@emperor/core';
 import { PALACE_ANCHORS } from './palaceMap';
-import { ATLAS_PALACE, COURT_PALACE, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
+import { ATLAS_PALACE, COURT_PALACE, countStep, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 
 type Of<K extends Screen['screen']> = Extract<Screen, { screen: K }>;
 
@@ -129,6 +131,10 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${screen.state.works.recruitedTurn === screen.state.turn ? text.recruitUsed : text.noRecruits}</span></button>`
           : option === 'release-artisans' && idleArtisans(screen.state) <= 0
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.noIdleArtisans}</span></button>`
+          : option === 'conscript-soldiers' && !canConscript(screen.state)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${screen.state.army.conscriptedTurn === screen.state.turn ? text.recruitUsed : text.noRecruits}</span></button>`
+          : option === 'release-soldiers' && screen.state.army.soldiers <= 0
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.noSoldiers}</span></button>`
           : option === 'recommend-officials' && !canRecommend(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.recommendUsed}</span></button>`
           : option === 'hold-exams' && !canHoldExam(screen.state)
@@ -164,7 +170,7 @@ export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: G
             return `<li data-region="${escapeHtml(r.region)}">${escapeHtml(name)}：${formatChanges(r.changes)}</li>`;
           })
           .join('');
-  const wages = screen.economy.wages > 0 ? `<p id="summary-wages">${formatWages(screen.economy.wages)}</p>` : '';
+  const wages = screen.economy.wages + screen.economy.soldierWages > 0 ? `<p id="summary-wages">${formatWages(screen.economy.wages, screen.economy.soldierWages)}</p>` : '';
   const completedNames = screen.state.works.buildings
     .filter((b) => screen.completed.includes(b.id))
     .map((b) => escapeHtml(buildingName(game, b.id)));
@@ -311,21 +317,31 @@ function buildingName(game: GameText, id: string): string {
   return game.buildings.find((b) => b.id === id)?.name ?? id;
 }
 
-function renderPicker(count: number, limit: number, maxLabel: string, text: UiText): string {
-  const step = BALANCE.works.step;
+function renderPicker(count: number, limit: number, step: number, maxLabel: string, text: UiText): string {
   return `<div id="count-picker"><button type="button" id="count-down" aria-label="${text.countDownLabel}"${count <= step ? ' disabled' : ''}>${text.countDown}</button><span id="count-value" aria-label="${text.countLabel}">${formatArtisans(count)}</span><button type="button" id="count-up" aria-label="${text.countUpLabel}"${count >= limit ? ' disabled' : ''}>${text.countUp}</button><button type="button" id="count-max">${maxLabel}</button></div>`;
 }
 
 export function renderRecruitScreen(screen: Of<'recruit'>, text: UiText, game: GameText): string {
   const { state, count } = screen;
   const max = maxRecruit(state);
-  return `${renderHeader(state, text, game)}<main id="recruit-screen"><h2>${text.recruitHeading}</h2><p id="artisan-total">${text.artisanTotalLabel}：${formatArtisans(state.works.artisans)}</p><p id="free-population">${text.freePopulationLabel}：${formatArtisans(freePopulation(state))}</p><p id="recruit-max-line">${text.recruitMaxLabel}：${formatArtisans(max)}</p>${renderPicker(count, max, text.recruitMax, text)}<button type="button" id="confirm-recruit">${text.confirmRecruit}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+  return `${renderHeader(state, text, game)}<main id="recruit-screen"><h2>${text.recruitHeading}</h2><p id="artisan-total">${text.artisanTotalLabel}：${formatArtisans(state.works.artisans)}</p><p id="free-population">${text.freePopulationLabel}：${formatArtisans(freePopulation(state))}</p><p id="recruit-max-line">${text.recruitMaxLabel}：${formatArtisans(max)}</p>${renderPicker(count, max, countStep(screen), text.recruitMax, text)}<button type="button" id="confirm-recruit">${text.confirmRecruit}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
+export function renderConscriptScreen(screen: Of<'conscript'>, text: UiText, game: GameText): string {
+  const { state, count } = screen;
+  const max = maxConscript(state);
+  return `${renderHeader(state, text, game)}<main id="conscript-screen"><h2>${text.conscriptHeading}</h2><p id="soldier-total">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p><p id="free-population">${text.freePopulationLabel}：${formatArtisans(freePopulation(state))}</p><p id="conscript-max-line">${text.recruitMaxLabel}：${formatArtisans(max)}</p><p id="conscript-hint">${text.conscriptHint}</p>${renderPicker(count, max, countStep(screen), text.recruitMax, text)}<button type="button" id="confirm-conscript">${text.confirmConscript}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
+export function renderDischargeScreen(screen: Of<'discharge'>, text: UiText, game: GameText): string {
+  const { state, count } = screen;
+  return `${renderHeader(state, text, game)}<main id="discharge-screen"><h2>${text.dischargeHeading}</h2><p id="soldier-total">${text.soldierTotalLabel}：${formatArtisans(state.army.soldiers)}</p>${renderPicker(count, state.army.soldiers, countStep(screen), text.dischargeAll, text)}<button type="button" id="confirm-discharge">${text.confirmDischarge}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
 }
 
 export function renderReleaseScreen(screen: Of<'release'>, text: UiText, game: GameText): string {
   const { state, count } = screen;
   const idle = idleArtisans(state);
-  return `${renderHeader(state, text, game)}<main id="release-screen"><h2>${text.releaseHeading}</h2><p id="artisan-total">${text.artisanTotalLabel}：${formatArtisans(state.works.artisans)}</p><p id="artisan-idle">${text.idleArtisansLabel}：${formatArtisans(idle)}</p>${renderPicker(count, idle, text.releaseAll, text)}<button type="button" id="confirm-release">${text.confirmRelease}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+  return `${renderHeader(state, text, game)}<main id="release-screen"><h2>${text.releaseHeading}</h2><p id="artisan-total">${text.artisanTotalLabel}：${formatArtisans(state.works.artisans)}</p><p id="artisan-idle">${text.idleArtisansLabel}：${formatArtisans(idle)}</p>${renderPicker(count, idle, countStep(screen), text.releaseAll, text)}<button type="button" id="confirm-release">${text.confirmRelease}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
 }
 
 export function renderBuildScreen(screen: Of<'build'>, text: UiText, game: GameText): string {
@@ -439,6 +455,10 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderRecruitScreen(screen, text, game);
     case 'release':
       return renderReleaseScreen(screen, text, game);
+    case 'conscript':
+      return renderConscriptScreen(screen, text, game);
+    case 'discharge':
+      return renderDischargeScreen(screen, text, game);
     case 'build':
       return renderBuildScreen(screen, text, game);
     case 'taxes':
