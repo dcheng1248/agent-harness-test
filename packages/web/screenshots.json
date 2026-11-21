@@ -751,7 +751,7 @@
   },
   {
     "name": "palace-xuanzheng-works",
-    "description": "宣政殿畫面：展開工部，選項列表在工部上方右緣對齊，箭頭指向工部",
+    "description": "宣政殿畫面：展開工部，徵召工匠、遣散工匠、營建工程與打造兵器（尚未開放）",
     "steps": [
       {
         "click": "#start"
@@ -767,6 +767,198 @@
       },
       {
         "waitFor": "#court-options"
+      }
+    ]
+  },
+  {
+    "name": "recruit-artisans",
+    "description": "徵召工匠：可徵人口、此次至多與人數選擇",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-works"
+      },
+      {
+        "click": "#court-option-recruit-artisans"
+      },
+      {
+        "waitFor": "#recruit-screen"
+      }
+    ]
+  },
+  {
+    "name": "release-artisans",
+    "description": "遣散工匠：工匠總數、閒置工匠與人數選擇",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-works"
+      },
+      {
+        "click": "#court-option-recruit-artisans"
+      },
+      {
+        "click": "#count-max"
+      },
+      {
+        "click": "#confirm-recruit"
+      },
+      {
+        "click": "#court-option-release-artisans"
+      },
+      {
+        "waitFor": "#release-screen"
+      }
+    ]
+  },
+  {
+    "name": "build-in-progress",
+    "description": "營建工程：工程名錄，天壇營建中",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-works"
+      },
+      {
+        "click": "#court-option-recruit-artisans"
+      },
+      {
+        "click": "#count-max"
+      },
+      {
+        "click": "#confirm-recruit"
+      },
+      {
+        "click": "#court-option-build"
+      },
+      {
+        "click": "#assign-up-tiantan"
+      },
+      {
+        "click": "#assign-up-tiantan"
+      },
+      {
+        "click": "#assign-up-tiantan"
+      },
+      {
+        "waitFor": "#building-list [data-building-row=\"tiantan\"][data-status=\"in-progress\"]"
+      }
+    ]
+  },
+  {
+    "name": "turn-summary-works",
+    "description": "半季總結：工匠工錢與觀星臺落成",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-works"
+      },
+      {
+        "click": "#court-option-recruit-artisans"
+      },
+      {
+        "click": "#count-max"
+      },
+      {
+        "click": "#confirm-recruit"
+      },
+      {
+        "click": "#court-option-build"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#assign-up-observatory"
+      },
+      {
+        "click": "#back-to-court"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "waitFor": "#summary-completed"
       }
     ]
   },

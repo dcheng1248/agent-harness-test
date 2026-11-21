@@ -1,7 +1,15 @@
 import {
   acceptCandidate,
   appointOfficial,
+  assignArtisans,
+  BALANCE,
   canHoldExam,
+  canRecruit,
+  idleArtisans,
+  maxRecruit,
+  recruitArtisans,
+  releaseArtisans,
+  type BuildingData,
   canRecommend,
   confirmExam,
   holdExam,
@@ -49,11 +57,15 @@ export type Screen =
       endedHalfSeason: HalfSeasonId;
       totals: StatChange[];
       economy: EconomyReport;
+      completed: string[];
     }
   | { screen: 'atlas'; state: GameState }
   | { screen: 'recommend'; state: GameState }
   | { screen: 'appoint'; state: GameState; post?: PostId; sort?: OfficialStatId }
   | { screen: 'exam'; state: GameState; picks: number[]; sort?: OfficialStatId }
+  | { screen: 'recruit'; state: GameState; count: number }
+  | { screen: 'release'; state: GameState; count: number }
+  | { screen: 'build'; state: GameState }
   | { screen: 'ending'; state: GameState };
 
 /** The palace that offers the 輿圖. */
@@ -63,7 +75,14 @@ export const ATLAS_PALACE: PalaceId = 'chongwen';
 export const COURT_PALACE: PalaceId = COURT_PALACE_ID;
 
 /** The court options that open a screen; every other option is not yet open. */
-export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = ['recommend-officials', 'appoint-officials', 'hold-exams'];
+export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = [
+  'recommend-officials',
+  'appoint-officials',
+  'hold-exams',
+  'recruit-artisans',
+  'release-artisans',
+  'build',
+];
 
 export function startGame(seed: number, pool: readonly string[]): Screen {
   return {
@@ -80,11 +99,12 @@ export function chooseEraName(
   input: string,
   regions: readonly RegionData[],
   names: NamePool,
+  buildings: readonly BuildingData[],
 ): Screen {
   if (screen.screen !== 'era') return screen;
   const name = input.trim();
   if (!isValidEraName(name)) return { ...screen, draft: input, error: true };
-  return { screen: 'play', state: createInitialState(screen.seed, name, regions, names) };
+  return { screen: 'play', state: createInitialState(screen.seed, name, regions, names, buildings) };
 }
 
 export function goToPalace(screen: Screen, palaceId: PalaceId): Screen {
@@ -123,7 +143,57 @@ export function chooseCourtOption(
     const outcome = holdExam(screen.state, notables, names);
     return outcome.ok ? { screen: 'exam', state: outcome.state, picks: [] } : screen;
   }
+  if (optionId === 'recruit-artisans') {
+    return canRecruit(screen.state) ? { screen: 'recruit', state: screen.state, count: BALANCE.works.step } : screen;
+  }
+  if (optionId === 'release-artisans') {
+    return idleArtisans(screen.state) > 0 ? { screen: 'release', state: screen.state, count: BALANCE.works.step } : screen;
+  }
+  if (optionId === 'build') return { screen: 'build', state: screen.state };
   return { screen: 'appoint', state: screen.state };
+}
+
+/** The largest count the picker of a `recruit` or `release` screen allows. */
+function countLimit(screen: Extract<Screen, { screen: 'recruit' | 'release' }>): number {
+  return screen.screen === 'recruit' ? maxRecruit(screen.state) : idleArtisans(screen.state);
+}
+
+export function stepCount(screen: Screen, direction: 1 | -1): Screen {
+  if (screen.screen !== 'recruit' && screen.screen !== 'release') return screen;
+  if (direction !== 1 && direction !== -1) return screen;
+  const count = screen.count + direction * BALANCE.works.step;
+  if (count < BALANCE.works.step || count > countLimit(screen)) return screen;
+  return { ...screen, count };
+}
+
+export function maxCount(screen: Screen): Screen {
+  if (screen.screen !== 'recruit' && screen.screen !== 'release') return screen;
+  return { ...screen, count: countLimit(screen) };
+}
+
+function confirmWorks(screen: Screen, kind: 'recruit' | 'release'): Screen {
+  if (screen.screen !== kind) return screen;
+  const rule = kind === 'recruit' ? recruitArtisans : releaseArtisans;
+  const outcome = rule(screen.state, screen.count);
+  if (!outcome.ok) return screen;
+  return { screen: 'play', state: outcome.state, department: 'works' };
+}
+
+export function confirmRecruit(screen: Screen): Screen {
+  return confirmWorks(screen, 'recruit');
+}
+
+export function confirmRelease(screen: Screen): Screen {
+  return confirmWorks(screen, 'release');
+}
+
+export function changeAssignment(screen: Screen, buildingId: string, direction: 1 | -1): Screen {
+  if (screen.screen !== 'build') return screen;
+  if (direction !== 1 && direction !== -1) return screen;
+  const building = screen.state.works.buildings.find((b) => b.id === buildingId);
+  if (!building) return screen;
+  const outcome = assignArtisans(screen.state, buildingId, building.assigned + direction * BALANCE.works.step);
+  return outcome.ok ? { screen: 'build', state: outcome.state } : screen;
 }
 
 function decide(screen: Screen, rule: typeof acceptCandidate): Screen {
@@ -169,6 +239,9 @@ export function cancelPost(screen: Screen): Screen {
 }
 
 export function backToCourt(screen: Screen): Screen {
+  if (screen.screen === 'recruit' || screen.screen === 'release' || screen.screen === 'build') {
+    return { screen: 'play', state: screen.state, department: 'works' };
+  }
   if (screen.screen !== 'appoint' && screen.screen !== 'recommend' && screen.screen !== 'exam') return screen;
   return { screen: 'play', state: screen.state, department: 'personnel' };
 }
@@ -226,6 +299,7 @@ export function performAction(screen: Screen, actionId: ActionId): Screen {
       endedHalfSeason: getHalfSeason(screen.state),
       totals: turnEnd.totals,
       economy: turnEnd.economy,
+      completed: turnEnd.completed,
     };
   }
   return { screen: 'result', state, actionId, changes };

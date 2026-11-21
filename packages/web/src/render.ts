@@ -1,6 +1,8 @@
 import type { GameText, UiText } from '@emperor/content';
 import {
   formatAge,
+  formatArtisans,
+  formatWages,
   formatAmount,
   formatChineseNumber,
   formatChanges,
@@ -23,11 +25,18 @@ import {
   getHalfSeason,
   getReignYear,
   canHoldExam,
+  canRecruit,
   canRecommend,
+  freePopulation,
+  halfSeasonsToFinish,
+  buildingStatus,
+  idleArtisans,
+  maxRecruit,
   isExamYear,
   nextExamYear,
   listPosts,
   OFFICIAL_STAT_IDS,
+  BALANCE,
   type DepartmentId,
   type GameState,
   type Official,
@@ -105,7 +114,11 @@ function renderCourtView(screen: Of<'play'>, header: string, text: UiText, game:
   const optionList = (id: DepartmentId): string =>
     `<div id="court-options">${DEPARTMENTS[id].options
       .map((option) =>
-        option === 'recommend-officials' && !canRecommend(screen.state)
+        option === 'recruit-artisans' && !canRecruit(screen.state)
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${screen.state.works.recruitedTurn === screen.state.turn ? text.recruitUsed : text.noRecruits}</span></button>`
+          : option === 'release-artisans' && idleArtisans(screen.state) <= 0
+          ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.noIdleArtisans}</span></button>`
+          : option === 'recommend-officials' && !canRecommend(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${text.recommendUsed}</span></button>`
           : option === 'hold-exams' && !canHoldExam(screen.state)
           ? `<button type="button" id="court-option-${option}" data-court-option="${option}" disabled>${game.courtOptions[option].name}<span class="court-option-tag">${examTag(screen.state, text)}</span></button>`
@@ -140,7 +153,13 @@ export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: G
             return `<li data-region="${escapeHtml(r.region)}">${escapeHtml(name)}：${formatChanges(r.changes)}</li>`;
           })
           .join('');
-  return `${renderHeader(screen.state, text, game)}<main id="turn-summary"><h2>${ended}${text.summarySuffix}</h2><p id="summary-action">${game.actions[screen.actionId].name}：${formatChanges(screen.changes)}</p><p id="summary-totals">${formatChanges(screen.totals)}</p><p id="summary-treasury">${formatEconomy(screen.economy)}</p><ul id="summary-regions">${regionLines}</ul><button type="button" id="next-turn">${text.nextTurnPrefix}${next}</button></main>`;
+  const wages = screen.economy.wages > 0 ? `<p id="summary-wages">${formatWages(screen.economy.wages)}</p>` : '';
+  const completedNames = screen.state.works.buildings
+    .filter((b) => screen.completed.includes(b.id))
+    .map((b) => escapeHtml(buildingName(game, b.id)));
+  const completed =
+    completedNames.length > 0 ? `<p id="summary-completed">${text.completedLabel}：${completedNames.join('、')}</p>` : '';
+  return `${renderHeader(screen.state, text, game)}<main id="turn-summary"><h2>${ended}${text.summarySuffix}</h2><p id="summary-action">${game.actions[screen.actionId].name}：${formatChanges(screen.changes)}</p><p id="summary-totals">${formatChanges(screen.totals)}</p><p id="summary-treasury">${formatEconomy(screen.economy)}</p>${wages}${completed}<ul id="summary-regions">${regionLines}</ul><button type="button" id="next-turn">${text.nextTurnPrefix}${next}</button></main>`;
 }
 
 export function renderAtlasScreen(screen: Of<'atlas'>, text: UiText, game: GameText): string {
@@ -253,6 +272,56 @@ export function renderExamScreen(screen: Of<'exam'>, text: UiText, game: GameTex
   return `${renderHeader(state, text, game)}<main id="exam-screen"><h2>${text.examHeading}</h2>${body}</main>`;
 }
 
+function buildingName(game: GameText, id: string): string {
+  return game.buildings.find((b) => b.id === id)?.name ?? id;
+}
+
+function renderPicker(count: number, limit: number, maxLabel: string, text: UiText): string {
+  const step = BALANCE.works.step;
+  return `<div id="count-picker"><button type="button" id="count-down" aria-label="${text.countDownLabel}"${count <= step ? ' disabled' : ''}>${text.countDown}</button><span id="count-value" aria-label="${text.countLabel}">${formatArtisans(count)}</span><button type="button" id="count-up" aria-label="${text.countUpLabel}"${count >= limit ? ' disabled' : ''}>${text.countUp}</button><button type="button" id="count-max">${maxLabel}</button></div>`;
+}
+
+export function renderRecruitScreen(screen: Of<'recruit'>, text: UiText, game: GameText): string {
+  const { state, count } = screen;
+  const max = maxRecruit(state);
+  return `${renderHeader(state, text, game)}<main id="recruit-screen"><h2>${text.recruitHeading}</h2><p id="artisan-total">${text.artisanTotalLabel}：${formatArtisans(state.works.artisans)}</p><p id="free-population">${text.freePopulationLabel}：${formatArtisans(freePopulation(state))}</p><p id="recruit-max-line">${text.recruitMaxLabel}：${formatArtisans(max)}</p>${renderPicker(count, max, text.recruitMax, text)}<button type="button" id="confirm-recruit">${text.confirmRecruit}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
+export function renderReleaseScreen(screen: Of<'release'>, text: UiText, game: GameText): string {
+  const { state, count } = screen;
+  const idle = idleArtisans(state);
+  return `${renderHeader(state, text, game)}<main id="release-screen"><h2>${text.releaseHeading}</h2><p id="artisan-total">${text.artisanTotalLabel}：${formatArtisans(state.works.artisans)}</p><p id="artisan-idle">${text.idleArtisansLabel}：${formatArtisans(idle)}</p>${renderPicker(count, idle, text.releaseAll, text)}<button type="button" id="confirm-release">${text.confirmRelease}</button><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
+export function renderBuildScreen(screen: Of<'build'>, text: UiText, game: GameText): string {
+  const { state } = screen;
+  const idle = idleArtisans(state);
+  const rows = state.works.buildings
+    .map((b) => {
+      const status = buildingStatus(b);
+      const entry = game.buildings.find((g) => g.id === b.id);
+      const name = escapeHtml(entry?.name ?? b.id);
+      const description = entry ? `<span class="building-description">${escapeHtml(entry.description)}</span>` : '';
+      let statusText: string;
+      if (status === 'not-started') statusText = text.statusNotStarted;
+      else if (status === 'completed') statusText = text.statusCompleted;
+      else {
+        const left = halfSeasonsToFinish(b);
+        const eta = left === null ? text.pausedMark : `${text.etaPrefix}${left}${text.etaSuffix}`;
+        statusText = `${text.statusInProgress} ${formatAmount(b.progress)} / ${formatAmount(b.required)}（${eta}）`;
+      }
+      const id = escapeHtml(b.id);
+      const assign =
+        status === 'completed'
+          ? ''
+          : `<button type="button" id="assign-down-${id}" data-assign="${id}" data-direction="-1" aria-label="${text.countDownLabel}"${b.assigned <= 0 ? ' disabled' : ''}>${text.countDown}</button> ${formatAmount(b.assigned)} <button type="button" id="assign-up-${id}" data-assign="${id}" data-direction="1" aria-label="${text.countUpLabel}"${idle <= 0 ? ' disabled' : ''}>${text.countUp}</button>`;
+      return `<tr data-building-row="${id}" data-status="${status}"><th scope="row">${name}${description}</th><td>${formatAmount(b.required)}</td><td>${statusText}</td><td class="assign-cell">${assign}</td></tr>`;
+    })
+    .join('');
+  const head = `<tr><th>${text.buildingColumn}</th><th>${text.requiredColumn}</th><th>${text.statusColumn}</th><th>${text.assignedColumn}</th></tr>`;
+  return `${renderHeader(state, text, game)}<main id="build-screen"><h2>${text.buildHeading}</h2><p id="artisan-total">${text.artisanTotalLabel}：${formatArtisans(state.works.artisans)}</p><p id="artisan-idle">${text.idleArtisansLabel}：${formatArtisans(idle)}</p><div class="table-scroll"><table id="building-list"><thead>${head}</thead><tbody>${rows}</tbody></table></div><button type="button" id="back-to-court">${text.backToCourt}</button></main>`;
+}
+
 export function renderEndingScreen(screen: Of<'ending'>, text: UiText, _game?: GameText): string {
   const { state } = screen;
   return `<main id="ending"><h1>${text.endingHeading}</h1><p id="ending-era">${text.eraLabel}：${escapeHtml(state.eraName)}</p><p id="ending-reign">${formatReign(getReignYear(state))}</p><p id="ending-age">${formatLifespan(getAge(state))}</p><button type="button" id="restart">${text.restartButton}</button></main>`;
@@ -278,6 +347,12 @@ export function renderScreen(screen: Screen, text: UiText, game: GameText, image
       return renderRecommendScreen(screen, text, game);
     case 'exam':
       return renderExamScreen(screen, text, game);
+    case 'recruit':
+      return renderRecruitScreen(screen, text, game);
+    case 'release':
+      return renderReleaseScreen(screen, text, game);
+    case 'build':
+      return renderBuildScreen(screen, text, game);
     case 'ending':
       return renderEndingScreen(screen, text, game);
   }

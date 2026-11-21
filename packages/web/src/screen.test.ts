@@ -10,6 +10,9 @@ import {
   type GameState,
   type OfficialStatId,
   BALANCE,
+  canRecruit,
+  idleArtisans,
+  maxRecruit,
   canHoldExam,
   getReignYear,
 } from '@emperor/core';
@@ -21,8 +24,13 @@ import {
   chooseCourtOption,
   chooseEraName,
   closeAtlas,
+  changeAssignment,
   confirmExamPicks,
+  confirmRecruit,
+  confirmRelease,
   examCandidates,
+  maxCount,
+  stepCount,
   sortExam,
   toggleExamPick,
   continueToMap,
@@ -47,7 +55,7 @@ const names = gameText.officialNames;
 const notables = gameText.notables;
 
 function newState(): GameState {
-  return createInitialState(42, '承平', regions, names);
+  return createInitialState(42, '承平', regions, names, gameText.buildings);
 }
 
 function play(state: GameState): Screen {
@@ -72,7 +80,7 @@ describe('start game', () => {
 
 describe('年號', () => {
   it('UC-WEB-003 a valid 年號 starts the game', () => {
-    expect(chooseEraName(era, ' 承平 ', regions, names)).toEqual({
+    expect(chooseEraName(era, ' 承平 ', regions, names, gameText.buildings)).toEqual({
       screen: 'play',
       state: newState(),
     });
@@ -80,13 +88,13 @@ describe('年號', () => {
 
   it('UC-WEB-003 an invalid 年號 shows the error and keeps the typed text', () => {
     for (const input of ['承', 'abc', '<b>']) {
-      expect(chooseEraName(era, input, regions, names)).toEqual({ ...era, error: true, draft: input });
+      expect(chooseEraName(era, input, regions, names, gameText.buildings)).toEqual({ ...era, error: true, draft: input });
     }
   });
 
   it('UC-WEB-003 chooseEraName on another screen is unchanged', () => {
     const title: Screen = { screen: 'title' };
-    expect(chooseEraName(title, '承平', regions, names)).toBe(title);
+    expect(chooseEraName(title, '承平', regions, names, gameText.buildings)).toBe(title);
   });
 });
 
@@ -140,6 +148,7 @@ describe('palace loop', () => {
       endedHalfSeason: 'spring-early',
       totals: outcome.turnEnd.totals,
       economy: outcome.turnEnd.economy,
+      completed: [],
     });
     expect(outcome.state.turn).toBe(1);
     expect(continueToMap(summary)).toEqual(play(outcome.state));
@@ -438,7 +447,7 @@ describe('screenshot scenarios', () => {
   function toCourt(): Screen {
     let s = startGame(harnessSeed(), gameText.eraNamePool);
     if (s.screen !== 'era') throw new Error('unexpected');
-    s = chooseEraName(s, s.suggestions[0]!, regions, names);
+    s = chooseEraName(s, s.suggestions[0]!, regions, names, gameText.buildings);
     return toggleDepartment(goToPalace(s, 'xuanzheng'), 'personnel');
   }
   const open = (s: Screen): Screen => chooseCourtOption(s, 'recommend-officials', notables, names);
@@ -563,7 +572,7 @@ describe('開科取士', () => {
 
   it('UC-WEB-010 the non-exam-year screenshot path reaches 二年', () => {
     const regionsAll = gameText.regions;
-    let s = chooseEraName(startGame(42, gameText.eraNamePool), '承平', regionsAll, names);
+    let s = chooseEraName(startGame(42, gameText.eraNamePool), '承平', regionsAll, names, gameText.buildings);
     for (let i = 0; i < 32; i += 1) {
       s = continueToMap(performAction(goToPalace(s, 'yangxin'), 'rest'));
     }
@@ -573,3 +582,189 @@ describe('開科取士', () => {
     expect(canHoldExam(s.state)).toBe(false);
   });
 });
+
+describe('工部', () => {
+  const step = BALANCE.works.step;
+  const buildings = gameText.buildings;
+  const court = (): Screen => toggleDepartment(goToPalace(play(newState()), 'xuanzheng'), 'works');
+  const recruitScreen = (): Extract<Screen, { screen: 'recruit' }> => {
+    const s = chooseCourtOption(court(), 'recruit-artisans', notables, names);
+    if (s.screen !== 'recruit') throw new Error('expected recruit');
+    return s;
+  };
+  const withArtisans = (): Screen => confirmRecruit(maxCount(recruitScreen()));
+  const buildScreen = (): Extract<Screen, { screen: 'build' }> => {
+    if (withArtisans().screen !== 'play') throw new Error('unexpected');
+    const s = chooseCourtOption(withArtisans(), 'build', notables, names);
+    if (s.screen !== 'build') throw new Error('expected build');
+    return s;
+  };
+  const releaseScreen = (): Extract<Screen, { screen: 'release' }> => {
+    const s = chooseCourtOption(withArtisans(), 'release-artisans', notables, names);
+    if (s.screen !== 'release') throw new Error('expected release');
+    return s;
+  };
+
+  it('UC-WEB-003 the started state has one building per building passed', () => {
+    let s = startGame(42, gameText.eraNamePool);
+    s = chooseEraName(s, '承平', regions, names, buildings);
+    if (s.screen !== 'play') throw new Error('unexpected');
+    expect(s.state.works.buildings.map((b) => b.id)).toEqual(buildings.map((b) => b.id));
+    const few = chooseEraName(startGame(42, gameText.eraNamePool), '承平', regions, names, buildings.slice(0, 2));
+    if (few.screen !== 'play') throw new Error('unexpected');
+    expect(few.state.works.buildings).toHaveLength(2);
+  });
+
+  it('UC-WEB-007 recruit, release and build options open their screens', () => {
+    const c = court();
+    const s = chooseCourtOption(c, 'recruit-artisans', notables, names);
+    expect(s).toMatchObject({ screen: 'recruit', count: step });
+    if (c.screen !== 'play' || s.screen !== 'recruit') throw new Error('unexpected');
+    expect(s.state).toBe(c.state);
+    expect(chooseCourtOption(court(), 'build', notables, names)).toMatchObject({ screen: 'build' });
+    expect(withArtisans()).toMatchObject({ screen: 'play', department: 'works' });
+    expect(chooseCourtOption(withArtisans(), 'release-artisans', notables, names)).toMatchObject({
+      screen: 'release',
+      count: step,
+    });
+  });
+
+  it('UC-WEB-007 recruit is refused once used and release without idle 工匠', () => {
+    const c = court();
+    expect(chooseCourtOption(c, 'release-artisans', notables, names)).toBe(c);
+    const used = withArtisans();
+    expect(chooseCourtOption(used, 'recruit-artisans', notables, names)).toBe(used);
+  });
+
+  it('UC-WEB-011 stepCount moves one step and stops at both ends', () => {
+    const s = recruitScreen();
+    expect(stepCount(s, 1)).toMatchObject({ screen: 'recruit', count: 2 * step });
+    expect(stepCount(s, -1)).toBe(s);
+    const top = maxCount(s);
+    expect(top).toMatchObject({ screen: 'recruit', count: maxRecruit(s.state) });
+    expect(stepCount(top, 1)).toBe(top);
+  });
+
+  it('UC-WEB-011 confirmRecruit recruits and returns to 工部', () => {
+    const s = stepCount(recruitScreen(), 1);
+    const done = confirmRecruit(s);
+    if (done.screen !== 'play' || s.screen !== 'recruit') throw new Error('unexpected');
+    expect(done.department).toBe('works');
+    expect(done.state.works.artisans).toBe(2 * step);
+    expect(canRecruit(done.state)).toBe(false);
+  });
+
+  it('UC-WEB-011 backToCourt from recruit, release and build opens 工部 unchanged', () => {
+    for (const s of [recruitScreen(), releaseScreen(), buildScreen()]) {
+      expect(backToCourt(s)).toEqual({ screen: 'play', state: s.state, department: 'works' });
+    }
+  });
+
+  it('UC-WEB-011 count transitions on other screens are unchanged', () => {
+    const c = court();
+    expect(stepCount(c, 1)).toBe(c);
+    expect(maxCount(c)).toBe(c);
+    expect(confirmRecruit(c)).toBe(c);
+    expect(confirmRelease(c)).toBe(c);
+    expect(changeAssignment(c, 'observatory', 1)).toBe(c);
+    const r = recruitScreen();
+    expect(confirmRelease(r)).toBe(r);
+  });
+
+  it('UC-WEB-012 the release picker runs from one step to the idle 工匠', () => {
+    const s = releaseScreen();
+    const idle = idleArtisans(s.state);
+    expect(stepCount(s, -1)).toBe(s);
+    expect(maxCount(s)).toMatchObject({ count: idle });
+    expect(stepCount(maxCount(s), 1)).toEqual(maxCount(s));
+    expect(stepCount(s, 1)).toMatchObject({ count: 2 * step });
+  });
+
+  it('UC-WEB-012 confirmRelease lowers 工匠 and returns to 工部', () => {
+    const s = releaseScreen();
+    const done = confirmRelease(s);
+    if (done.screen !== 'play') throw new Error('unexpected');
+    expect(done.department).toBe('works');
+    expect(done.state.works.artisans).toBe(s.state.works.artisans - step);
+    const all = confirmRelease(maxCount(s));
+    if (all.screen !== 'play') throw new Error('unexpected');
+    expect(all.state.works.artisans).toBe(0);
+  });
+
+  it('UC-WEB-013 changeAssignment moves one step and stays on build', () => {
+    const s = buildScreen();
+    const up = changeAssignment(s, 'observatory', 1);
+    if (up.screen !== 'build') throw new Error('unexpected');
+    expect(up.state.works.buildings.find((b) => b.id === 'observatory')!.assigned).toBe(step);
+    const down = changeAssignment(up, 'observatory', -1);
+    if (down.screen !== 'build') throw new Error('unexpected');
+    expect(down.state.works.buildings.find((b) => b.id === 'observatory')!.assigned).toBe(0);
+  });
+
+  it('UC-WEB-013 changeAssignment refuses what core refuses', () => {
+    const s = buildScreen();
+    expect(changeAssignment(s, 'observatory', -1)).toBe(s);
+    expect(changeAssignment(s, 'no-such-building', 1)).toBe(s);
+    expect(changeAssignment(s, 'observatory', 2 as 1)).toBe(s);
+    const done: Screen = {
+      ...s,
+      state: {
+        ...s.state,
+        works: {
+          ...s.state.works,
+          buildings: s.state.works.buildings.map((b) => (b.id === 'observatory' ? { ...b, progress: b.required } : b)),
+        },
+      },
+    };
+    expect(changeAssignment(done, 'observatory', 1)).toBe(done);
+    const idle: Screen = { screen: 'build', state: { ...s.state, works: { ...s.state.works, artisans: 0 } } };
+    expect(changeAssignment(idle, 'observatory', 1)).toBe(idle);
+  });
+
+  it('UC-WEB-004 a turn that completes a building lists it in the summary', () => {
+    const s = buildScreen();
+    const nearly: Screen = {
+      ...s,
+      state: {
+        ...s.state,
+        works: {
+          ...s.state.works,
+          buildings: s.state.works.buildings.map((b) =>
+            b.id === 'observatory' ? { ...b, progress: b.required - step, assigned: step } : b,
+          ),
+        },
+      },
+    };
+    let t: Screen = goToMap(backToCourt(nearly));
+    for (let i = 0; i < 2; i += 1) t = continueToMap(performAction(goToPalace(t, 'yangxin'), 'rest'));
+    const summary = performAction(goToPalace(t, 'yangxin'), 'rest');
+    if (summary.screen !== 'summary') throw new Error('expected summary');
+    expect(summary.completed).toEqual(['observatory']);
+  });
+
+  it('UC-WEB-013 the summary screenshot path completes 觀星臺', () => {
+    let s = startGame(harnessSeedOf(), gameText.eraNamePool);
+    s = chooseEraName(s, (s as Extract<Screen, { screen: 'era' }>).suggestions[0]!, regions, names, buildings);
+    s = toggleDepartment(goToPalace(s, 'xuanzheng'), 'works');
+    s = confirmRecruit(maxCount(chooseCourtOption(s, 'recruit-artisans', notables, names)));
+    s = chooseCourtOption(s, 'build', notables, names);
+    for (let i = 0; i < 10; i += 1) s = changeAssignment(s, 'observatory', 1);
+    s = goToMap(backToCourt(s));
+    for (let i = 0; i < 2; i += 1) s = continueToMap(performAction(goToPalace(s, 'yangxin'), 'rest'));
+    const last = performAction(goToPalace(s, 'yangxin'), 'rest');
+    if (last.screen !== 'summary') throw new Error('expected summary');
+    expect(last.completed).toEqual(['observatory']);
+    expect(last.economy.wages).toBe(155000);
+  });
+});
+
+function harnessSeedOf(): number {
+  let s = 0x2545f491;
+  const bytes: number[] = [];
+  for (let i = 0; i < 4; i += 1) {
+    const r = nextRandom(s);
+    s = r.rngState;
+    bytes.push(Math.floor(r.value * 256));
+  }
+  return (bytes[0]! | (bytes[1]! << 8) | (bytes[2]! << 16) | (bytes[3]! << 24)) >>> 0;
+}

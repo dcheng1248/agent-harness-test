@@ -75,7 +75,10 @@ button#start:hover {
 #ending,
 #appoint-screen,
 #recommend-screen,
-#exam-screen {
+#exam-screen,
+#recruit-screen,
+#release-screen,
+#build-screen {
   max-width: 32rem;
   margin: 0 auto;
   padding: 1rem;
@@ -84,7 +87,8 @@ button#start:hover {
 }
 
 #appoint-screen,
-#exam-screen {
+#exam-screen,
+#build-screen {
   max-width: 48rem;
 }
 
@@ -142,6 +146,8 @@ button#start:hover {
 #accept-candidate,
 #decline-candidate,
 #confirm-exam,
+#confirm-recruit,
+#confirm-release,
 #exam-picked {
   min-width: 44px;
   min-height: 44px;
@@ -166,7 +172,9 @@ button#start:hover {
 #back-to-court:hover,
 #accept-candidate:hover,
 #decline-candidate:hover,
-#confirm-exam:hover {
+#confirm-exam:hover,
+#confirm-recruit:hover,
+#confirm-release:hover {
   background: #922424;
 }
 
@@ -197,6 +205,7 @@ button#start:hover {
 
 .post-table,
 #idle-list,
+#building-list,
 #exam-list {
   width: 100%;
   border-collapse: collapse;
@@ -206,6 +215,8 @@ button#start:hover {
 .post-table td,
 #idle-list th,
 #idle-list td,
+#building-list th,
+#building-list td,
 #exam-list th,
 #exam-list td {
   padding: 0.4rem 0.6rem;
@@ -217,6 +228,7 @@ button#start:hover {
 .post-table th:first-child,
 .post-table td:nth-child(2),
 #idle-list th:first-child,
+#building-list th:first-child,
 #exam-list th:first-child,
 #exam-list th:nth-child(2),
 #exam-list td:first-child {
@@ -566,4 +578,56 @@ button#start:hover {
 #exam-picked {
   display: inline-block;
   cursor: default;
+}
+
+#building-list th,
+#building-list td {
+  white-space: normal;
+}
+
+.building-description {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: #8b6b4a;
+}
+
+#count-picker {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+#count-value {
+  min-width: 7rem;
+  text-align: center;
+}
+
+#count-picker button,
+#building-list button[data-assign] {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0.2em 0.6em;
+  font-size: 1rem;
+  color: #f0d78c;
+  background: #7a1c1c;
+  border: 2px solid #c9a227;
+  border-radius: 0.5em;
+  cursor: pointer;
+}
+
+#count-picker button:hover:not(:disabled),
+#building-list button[data-assign]:hover:not(:disabled) {
+  background: #922424;
+}
+
+#count-picker button:disabled,
+#building-list button[data-assign]:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.assign-cell {
+  white-space: nowrap;
 }

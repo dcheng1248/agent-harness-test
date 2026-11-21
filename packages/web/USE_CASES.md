@@ -14,9 +14,9 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-008 | 官員任命畫面：按中樞、六部、地方列出官位，選官位後自賦閑官員中任命 | implemented |
 | UC-WEB-009 | 舉薦人選畫面：顯示一名候選人（名臣另有標記），錄用或婉拒；每次早朝限用一次 | implemented |
 | UC-WEB-010 | 開科取士畫面：列出應試者（名臣另有標記），可依屬性排序，勾選錄取後確定；非開科之年顯示下次開科 | implemented |
-| UC-WEB-011 | 徵召工匠畫面：以一萬為單位選定人數後徵召；每次早朝限用一次 | planned |
-| UC-WEB-012 | 遣散工匠畫面：以一萬為單位或全部遣散閒置工匠 | planned |
-| UC-WEB-013 | 營建工程畫面：列出全部工程的簡介、所需工匠·半季與狀態，增減各工程的工匠 | planned |
+| UC-WEB-011 | 徵召工匠畫面：以一萬為單位選定人數後徵召；每次早朝限用一次 | implemented |
+| UC-WEB-012 | 遣散工匠畫面：以一萬為單位或全部遣散閒置工匠 | implemented |
+| UC-WEB-013 | 營建工程畫面：列出全部工程的簡介、所需工匠·半季與狀態，增減各工程的工匠 | implemented |
 
 ## UC-WEB-001 Title screen
 The palace image fills the viewport width with its aspect ratio kept, never cropped or stretched. A decorative scroll sits over the top centre of the image, with the game title written on it. The scroll and title scale with the image. There is no animation.
