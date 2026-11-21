@@ -62,6 +62,9 @@ export {
   levy,
 } from "./rules/revenue";
 export type { RevenueRejection, RevenueOutcome } from "./rules/revenue";
+export type { Rites } from "./model/rites";
+export { sacrificedThisYear, canHoldSacrifice, holdSacrifice } from "./rules/rites";
+export type { RitesRejection, RitesOutcome } from "./rules/rites";
 export { regionTax, settleEconomy } from "./rules/economy";
 export type { RegionChange, EconomyReport } from "./rules/economy";
 export { buildingStatus, halfSeasonsToFinish } from "./model/works";

@@ -54,6 +54,7 @@ export const BALANCE = {
   },
   upkeep: 120000,
   works: { step: 10000, recruitPercent: 1, wagePerArtisan: 0.5 },
+  rites: { sacrificeCost: 50000 },
   bankruptcyMoraleLoss: 3,
   population: { growAtOrAbove: 120, shrinkAtOrBelow: 80, ratePercent: 2 },
   aging: { startAge: 40, baseLoss: 1, yearsPerStep: 5 },
