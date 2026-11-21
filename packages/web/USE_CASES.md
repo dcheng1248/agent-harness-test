@@ -119,7 +119,7 @@ Opened from 兵部 → 解甲歸田 during 早朝, when there is at least one so
 Opened from 兵部 → 操練軍隊 during 早朝, any number of times, whether or not a drill is running. Nothing on this screen uses an action point, and the header keeps showing 朝.
 
 - The screen has the header bar, a heading, and lines with the current soldier count, in persons, and the current training value.
-- When no drill is running: a one-line hint giving the cost (`BALANCE.army.drillCost`, in taels), saying it is paid once up front, that the drill lasts one year, and that training rises each half-season. A confirm button calls `startDrill`. The player stays on this screen, which now shows the drill running, and the header shows 國庫 with the cost taken off.
+- When no drill is running: a one-line hint giving the cost (`BALANCE.army.drillCost`, in taels), saying it is paid once up front, that the drill lasts `BALANCE.army.drillTurns` turns, and that training rises each half-season. A confirm button calls `startDrill`. The player stays on this screen, which now shows the drill running, and the header shows 國庫 with the cost taken off.
 - While a drill is running: in place of the hint, a line saying the army is drilling, with the half-seasons left (`drillTurnsLeft`) in Chinese numerals, and the confirm button is shown disabled.
 - A back button returns to 宣政殿 with 兵部 open.
 
