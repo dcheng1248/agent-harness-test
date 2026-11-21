@@ -20,13 +20,13 @@ const FIXTURE: RegionData[] = [
   {
     id: "a",
     owner: PLAYER_OWNER,
-    adjacent: ["b"],
+    cell: { x: 0, y: 0 },
     start: { morale: 60, population: 1000000, prosperity: 50 },
   },
   {
     id: "b",
     owner: "foreign",
-    adjacent: ["a"],
+    cell: { x: 1, y: 0 },
     start: { morale: 40, population: 500000, prosperity: 30 },
   },
 ];

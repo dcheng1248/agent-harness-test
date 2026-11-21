@@ -279,7 +279,7 @@ describe("economy at turn end", () => {
     {
       id: "a",
       owner: "player",
-      adjacent: [],
+      cell: { x: 0, y: 0 },
       start: { morale: 60, population: 5000000, prosperity: 60 },
     },
   ];
@@ -332,7 +332,7 @@ describe("economy at turn end", () => {
 
 describe("works at turn end", () => {
   const FIXTURE = [
-    { id: "a", owner: "player", adjacent: [], start: { morale: 60, population: 5000000, prosperity: 60 } },
+    { id: "a", owner: "player", cell: { x: 0, y: 0 }, start: { morale: 60, population: 5000000, prosperity: 60 } },
   ];
   function worked(over: Partial<GameState> = {}): GameState {
     const base = createInitialState(1, "承平", FIXTURE, TEST_NAMES, TEST_BUILDINGS);
@@ -373,8 +373,8 @@ describe("works at turn end", () => {
 
 describe("tax level in the turn loop", () => {
   const FIXTURE = [
-    { id: "a", owner: "player", adjacent: [], start: { morale: 60, population: 5000000, prosperity: 60 } },
-    { id: "f", owner: "foreign", adjacent: [], start: { morale: 60, population: 5000000, prosperity: 60 } },
+    { id: "a", owner: "player", cell: { x: 0, y: 0 }, start: { morale: 60, population: 5000000, prosperity: 60 } },
+    { id: "f", owner: "foreign", cell: { x: 1, y: 0 }, start: { morale: 60, population: 5000000, prosperity: 60 } },
   ];
   function fourActions(start: GameState) {
     let state = start;
