@@ -25,7 +25,7 @@ export function freePopulation(state: GameState): number {
   const population = state.regions
     .filter((r) => r.owner === PLAYER_OWNER)
     .reduce((sum, r) => sum + r.stats.population, 0);
-  return Math.max(0, population - state.works.artisans);
+  return Math.max(0, population - state.works.artisans - state.army.soldiers);
 }
 
 export function maxRecruit(state: GameState): number {

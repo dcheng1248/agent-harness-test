@@ -118,6 +118,22 @@ export interface UiText {
   totalRow: string;
   halfYearUpkeepLabel: string;
   nextCollectionLabel: string;
+  conscriptHeading: string;
+  dischargeHeading: string;
+  drillHeading: string;
+  soldierTotalLabel: string;
+  trainingLabel: string;
+  soldierWagesLabel: string;
+  conscriptHint: string;
+  confirmConscript: string;
+  dischargeAll: string;
+  confirmDischarge: string;
+  noSoldiers: string;
+  drillHintPrefix: string;
+  drillHintSuffix: string;
+  confirmDrill: string;
+  drillingPrefix: string;
+  drillingSuffix: string;
 }
 
 export interface RegionEntry extends RegionData {

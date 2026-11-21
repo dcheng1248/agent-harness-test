@@ -11,6 +11,12 @@ import {
   setTaxLevel,
   type TaxLevelId,
   canRecruit,
+  canConscript,
+  conscriptSoldiers,
+  maxConscript,
+  releaseSoldiers,
+  canDrill,
+  startDrill,
   idleArtisans,
   maxRecruit,
   recruitArtisans,
@@ -64,6 +70,7 @@ export type Screen =
       totals: StatChange[];
       economy: EconomyReport;
       completed: string[];
+      training: number | null;
     }
   | { screen: 'atlas'; state: GameState; region?: string }
   | { screen: 'recommend'; state: GameState }
@@ -71,6 +78,9 @@ export type Screen =
   | { screen: 'exam'; state: GameState; picks: number[]; sort?: OfficialStatId }
   | { screen: 'recruit'; state: GameState; count: number }
   | { screen: 'release'; state: GameState; count: number }
+  | { screen: 'conscript'; state: GameState; count: number }
+  | { screen: 'discharge'; state: GameState; count: number }
+  | { screen: 'drill'; state: GameState }
   | { screen: 'build'; state: GameState }
   | { screen: 'taxes'; state: GameState }
   | { screen: 'levy'; state: GameState; gained?: number }
@@ -91,6 +101,9 @@ export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = [
   'hold-exams',
   'recruit-artisans',
   'release-artisans',
+  'conscript-soldiers',
+  'release-soldiers',
+  'drill-troops',
   'build',
   'adjust-taxes',
   'extra-levy',
@@ -163,6 +176,13 @@ export function chooseCourtOption(
   if (optionId === 'release-artisans') {
     return idleArtisans(screen.state) > 0 ? { screen: 'release', state: screen.state, count: BALANCE.works.step } : screen;
   }
+  if (optionId === 'conscript-soldiers') {
+    return canConscript(screen.state) ? { screen: 'conscript', state: screen.state, count: BALANCE.army.step } : screen;
+  }
+  if (optionId === 'release-soldiers') {
+    return screen.state.army.soldiers > 0 ? { screen: 'discharge', state: screen.state, count: BALANCE.army.step } : screen;
+  }
+  if (optionId === 'drill-troops') return { screen: 'drill', state: screen.state };
   if (optionId === 'adjust-taxes') return { screen: 'taxes', state: screen.state };
   if (optionId === 'budget-sheet') return { screen: 'budget', state: screen.state };
   if (optionId === 'extra-levy') return canLevy(screen.state) ? { screen: 'levy', state: screen.state } : screen;
@@ -173,21 +193,42 @@ export function chooseCourtOption(
   return { screen: 'appoint', state: screen.state };
 }
 
-/** The largest count the picker of a `recruit` or `release` screen allows. */
-function countLimit(screen: Extract<Screen, { screen: 'recruit' | 'release' }>): number {
-  return screen.screen === 'recruit' ? maxRecruit(screen.state) : idleArtisans(screen.state);
+type CountScreen = Extract<Screen, { screen: 'recruit' | 'release' | 'conscript' | 'discharge' }>;
+
+function isCountScreen(screen: Screen): screen is CountScreen {
+  return ['recruit', 'release', 'conscript', 'discharge'].includes(screen.screen);
+}
+
+/** The step of a picker screen: 工匠 and soldiers use their own. */
+export function countStep(screen: CountScreen): number {
+  return screen.screen === 'conscript' || screen.screen === 'discharge' ? BALANCE.army.step : BALANCE.works.step;
+}
+
+/** The largest count the picker of a count screen allows. */
+function countLimit(screen: CountScreen): number {
+  switch (screen.screen) {
+    case 'recruit':
+      return maxRecruit(screen.state);
+    case 'release':
+      return idleArtisans(screen.state);
+    case 'conscript':
+      return maxConscript(screen.state);
+    case 'discharge':
+      return screen.state.army.soldiers;
+  }
 }
 
 export function stepCount(screen: Screen, direction: 1 | -1): Screen {
-  if (screen.screen !== 'recruit' && screen.screen !== 'release') return screen;
+  if (!isCountScreen(screen)) return screen;
   if (direction !== 1 && direction !== -1) return screen;
-  const count = screen.count + direction * BALANCE.works.step;
-  if (count < BALANCE.works.step || count > countLimit(screen)) return screen;
+  const step = countStep(screen);
+  const count = screen.count + direction * step;
+  if (count < step || count > countLimit(screen)) return screen;
   return { ...screen, count };
 }
 
 export function maxCount(screen: Screen): Screen {
-  if (screen.screen !== 'recruit' && screen.screen !== 'release') return screen;
+  if (!isCountScreen(screen)) return screen;
   return { ...screen, count: countLimit(screen) };
 }
 
@@ -205,6 +246,28 @@ export function confirmRecruit(screen: Screen): Screen {
 
 export function confirmRelease(screen: Screen): Screen {
   return confirmWorks(screen, 'release');
+}
+
+function confirmArmy(screen: Screen, kind: 'conscript' | 'discharge'): Screen {
+  if (screen.screen !== kind) return screen;
+  const rule = kind === 'conscript' ? conscriptSoldiers : releaseSoldiers;
+  const outcome = rule(screen.state, screen.count);
+  if (!outcome.ok) return screen;
+  return { screen: 'play', state: outcome.state, department: 'war' };
+}
+
+export function confirmConscript(screen: Screen): Screen {
+  return confirmArmy(screen, 'conscript');
+}
+
+export function confirmDischarge(screen: Screen): Screen {
+  return confirmArmy(screen, 'discharge');
+}
+
+export function confirmDrill(screen: Screen): Screen {
+  if (screen.screen !== 'drill' || !canDrill(screen.state)) return screen;
+  const outcome = startDrill(screen.state);
+  return outcome.ok ? { screen: 'drill', state: outcome.state } : screen;
 }
 
 export function changeAssignment(screen: Screen, buildingId: string, direction: 1 | -1): Screen {
@@ -281,6 +344,9 @@ export function backToCourt(screen: Screen): Screen {
   if (screen.screen === 'taxes' || screen.screen === 'levy' || screen.screen === 'budget') {
     return { screen: 'play', state: screen.state, department: 'revenue' };
   }
+  if (screen.screen === 'conscript' || screen.screen === 'discharge' || screen.screen === 'drill') {
+    return { screen: 'play', state: screen.state, department: 'war' };
+  }
   if (screen.screen === 'recruit' || screen.screen === 'release' || screen.screen === 'build') {
     return { screen: 'play', state: screen.state, department: 'works' };
   }
@@ -342,6 +408,7 @@ export function performAction(screen: Screen, actionId: ActionId): Screen {
       totals: turnEnd.totals,
       economy: turnEnd.economy,
       completed: turnEnd.completed,
+      training: turnEnd.training,
     };
   }
   return { screen: 'result', state, actionId, changes };

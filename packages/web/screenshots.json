@@ -898,7 +898,7 @@
   },
   {
     "name": "turn-summary-works",
-    "description": "半季總結：工匠工錢與觀星臺落成",
+    "description": "半季總結：工匠工錢與兵餉、觀星臺落成",
     "steps": [
       {
         "click": "#start"
@@ -2003,6 +2003,183 @@
       },
       {
         "waitFor": "#palace-xuanzheng[disabled]"
+      }
+    ]
+  },
+  {
+    "name": "palace-xuanzheng-war",
+    "description": "宣政殿畫面：展開兵部，徵召士兵、解甲歸田與操練軍隊",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "waitFor": "#court-options"
+      }
+    ]
+  },
+  {
+    "name": "conscript-soldiers",
+    "description": "徵召士兵：士兵總數、可徵人口、此次至多、訓練稀釋提示與人數選擇",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-conscript-soldiers"
+      },
+      {
+        "waitFor": "#conscript-screen"
+      }
+    ]
+  },
+  {
+    "name": "release-soldiers",
+    "description": "解甲歸田：士兵總數與人數選擇",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-release-soldiers"
+      },
+      {
+        "waitFor": "#discharge-screen"
+      }
+    ]
+  },
+  {
+    "name": "drill-troops",
+    "description": "操練軍隊：士兵總數、訓練、耗費與為期一年之提示",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-drill-troops"
+      },
+      {
+        "waitFor": "#drill-screen"
+      }
+    ]
+  },
+  {
+    "name": "drill-troops-running",
+    "description": "操練軍隊進行中：尚餘八半季，按鈕停用，國庫已扣",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-drill-troops"
+      },
+      {
+        "click": "#confirm-drill"
+      },
+      {
+        "waitFor": "#confirm-drill[disabled]"
+      }
+    ]
+  },
+  {
+    "name": "turn-summary-army",
+    "description": "半季總結：兵餉列於工錢行，訓練 +2",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-war"
+      },
+      {
+        "click": "#court-option-drill-troops"
+      },
+      {
+        "click": "#confirm-drill"
+      },
+      {
+        "click": "#back-to-court"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "click": "#continue"
+      },
+      {
+        "click": "#palace-yangxin"
+      },
+      {
+        "click": "#action-rest"
+      },
+      {
+        "waitFor": "#summary-training"
       }
     ]
   }

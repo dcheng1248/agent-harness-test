@@ -10,6 +10,7 @@ import {
   formatPostName,
   formatReign,
   formatTaels,
+  formatTrainingChange,
   formatWages,
   formatArtisans,
 } from './format';
@@ -43,15 +44,23 @@ describe('format', () => {
     expect(formatTaels(-20000)).toBe('−20,000 兩');
   });
   it('UC-WEB-006 formats the economy report, hiding zero tax income', () => {
-    expect(formatEconomy({ taxIncome: 547437, upkeep: 120000, wages: 0, regionChanges: [] })).toBe('稅入 +547,437 兩，宮廷用度 −120,000 兩');
-    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 0, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 547437, upkeep: 120000, wages: 0, soldierWages: 0, regionChanges: [] })).toBe('稅入 +547,437 兩，宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 0, soldierWages: 0, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
   });
   it('UC-WEB-004 formatEconomy ignores wages', () => {
-    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 50000, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
+    expect(formatEconomy({ taxIncome: 0, upkeep: 120000, wages: 50000, soldierWages: 0, regionChanges: [] })).toBe('宮廷用度 −120,000 兩');
   });
   it('UC-WEB-004 formats wages and artisans', () => {
-    expect(formatWages(50000)).toBe('工匠工錢 −50,000 兩');
+    expect(formatWages(50000, 0)).toBe('工匠工錢 −50,000 兩');
+    expect(formatWages(0, 10000)).toBe('兵餉 −10,000 兩');
+    expect(formatWages(50000, 10000)).toBe('工匠工錢 −50,000 兩，兵餉 −10,000 兩');
+    expect(formatWages(0, 0)).toBe('');
     expect(formatArtisans(310000)).toBe('310,000 人');
+  });
+  it('UC-WEB-004 formats the training change with its sign', () => {
+    expect(formatTrainingChange(2)).toBe('訓練 +2');
+    expect(formatTrainingChange(0)).toBe('訓練 +0');
+    expect(formatTrainingChange(-3)).toBe('訓練 −3');
   });
   it('UC-CONTENT-002 formatPostName', () => {
     expect(formatPostName({ id: 'chancellor', group: 'central', office: 'chancellor' })).toBe('丞相');

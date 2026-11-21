@@ -1,5 +1,6 @@
 import { nextRandom } from "../rng";
 import { drawOfficial } from "../rules/officials";
+import type { Army } from "./army";
 import { BALANCE } from "./balance";
 import type { PalaceId } from "./catalog";
 import type { Exam } from "./exam";
@@ -13,7 +14,7 @@ import { EMPEROR_STAT_IDS } from "./stats";
 import type { NationStatValues, StatValues } from "./stats";
 import type { RegionData, RegionState } from "./region";
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 export type Location = "map" | PalaceId;
 
@@ -33,6 +34,7 @@ export interface GameState {
   recommendation: Recommendation | null;
   exam: Exam | null;
   works: Works;
+  army: Army;
   revenue: Revenue;
   rites: Rites;
   dead: boolean;
@@ -116,6 +118,12 @@ export function createInitialState(
       artisans: 0,
       recruitedTurn: null,
       buildings: buildings.map((b) => ({ id: b.id, required: b.required, progress: 0, assigned: 0 })),
+    },
+    army: {
+      soldiers: BALANCE.army.startingSoldiers,
+      training: BALANCE.army.startingTraining,
+      conscriptedTurn: null,
+      drillStartTurn: null,
     },
     revenue: { taxLevel: "normal", leviedTurn: null },
     rites: { sacrificeTurn: null },

@@ -3,6 +3,7 @@ import {
   CATALOG,
   PALACE_IDS,
   canEnterPalace,
+  conscriptSoldiers,
   createInitialState,
   enterPalace,
   getAge,
@@ -12,6 +13,7 @@ import {
   isMorningCourt,
   regionTax,
   returnToMap,
+  startDrill,
   takeAction,
 } from "../index";
 import type { ActionId, Catalog, GameState, PalaceId } from "../index";
@@ -294,7 +296,8 @@ describe("economy at turn end", () => {
     }
     expect(last.turnEnd?.economy.upkeep).toBe(120000);
     expect(last.turnEnd?.economy.taxIncome).toBe(0);
-    expect(state.nation.treasury).toBe(380000);
+    expect(last.turnEnd?.economy.soldierWages).toBe(10000);
+    expect(state.nation.treasury).toBe(370000);
   });
 
   it("UC-CORE-015 the summary of 夏下 reports the 秋上 tax", () => {
@@ -322,6 +325,7 @@ describe("economy at turn end", () => {
       taxIncome: 0,
       upkeep: 0,
       wages: 0,
+      soldierWages: 0,
       regionChanges: [],
     });
     expect(out.turnEnd?.completed).toEqual([]);
@@ -410,5 +414,78 @@ describe("tax level in the turn loop", () => {
     const { last, state } = fourActions(start);
     expect(last.turnEnd?.economy.taxIncome).toBe(0);
     expect(state.regions[0]?.stats.morale).toBe(62);
+  });
+});
+
+describe("drill training at turn end", () => {
+  const BIG = [
+    { id: "a", owner: "player", cell: { x: 0, y: 0 }, start: { morale: 60, population: 20000000, prosperity: 60 } },
+  ];
+  function fresh(training = 50): GameState {
+    const s = createInitialState(1, "承平", BIG, TEST_NAMES, TEST_BUILDINGS);
+    return { ...s, army: { ...s.army, training } };
+  }
+  function drilling(state: GameState): GameState {
+    const out = startDrill(enterPalace(state, "xuanzheng"));
+    if (!out.ok) throw new Error("rejected");
+    return { ...out.state, location: "map" };
+  }
+  function playTurn(start: GameState) {
+    let state = start;
+    let last = act(state, "yangxin", "rest");
+    state = last.state;
+    for (let i = 0; i < 3; i += 1) {
+      last = act(state, "yangxin", "rest");
+      state = last.state;
+    }
+    return { last, state };
+  }
+
+  it("UC-CORE-025 training rises by 2 at each of 8 turn ends", () => {
+    let state = drilling(fresh());
+    const trained: number[] = [];
+    const reported: (number | null)[] = [];
+    for (let i = 0; i < 9; i += 1) {
+      const { last, state: next } = playTurn(state);
+      state = next;
+      trained.push(state.army.training);
+      reported.push(last.turnEnd?.training ?? null);
+    }
+    expect(trained).toEqual([52, 54, 56, 58, 60, 62, 64, 66, 66]);
+    expect(reported).toEqual([2, 2, 2, 2, 2, 2, 2, 2, null]);
+  });
+  it("UC-CORE-025 training is capped", () => {
+    let state = drilling(fresh(99));
+    const first = playTurn(state);
+    expect(first.state.army.training).toBe(100);
+    expect(first.last.turnEnd?.training).toBe(1);
+    const second = playTurn(first.state);
+    expect(second.state.army.training).toBe(100);
+    expect(second.last.turnEnd?.training).toBe(0);
+  });
+  it("UC-CORE-025 no drill reports null", () => {
+    const { last, state } = playTurn(fresh());
+    expect(last.turnEnd?.training).toBeNull();
+    expect(state.army.training).toBe(50);
+  });
+  it("UC-CORE-025 dying of age during a drill changes nothing", () => {
+    const base = drilling(fresh());
+    const out = act(
+      { ...base, stats: { ...baseStats, health: 1 }, turn: 399, actionPoint: 3, army: { ...base.army, drillStartTurn: 395 } },
+      "yanwu",
+      "riding",
+    );
+    expect(out.state.dead).toBe(true);
+    expect(out.state.army.training).toBe(50);
+    expect(out.turnEnd?.training).toBeNull();
+  });
+  it("UC-CORE-025 conscripting during a drill dilutes at once", () => {
+    const base = drilling({ ...fresh(60), army: { ...fresh(60).army, soldiers: 20000 } });
+    const court = enterPalace({ ...base, location: "map" }, "xuanzheng");
+    const conscripted = conscriptSoldiers(court, 10000);
+    if (!conscripted.ok) throw new Error("rejected");
+    expect(conscripted.state.army.training).toBe(40);
+    const { state } = playTurn({ ...conscripted.state, location: "map" });
+    expect(state.army.training).toBe(42);
   });
 });
