@@ -1,5 +1,7 @@
 # Operating the pipeline
 
+How the parts fit together: `architecture.md`. When something is stuck or a run failed: `troubleshooting.md`, or run the `pipeline-doctor` skill in Claude Code.
+
 ## Flow
 ```mermaid
 flowchart TD
@@ -27,7 +29,7 @@ flowchart TD
 | Plan is ready (`stage:plan-review`) | Read the PR description and doc diff. Approve, or add `plan-approved`, or request changes |
 | Code is ready (`stage:human-review`) | Approve to merge automatically, or request changes |
 | You want a new plan | Put `/replan` on its own line in your review summary |
-| `needs-human` | Read the latest comment. Request changes to send the code back, or fix the cause |
+| `needs-human` | Read the latest comment, then find the symptom in `troubleshooting.md` |
 | You fixed the cause of a `needs-human` pause in `stage:agent-review`, such as a guard check | Comment `/resume` on the PR. If CI passes on the latest commit, the agent review starts. If CI fails, the PR stays paused |
 | You first noticed an important change at merge | Add `escape` to the PR |
 | A risk rating is wrong | Change the `risk:` label |

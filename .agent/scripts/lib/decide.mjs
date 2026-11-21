@@ -200,3 +200,12 @@ export function routeEvent(event) {
   if (kind === 'ci') return routeCi(event);
   return [];
 }
+
+/** What to do after a failed run, by the workflow's STAGE_NAME. Matches docs/harness/troubleshooting.md. */
+export function failureHint(stage) {
+  if (stage === 'agent review' || stage === 'review') {
+    return 'To rerun only the agent review, comment `/resume` on this PR. To send the code back to the implementer, request changes.';
+  }
+  if (stage === 'implement') return 'To retry, request changes on this PR.';
+  return 'To retry, remove `needs-human` and `agent:in-progress` from the issue, then add `ready-for-agent`.';
+}
