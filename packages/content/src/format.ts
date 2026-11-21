@@ -42,10 +42,15 @@ export function formatEconomy(report: EconomyReport): string {
   return parts.join('，');
 }
 
-export function formatWages(artisanWages: number, soldierWages: number): string {
+export function formatLegionName(name: string): string {
+  return name + uiText.legionSuffix;
+}
+
+export function formatWages(artisanWages: number, soldierWages: number, legionWages = 0): string {
   const parts: string[] = [];
   if (artisanWages > 0) parts.push(`${uiText.wagesLabel} −${formatTaels(artisanWages)}`);
   if (soldierWages > 0) parts.push(`${uiText.soldierWagesLabel} −${formatTaels(soldierWages)}`);
+  if (legionWages > 0) parts.push(`${uiText.legionWagesLabel} −${formatTaels(legionWages)}`);
   return parts.join('，');
 }
 

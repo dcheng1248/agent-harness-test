@@ -12,6 +12,7 @@ import {
   formatTaels,
   formatTrainingChange,
   formatWages,
+  formatLegionName,
   formatArtisans,
 } from './format';
 import { uiText } from './index';
@@ -55,6 +56,9 @@ describe('format', () => {
     expect(formatWages(0, 10000)).toBe('兵餉 −10,000 兩');
     expect(formatWages(50000, 10000)).toBe('工匠工錢 −50,000 兩，兵餉 −10,000 兩');
     expect(formatWages(0, 0)).toBe('');
+    expect(formatWages(0, 5000, 10000)).toBe('兵餉 −5,000 兩，軍團兵餉 −10,000 兩');
+    expect(formatWages(155000, 0)).toBe('工匠工錢 −155,000 兩');
+    expect(formatLegionName('征西')).toBe('征西軍');
     expect(formatArtisans(310000)).toBe('310,000 人');
   });
   it('UC-WEB-004 formats the training change with its sign', () => {
