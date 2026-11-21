@@ -113,8 +113,13 @@ export function formLegion(
 const owns = (state: GameState, regionId: string) =>
   state.regions.some((r) => r.id === regionId && r.owner === PLAYER_OWNER);
 
+/** The 軍團 with this id, if any. */
+export function findLegion(state: Pick<GameState, "army">, legionId: string): Legion | undefined {
+  return state.army.legions.find((x) => x.id === legionId);
+}
+
 export function legionMoves(state: GameState, regions: readonly RegionData[], legionId: string): string[] {
-  const l = state.army.legions.find((x) => x.id === legionId);
+  const l = findLegion(state, legionId);
   if (!l || l.route !== null || l.movedTurn === state.turn) return [];
   return regionNeighbours(regions, l.region).filter((id) => owns(state, id) && !stationedLegion(state, id));
 }
@@ -126,7 +131,7 @@ export function moveLegion(
   regionId: string,
 ): LegionOutcome {
   if (!isMorningCourt(state)) return reject("not-in-court", state);
-  const l = state.army.legions.find((x) => x.id === legionId);
+  const l = findLegion(state, legionId);
   if (!l) return reject("unknown-legion", state);
   if (l.route !== null) return reject("returning", state);
   if (l.movedTurn === state.turn) return reject("already-moved", state);
@@ -146,7 +151,7 @@ export function moveLegion(
 }
 
 export function recallRoute(state: GameState, regions: readonly RegionData[], legionId: string): string[] | null {
-  const l = state.army.legions.find((x) => x.id === legionId);
+  const l = findLegion(state, legionId);
   const capital = capitalRegion(regions);
   if (!l || capital === null) return null;
   const from = new Map<string, string | null>([[l.region, null]]);
@@ -168,13 +173,13 @@ export function recallRoute(state: GameState, regions: readonly RegionData[], le
 }
 
 export function canRecall(state: GameState, regions: readonly RegionData[], legionId: string): boolean {
-  const l = state.army.legions.find((x) => x.id === legionId);
+  const l = findLegion(state, legionId);
   return isMorningCourt(state) && l !== undefined && l.route === null && recallRoute(state, regions, legionId) !== null;
 }
 
 /** Merges a 軍團 back into the pool and removes it. */
 function disbandLegion(army: Army, legionId: string): Army {
-  const l = army.legions.find((x) => x.id === legionId);
+  const l = findLegion({ army }, legionId);
   if (!l) return army;
   const total = army.soldiers + l.soldiers;
   return {
@@ -187,7 +192,7 @@ function disbandLegion(army: Army, legionId: string): Army {
 
 export function recallLegion(state: GameState, regions: readonly RegionData[], legionId: string): LegionOutcome {
   if (!isMorningCourt(state)) return reject("not-in-court", state);
-  const l = state.army.legions.find((x) => x.id === legionId);
+  const l = findLegion(state, legionId);
   if (!l) return reject("unknown-legion", state);
   if (l.route !== null) return reject("returning", state);
   const route = recallRoute(state, regions, legionId);

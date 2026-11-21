@@ -141,6 +141,7 @@ export {
   isValidLegionName,
   drawLegionNameSuggestions,
   stationedLegion,
+  findLegion,
   canFormLegion,
   formLegion,
   legionMoves,
