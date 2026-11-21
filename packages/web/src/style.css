@@ -151,6 +151,7 @@ button#start:hover {
 #confirm-exam,
 #confirm-recruit,
 #confirm-release,
+#confirm-levy,
 #exam-picked {
   min-width: 44px;
   min-height: 44px;
@@ -177,7 +178,8 @@ button#start:hover {
 #decline-candidate:hover,
 #confirm-exam:hover,
 #confirm-recruit:hover,
-#confirm-release:hover {
+#confirm-release:hover,
+#confirm-levy:hover {
   background: #922424;
 }
 

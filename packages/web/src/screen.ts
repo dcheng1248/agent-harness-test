@@ -7,7 +7,6 @@ import {
   canLevy,
   levy,
   setTaxLevel,
-  TAX_LEVEL_IDS,
   type TaxLevelId,
   canRecruit,
   idleArtisans,
