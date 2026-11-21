@@ -174,15 +174,39 @@ export function renderSummaryScreen(screen: Of<'summary'>, text: UiText, game: G
 }
 
 export function renderAtlasScreen(screen: Of<'atlas'>, text: UiText, game: GameText): string {
-  const rows = screen.state.regions
-    .map((r) => {
-      const entry = game.regions.find((g) => g.id === r.id);
-      const name = `${entry?.name ?? r.id}${entry?.capital ? `（${text.capitalMark}）` : ''}`;
-      return `<tr data-region="${escapeHtml(r.id)}"><th scope="row">${escapeHtml(name)}</th><td>${r.stats.morale}</td><td>${formatAmount(r.stats.population)}</td><td>${r.stats.prosperity}</td></tr>`;
-    })
+  const nationOf = (id: string) => game.nations.find((n) => n.id === id);
+  const drawn = screen.state.regions.flatMap((r) => {
+    const entry = game.regions.find((g) => g.id === r.id);
+    return entry ? [{ state: r, entry }] : [];
+  });
+  const cols = Math.max(0, ...drawn.map((d) => d.entry.cell.x + 1));
+  const rows = Math.max(0, ...drawn.map((d) => d.entry.cell.y + 1));
+  const cells: string[] = [];
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const place = `grid-column:${x + 1};grid-row:${y + 1}`;
+      const found = drawn.find((d) => d.entry.cell.x === x && d.entry.cell.y === y);
+      if (!found) {
+        cells.push(`<div class="map-cell map-empty" aria-hidden="true" style="${place}"></div>`);
+        continue;
+      }
+      const selected = found.state.id === screen.region;
+      const color = nationOf(found.state.owner)?.color;
+      const background = color === undefined ? '' : `;background:${escapeHtml(color)}`;
+      const mark = found.entry.capital ? `<span class="capital-mark">${text.capitalMark}</span>` : '';
+      cells.push(
+        `<button type="button" class="map-cell${selected ? ' selected' : ''}" data-region="${escapeHtml(found.state.id)}" aria-pressed="${selected}" style="${place}${background}">${escapeHtml(found.entry.name)}${mark}</button>`,
+      );
+    }
+  }
+  const chosen = drawn.find((d) => d.state.id === screen.region);
+  const panel = chosen
+    ? `<section id="region-panel"><h3 id="region-panel-name">${escapeHtml(chosen.entry.name)}</h3><dl><dt>${text.ownerLabel}</dt><dd id="region-owner">${escapeHtml(nationOf(chosen.state.owner)?.name ?? chosen.state.owner)}</dd><dt>${game.statLabels.morale}</dt><dd id="region-morale">${chosen.state.stats.morale}</dd><dt>${game.statLabels.population}</dt><dd id="region-population">${formatAmount(chosen.state.stats.population)}</dd><dt>${game.statLabels.prosperity}</dt><dd id="region-prosperity">${chosen.state.stats.prosperity}</dd></dl><button type="button" id="close-region-panel">${text.closeRegionPanel}</button></section>`
+    : `<p id="atlas-hint">${text.atlasHint}</p>`;
+  const legend = game.nations
+    .map((n) => `<li data-nation="${escapeHtml(n.id)}"><span class="legend-swatch" style="background:${escapeHtml(n.color)}"></span>${escapeHtml(n.name)}</li>`)
     .join('');
-  const head = `<tr><th>${text.regionColumn}</th><th>${game.statLabels.morale}</th><th>${game.statLabels.population}</th><th>${game.statLabels.prosperity}</th></tr>`;
-  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2><div id="atlas-scroll"><table id="atlas-table"><thead>${head}</thead><tbody>${rows}</tbody></table></div><button type="button" id="close-atlas">${text.closeAtlas}</button></main>`;
+  return `${renderHeader(screen.state, text, game)}<main id="atlas"><h2>${text.atlasHeading}</h2><div id="atlas-map" role="group" aria-label="${text.atlasMapLabel}" style="--cols:${cols}">${cells.join('')}</div>${panel}<section id="map-legend"><h3>${text.legendHeading}</h3><ul>${legend}</ul></section><button type="button" id="close-atlas">${text.closeAtlas}</button></main>`;
 }
 
 const POST_GROUPS = [

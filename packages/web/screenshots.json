@@ -514,7 +514,7 @@
   },
   {
     "name": "atlas",
-    "description": "輿圖畫面（自崇文館開啟），返回崇文館",
+    "description": "輿圖：天下格狀地圖與圖例（自崇文館開啟）",
     "steps": [
       {
         "click": "#start"
@@ -529,7 +529,34 @@
         "click": "#open-atlas"
       },
       {
-        "waitFor": "#atlas"
+        "waitFor": "#atlas-map"
+      }
+    ]
+  },
+  {
+    "name": "atlas-region",
+    "description": "輿圖：點選上京，顯示歸屬契丹與民心、人口、富庶",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-chongwen"
+      },
+      {
+        "click": "#open-atlas"
+      },
+      {
+        "waitFor": "#atlas-map"
+      },
+      {
+        "click": "#atlas-map [data-region=\"shangjing\"]"
+      },
+      {
+        "waitFor": "#region-panel"
       }
     ]
   },

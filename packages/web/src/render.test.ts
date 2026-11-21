@@ -289,16 +289,71 @@ describe('game screens', () => {
     expect(empty).toContain('諸項無變化');
   });
 
-  it('UC-WEB-006 輿圖 lists every region with 民心, 人口 and 富庶', () => {
-    const html = renderAtlasScreen({ screen: 'atlas', state }, uiText, gameText);
-    expect(html).toContain('id="atlas"');
-    expect(html).toContain('<h2>輿圖</h2>');
-    expect(html).toContain('id="atlas-table"');
-    expect(html.match(/<tr data-region=/g)).toHaveLength(9);
-    const row = html.match(/<tr data-region="guanzhong">.*?<\/tr>/)?.[0] ?? '';
-    for (const t of ['關中（京師）', '65', '3,000,000', '60']) expect(row).toContain(t);
-    expect(html).toMatch(/id="close-atlas"[^>]*>返回崇文館</);
-    expect(renderScreen({ screen: 'atlas', state }, uiText, gameText, images)).toContain('id="atlas"');
+  describe('輿圖 map', () => {
+    const atlas = (region?: string): string =>
+      renderAtlasScreen(region === undefined ? { screen: 'atlas', state } : { screen: 'atlas', state, region }, uiText, gameText);
+    const cell = (html: string, id: string): string => html.match(new RegExp(`<button[^>]*data-region="${id}".*?</button>`))?.[0] ?? '';
+
+    it('UC-WEB-006 draws a grid of 28 region buttons and 14 empty cells', () => {
+      const html = atlas();
+      expect(html).toContain('id="atlas"');
+      expect(html).toContain('<h2>輿圖</h2>');
+      expect(html).toContain('style="--cols:7"');
+      expect(html.match(/<button[^>]*class="map-cell[^>]*data-region=/g)).toHaveLength(28);
+      expect(html.match(/class="map-cell map-empty"/g)).toHaveLength(14);
+      expect(html).not.toContain('atlas-table');
+    });
+
+    it('UC-WEB-006 region cells sit on their grid cell, take the owner colour and mark only the capital', () => {
+      const html = atlas();
+      const g = cell(html, 'guanzhong');
+      expect(g).toContain('grid-column:3;grid-row:4');
+      expect(g).toContain('background:#a8322a');
+      expect(g).toContain('關中');
+      expect(g).toContain('<span class="capital-mark">京師</span>');
+      const s = cell(html, 'shangjing');
+      expect(s).toContain('background:#4a6d8c');
+      expect(s).not.toContain('capital-mark');
+      expect(html.match(/capital-mark/g)).toHaveLength(1);
+    });
+
+    it('UC-WEB-006 shows a hint and no panel until a region is selected, and a legend of nations', () => {
+      const html = atlas();
+      expect(html).not.toContain('id="region-panel"');
+      expect(html).toContain('id="atlas-hint"');
+      const items = [...html.matchAll(/<li data-nation="[^"]*"><span class="legend-swatch" style="background:([^"]*)"><\/span>([^<]*)<\/li>/g)];
+      expect(items.map((m) => m[2])).toEqual(['本朝', '契丹', '吐蕃', '高麗', '南詔']);
+      expect(items.map((m) => m[1])).toEqual(gameText.nations.map((n) => n.color));
+    });
+
+    it('UC-WEB-006 a selected region opens a panel with owner and stats', () => {
+      const html = atlas('shangjing');
+      const panel = html.match(/<section id="region-panel">.*?<\/section>/)?.[0] ?? '';
+      expect(panel).toContain('<h3 id="region-panel-name">上京</h3>');
+      expect(panel).toContain('<dd id="region-owner">契丹</dd>');
+      expect(panel).toContain('<dd id="region-morale">65</dd>');
+      expect(panel).toContain(`<dd id="region-population">${formatAmount(2500000)}</dd>`);
+      expect(panel).toContain('<dd id="region-prosperity">55</dd>');
+      expect(panel).toContain('id="close-region-panel"');
+      expect(cell(html, 'shangjing')).toContain('selected');
+      expect(cell(html, 'shangjing')).toContain('aria-pressed="true"');
+      expect(html).not.toContain('atlas-hint');
+      expect(atlas('guanzhong')).toContain('<dd id="region-owner">本朝</dd>');
+    });
+
+    it('UC-WEB-006 a state region unknown to content is not drawn and a content region missing from state is empty', () => {
+      const extra: GameState = { ...state, regions: [...state.regions, { id: 'zz', owner: 'zz', stats: state.regions[0]!.stats }] };
+      expect(renderAtlasScreen({ screen: 'atlas', state: extra }, uiText, gameText)).not.toContain('data-region="zz"');
+      const missing: GameState = { ...state, regions: state.regions.filter((r) => r.id !== 'shangjing') };
+      const html = renderAtlasScreen({ screen: 'atlas', state: missing }, uiText, gameText);
+      expect(html).not.toContain('data-region="shangjing"');
+      expect(html.match(/class="map-cell map-empty"/g)).toHaveLength(15);
+    });
+
+    it('UC-WEB-006 keeps the close button and dispatches through renderScreen', () => {
+      expect(atlas()).toMatch(/id="close-atlas"[^>]*>返回崇文館</);
+      expect(renderScreen({ screen: 'atlas', state }, uiText, gameText, images)).toContain('id="atlas"');
+    });
   });
 
   it('UC-WEB-004 renderScreen dispatches every screen kind', () => {
@@ -402,6 +457,7 @@ describe('官員任命', () => {
     const posts = listPosts(court);
     expect(posts).toHaveLength(33);
     expect(html.match(/data-post="/g)).toHaveLength(33);
+    expect(posts.filter((p) => p.group === 'region')).toHaveLength(18);
     last = -1;
     for (const post of posts) {
       const at = html.indexOf(`<button type="button" id="post-${post.id}" data-post="${post.id}">${formatPostName(post)}</button>`);
