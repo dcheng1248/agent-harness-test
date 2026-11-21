@@ -116,7 +116,7 @@ export const uiText: UiText = {
   taxLevelLabel: '稅率',
   expectedTaxLabel: '下次預計稅入',
   levyHeading: '額外徵稅',
-  levyHintPrefix: '此次加徵可得',
+  levyHintPrefix: '此次加徵可得 ',
   levyHintSuffix: '，然將大幅減低民心。',
   confirmLevy: '徵收',
   levyBack: '返回',
