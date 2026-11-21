@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTION_IDS, ACTION_POINTS, COURT_OPTION_IDS, DEPARTMENT_IDS, HALF_SEASONS, PALACE_IDS, STAT_IDS, isValidEraName } from '@emperor/core';
+import { ACTION_IDS, ACTION_POINTS, COURT_OPTION_IDS, DEPARTMENTS, DEPARTMENT_IDS, HALF_SEASONS, PALACE_IDS, STAT_IDS, isValidEraName } from '@emperor/core';
 import { gameText, uiText } from './index';
 
 const han = /\p{Script=Han}/u;
@@ -67,8 +67,10 @@ describe('content', () => {
       'hold-sacrifice': { name: '祭祀' }, 'conduct-diplomacy': { name: '外交' },
       'conscript-soldiers': { name: '徵召士兵' }, 'drill-troops': { name: '操練軍隊' },
       'grant-amnesty': { name: '大赦天下' }, 'try-major-case': { name: '審理要案' },
-      build: { name: '建造' }, 'forge-weapons': { name: '打造兵器' },
+      'recruit-artisans': { name: '徵召工匠' }, 'release-artisans': { name: '遣散工匠' },
+      build: { name: '營建工程' }, 'forge-weapons': { name: '打造兵器' },
     });
+    expect(DEPARTMENTS.works.options.map((id) => gameText.courtOptions[id].name)).toEqual(['徵召工匠', '遣散工匠', '營建工程', '打造兵器']);
     expect(Object.keys(gameText.departments)).toEqual([...DEPARTMENT_IDS]);
     expect(Object.keys(gameText.courtOptions).sort()).toEqual([...COURT_OPTION_IDS].sort());
     expect(uiText.leaveCourt).toBe('退');
@@ -101,6 +103,19 @@ describe('content', () => {
       nextExamPrefix: '下次開科：',
       nextExamSuffix: '年後',
       noExamCandidates: '此科已無應試者',
+    });
+  });
+
+  it('UC-WEB-011 UC-WEB-013 工部 text', () => {
+    expect(uiText).toMatchObject({
+      recruitHeading: '徵召工匠', releaseHeading: '遣散工匠', buildHeading: '營建工程', artisanTotalLabel: '工匠總數',
+      idleArtisansLabel: '閒置工匠', freePopulationLabel: '可徵人口', recruitMaxLabel: '此次至多', personUnit: '人',
+      countLabel: '人數', countDown: '－', countUp: '＋', countDownLabel: '減少', countUpLabel: '增加',
+      recruitMax: '最多', releaseAll: '全部閒置', confirmRecruit: '徵召', confirmRelease: '遣散',
+      recruitUsed: '本次已徵召', noRecruits: '無可徵之民', noIdleArtisans: '無閒置工匠',
+      buildingColumn: '工程', requiredColumn: '所需工匠·半季', statusColumn: '狀態', assignedColumn: '工匠',
+      statusNotStarted: '未動工', statusInProgress: '營建中', statusCompleted: '已落成', pausedMark: '停工',
+      etaPrefix: '約', etaSuffix: '半季', wagesLabel: '工匠工錢', completedLabel: '落成',
     });
   });
 });

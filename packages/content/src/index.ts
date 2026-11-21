@@ -1,9 +1,10 @@
+import { buildings } from './buildings';
 import { notables } from './notables';
 import { officialNames } from './officialNames';
 import { regions } from './regions';
 import type { GameText, UiText } from './schema';
 
-export type { GameText, RegionEntry, UiText } from './schema';
+export type { BuildingCategory, BuildingEntry, GameText, RegionEntry, UiText } from './schema';
 export {
   formatAge,
   formatAmount,
@@ -15,6 +16,8 @@ export {
   formatPostName,
   formatReign,
   formatTaels,
+  formatWages,
+  formatArtisans,
 } from './format';
 
 export const uiText: UiText = {
@@ -75,6 +78,38 @@ export const uiText: UiText = {
   nextExamPrefix: '下次開科：',
   nextExamSuffix: '年後',
   noExamCandidates: '此科已無應試者',
+  recruitHeading: '徵召工匠',
+  releaseHeading: '遣散工匠',
+  buildHeading: '營建工程',
+  artisanTotalLabel: '工匠總數',
+  idleArtisansLabel: '閒置工匠',
+  freePopulationLabel: '可徵人口',
+  recruitMaxLabel: '此次至多',
+  personUnit: '人',
+  countLabel: '人數',
+  countDown: '－',
+  countUp: '＋',
+  countDownLabel: '減少',
+  countUpLabel: '增加',
+  recruitMax: '最多',
+  releaseAll: '全部閒置',
+  confirmRecruit: '徵召',
+  confirmRelease: '遣散',
+  recruitUsed: '本次已徵召',
+  noRecruits: '無可徵之民',
+  noIdleArtisans: '無閒置工匠',
+  buildingColumn: '工程',
+  requiredColumn: '所需工匠·半季',
+  statusColumn: '狀態',
+  assignedColumn: '工匠',
+  statusNotStarted: '未動工',
+  statusInProgress: '營建中',
+  statusCompleted: '已落成',
+  pausedMark: '停工',
+  etaPrefix: '約',
+  etaSuffix: '半季',
+  wagesLabel: '工匠工錢',
+  completedLabel: '落成',
 };
 
 export const gameText: GameText = {
@@ -126,7 +161,8 @@ export const gameText: GameText = {
     'hold-sacrifice': { name: '祭祀' }, 'conduct-diplomacy': { name: '外交' },
     'conscript-soldiers': { name: '徵召士兵' }, 'drill-troops': { name: '操練軍隊' },
     'grant-amnesty': { name: '大赦天下' }, 'try-major-case': { name: '審理要案' },
-    build: { name: '建造' }, 'forge-weapons': { name: '打造兵器' },
+    'recruit-artisans': { name: '徵召工匠' }, 'release-artisans': { name: '遣散工匠' },
+    build: { name: '營建工程' }, 'forge-weapons': { name: '打造兵器' },
   },
   centralPosts: { chancellor: { name: '丞相' }, 'grand-general': { name: '大將軍' }, 'grand-tutor': { name: '太傅' } },
   ministryRanks: { minister: { name: '尚書' }, 'vice-minister': { name: '侍郎' } },
@@ -138,4 +174,5 @@ export const gameText: GameText = {
   regions,
   officialNames,
   notables,
+  buildings,
 };

@@ -1,4 +1,4 @@
-import type { ActionId, ActionPointId, CentralPostId, CourtOptionId, DepartmentId, HalfSeasonId, MinistryRankId, NamePool, NotableData, PalaceId, RegionData, RegionOfficeId, StatId } from '@emperor/core';
+import type { ActionId, ActionPointId, CentralPostId, CourtOptionId, DepartmentId, HalfSeasonId, MinistryRankId, BuildingData, NamePool, NotableData, PalaceId, RegionData, RegionOfficeId, StatId } from '@emperor/core';
 
 export interface UiText {
   gameTitle: string;
@@ -58,11 +58,51 @@ export interface UiText {
   nextExamPrefix: string;
   nextExamSuffix: string;
   noExamCandidates: string;
+  recruitHeading: string;
+  releaseHeading: string;
+  buildHeading: string;
+  artisanTotalLabel: string;
+  idleArtisansLabel: string;
+  freePopulationLabel: string;
+  recruitMaxLabel: string;
+  personUnit: string;
+  countLabel: string;
+  countDown: string;
+  countUp: string;
+  countDownLabel: string;
+  countUpLabel: string;
+  recruitMax: string;
+  releaseAll: string;
+  confirmRecruit: string;
+  confirmRelease: string;
+  recruitUsed: string;
+  noRecruits: string;
+  noIdleArtisans: string;
+  buildingColumn: string;
+  requiredColumn: string;
+  statusColumn: string;
+  assignedColumn: string;
+  statusNotStarted: string;
+  statusInProgress: string;
+  statusCompleted: string;
+  pausedMark: string;
+  etaPrefix: string;
+  etaSuffix: string;
+  wagesLabel: string;
+  completedLabel: string;
 }
 
 export interface RegionEntry extends RegionData {
   name: string;
   capital: boolean;
+}
+
+export type BuildingCategory = 'palace' | 'ritual' | 'education' | 'garden' | 'water' | 'defense' | 'transport';
+
+export interface BuildingEntry extends BuildingData {
+  name: string;
+  description: string;
+  category: BuildingCategory;
 }
 
 /** 宣政殿 has no panel, so it alone may lack a description. */
@@ -86,4 +126,5 @@ export interface GameText {
   regions: readonly RegionEntry[];
   officialNames: NamePool;
   notables: readonly NotableData[];
+  buildings: readonly BuildingEntry[];
 }
