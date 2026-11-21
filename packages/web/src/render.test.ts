@@ -39,7 +39,7 @@ import {
   renderTitleScreen,
 } from './render';
 import { PALACE_ANCHORS } from './palaceMap';
-import { confirmLevy } from './screen';
+import { confirmLevy, confirmSacrifice } from './screen';
 import { COURT_PALACE, examCandidates, idleOfficials, OPEN_COURT_OPTIONS, type Screen } from './screen';
 import { idleArtisans } from '@emperor/core';
 
@@ -183,7 +183,7 @@ describe('game screens', () => {
       images,
     );
     const atlas = renderScreen({ screen: 'atlas', state }, uiText, gameText, images);
-    const extra = (['taxes', 'levy', 'budget'] as const).map((k) => renderScreen({ screen: k, state }, uiText, gameText, images));
+    const extra = (['taxes', 'levy', 'budget', 'sacrifice'] as const).map((k) => renderScreen({ screen: k, state }, uiText, gameText, images));
     for (const html of [result, summary, atlas, ...extra]) expect(html.startsWith('<header id="game-header"')).toBe(true);
   });
 
@@ -867,5 +867,40 @@ describe('戶部 screens', () => {
     expect(nextCollection(court)).toBe('autumn-early');
     expect(html).toContain(`<p id="budget-next">${uiText.nextCollectionLabel}：${gameText.halfSeasonLabels[nextCollection(court)]}</p>`);
     expect(gameText.halfSeasonLabels['autumn-early']).toBe('秋上');
+  });
+});
+
+describe('祭祀 screens', () => {
+  const court = enterPalace(state, 'xuanzheng');
+  const render = (screen: Screen): string => renderScreen(screen, uiText, gameText, images);
+  const buttonOf = (html: string, id: string): string => {
+    const at = html.indexOf(`<button type="button" id="${id}"`);
+    return html.slice(at, html.indexOf('</button>', at));
+  };
+
+  it('UC-WEB-007 禮部 lists 祭祀 enabled and 外交 not yet open', () => {
+    const html = render({ screen: 'play', state: court, department: 'rites' });
+    expect(buttonOf(html, 'court-option-hold-sacrifice')).not.toContain('disabled');
+    expect(buttonOf(html, 'court-option-hold-sacrifice')).not.toContain('court-option-tag');
+    expect(buttonOf(html, 'court-option-conduct-diplomacy')).toContain('disabled');
+    expect(buttonOf(html, 'court-option-conduct-diplomacy')).toContain(`>${uiText.notYetOpen}<`);
+    const done = confirmSacrifice({ screen: 'sacrifice', state: court });
+    if (done.screen !== 'play') throw new Error('expected play');
+    const after = render(done);
+    expect(buttonOf(after, 'court-option-hold-sacrifice')).toContain('disabled');
+    expect(buttonOf(after, 'court-option-hold-sacrifice')).toContain(`<span class="court-option-tag">${uiText.sacrificeUsed}</span>`);
+    expect(after).toContain(gameText.actionPointLabels.dawn);
+  });
+
+  it('UC-WEB-017 祭祀 screen', () => {
+    const html = render({ screen: 'sacrifice', state: court });
+    expect(html).toContain('id="sacrifice-screen"');
+    expect(html).toContain(`<p id="sacrifice-hint">${uiText.sacrificeHint}</p>`);
+    expect(html).toContain('id="confirm-sacrifice"');
+    expect(html).toContain('id="back-to-court"');
+    const main = html.slice(html.indexOf('<main'));
+    const textOnly = main.replace(/<[^>]*>/g, '');
+    expect(textOnly).not.toMatch(/[0-9]/);
+    expect(textOnly).not.toContain(formatTaels(BALANCE.rites.sacrificeCost));
   });
 });

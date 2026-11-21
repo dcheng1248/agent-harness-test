@@ -20,7 +20,7 @@ Status is `planned` or `implemented`. An `implemented` use case must be referenc
 | UC-WEB-014 | 調整賦稅畫面：五段滑桿選定稅率，拖動時顯示稅率名稱與下次預計稅入，放開即生效 | implemented |
 | UC-WEB-015 | 額外徵稅畫面：提示可得稅銀與民心大減，確認後徵收並顯示所得；每次早朝限用一次 | implemented |
 | UC-WEB-016 | 收支表畫面：國庫、稅率、各地下次預計稅入與合計、半年宮廷用度、下次收稅時節 | implemented |
-| UC-WEB-017 | 祭祀畫面：提示耗國庫、耗用午時、可減低本年天災之虞，舉行或返回；每個在位年限一次 | planned |
+| UC-WEB-017 | 祭祀畫面：提示耗國庫、耗用午時、可減低本年天災之虞，舉行或返回；每個在位年限一次 | implemented |
 
 ## UC-WEB-001 Title screen
 The palace image fills the viewport width with its aspect ratio kept, never cropped or stretched. A decorative scroll sits over the top centre of the image, with the game title written on it. The scroll and title scale with the image. There is no animation.

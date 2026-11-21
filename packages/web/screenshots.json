@@ -1867,5 +1867,116 @@
         "waitFor": "#budget-screen"
       }
     ]
+  },
+  {
+    "name": "palace-xuanzheng-rites",
+    "description": "宣政殿畫面：展開禮部，祭祀可用、外交尚未開放",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-rites"
+      },
+      {
+        "waitFor": "#court-options"
+      }
+    ]
+  },
+  {
+    "name": "hold-sacrifice",
+    "description": "祭祀：耗國庫、佔用午時、可減天災之提示，舉行與返回",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-rites"
+      },
+      {
+        "click": "#court-option-hold-sacrifice"
+      },
+      {
+        "waitFor": "#sacrifice-screen"
+      }
+    ]
+  },
+  {
+    "name": "rites-sacrificed",
+    "description": "祭祀後：返回宣政殿禮部，祭祀標示本年已祭，仍在朝時",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-rites"
+      },
+      {
+        "click": "#court-option-hold-sacrifice"
+      },
+      {
+        "waitFor": "#sacrifice-screen"
+      },
+      {
+        "click": "#confirm-sacrifice"
+      },
+      {
+        "waitFor": "#court-option-hold-sacrifice[disabled]"
+      }
+    ]
+  },
+  {
+    "name": "palace-map-dusk",
+    "description": "祭祀後退朝：宮城地圖時辰為夕",
+    "steps": [
+      {
+        "click": "#start"
+      },
+      {
+        "click": "#era-suggestion-0"
+      },
+      {
+        "click": "#palace-xuanzheng"
+      },
+      {
+        "click": "#department-rites"
+      },
+      {
+        "click": "#court-option-hold-sacrifice"
+      },
+      {
+        "waitFor": "#sacrifice-screen"
+      },
+      {
+        "click": "#confirm-sacrifice"
+      },
+      {
+        "waitFor": "#court-option-hold-sacrifice[disabled]"
+      },
+      {
+        "click": "#leave-court"
+      },
+      {
+        "waitFor": "#palace-xuanzheng[disabled]"
+      }
+    ]
   }
 ]

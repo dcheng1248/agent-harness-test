@@ -4,7 +4,9 @@ import {
   assignArtisans,
   BALANCE,
   canHoldExam,
+  canHoldSacrifice,
   canLevy,
+  holdSacrifice,
   levy,
   setTaxLevel,
   type TaxLevelId,
@@ -73,6 +75,7 @@ export type Screen =
   | { screen: 'taxes'; state: GameState }
   | { screen: 'levy'; state: GameState; gained?: number }
   | { screen: 'budget'; state: GameState }
+  | { screen: 'sacrifice'; state: GameState }
   | { screen: 'ending'; state: GameState };
 
 /** The palace that offers the 輿圖. */
@@ -92,6 +95,7 @@ export const OPEN_COURT_OPTIONS: readonly CourtOptionId[] = [
   'adjust-taxes',
   'extra-levy',
   'budget-sheet',
+  'hold-sacrifice',
 ];
 
 export function startGame(seed: number, pool: readonly string[]): Screen {
@@ -162,6 +166,9 @@ export function chooseCourtOption(
   if (optionId === 'adjust-taxes') return { screen: 'taxes', state: screen.state };
   if (optionId === 'budget-sheet') return { screen: 'budget', state: screen.state };
   if (optionId === 'extra-levy') return canLevy(screen.state) ? { screen: 'levy', state: screen.state } : screen;
+  if (optionId === 'hold-sacrifice') {
+    return canHoldSacrifice(screen.state) ? { screen: 'sacrifice', state: screen.state } : screen;
+  }
   if (optionId === 'build') return { screen: 'build', state: screen.state };
   return { screen: 'appoint', state: screen.state };
 }
@@ -263,7 +270,14 @@ export function confirmLevy(screen: Screen): Screen {
   return outcome.ok ? { screen: 'levy', state: outcome.state, gained: outcome.amount } : screen;
 }
 
+export function confirmSacrifice(screen: Screen): Screen {
+  if (screen.screen !== 'sacrifice') return screen;
+  const outcome = holdSacrifice(screen.state);
+  return outcome.ok ? { screen: 'play', state: outcome.state, department: 'rites' } : screen;
+}
+
 export function backToCourt(screen: Screen): Screen {
+  if (screen.screen === 'sacrifice') return { screen: 'play', state: screen.state, department: 'rites' };
   if (screen.screen === 'taxes' || screen.screen === 'levy' || screen.screen === 'budget') {
     return { screen: 'play', state: screen.state, department: 'revenue' };
   }
