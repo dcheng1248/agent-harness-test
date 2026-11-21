@@ -1,5 +1,8 @@
 # Brief: 開科取士
 
+## Changes since last review
+- The next-exam tag now counts the years left instead of naming the next exam year: 「下次開科：二年後」 in 二年 and 「下次開科：一年後」 in 三年 (was 「下次開科：四年」). `nextExamSuffix` is now 「年後」, and the number is `nextExamYear` minus the current reign year. UC-WEB-007 is updated to match.
+
 ## Summary
 Turns on 吏部 → 開科取士. In 元年 and every third year after it, at one 早朝, the player holds an exam. Thirty candidates, mostly civil-leaning ordinary officials with an occasional 文 or 文武 名臣, are listed in a sortable checklist. The ticked ones join as 賦閑 and the rest are discarded.
 
@@ -7,7 +10,7 @@ Turns on 吏部 → 開科取士. In 元年 and every third year after it, at on
 - 開科取士 can be clicked at one 早朝 in each exam year: years 1, 4, 7 and so on, starting with 元年.
 - Opening it lists 30 candidates with a checkbox, name and four stats. 名臣 carry the 名臣 mark. Any stat column can be sorted, highest first.
 - 確定 adds every ticked candidate as 賦閑 and returns to 宣政殿 with 吏部 open. Confirming with nothing ticked is allowed and still uses up the exam.
-- For the rest of an exam year after the exam, the option is disabled and tagged 已開科. In other years it is disabled with a tag naming the next exam year, such as 「下次開科：四年」.
+- For the rest of an exam year after the exam, the option is disabled and tagged 已開科. In other years it is disabled with a tag counting the years until the next exam: 「下次開科：二年後」 or 「下次開科：一年後」.
 - Ordinary candidates lean civil (文治 50–75, 武功 20–55). They still get the usual outlier roll.
 - Each slot has the 舉薦 名臣 chance. Only 文 and 文武 名臣 can appear, at most once per exam, and never one already at court. A declined 名臣 can come back later.
 
@@ -20,13 +23,13 @@ Turns on 吏部 → 開科取士. In 元年 and every third year after it, at on
 - The exam is stored in `GameState.exam` with the turn it was held. 「Held this year」 is worked out from that turn's reign year, so nothing resets at year end. This matches how 舉薦 works.
 - Candidates are picked by their position in the list. Repeated positions count once, and accepted ones join in list order.
 - The exam screen has no back button. The player must confirm, as with 舉薦's accept or decline. If there are somehow no candidates, only 返回宣政殿 is shown.
-- New text: button 確定錄取, used tag 已開科, next-exam tag 「下次開科：」 + year in Chinese numerals + 「年」, a 錄取 column, a 「已選」 ticked count, and an empty line 此科已無應試者.
+- New text: button 確定錄取, used tag 已開科, next-exam tag 「下次開科：」 + years remaining in Chinese numerals + 「年後」 (the colon is the full-width 「：」 used elsewhere in the UI, not the 「︰」 typed in the review comment), a 錄取 column, a 「已選」 ticked count, and an empty line 此科已無應試者.
 - The ticked count is shown above the list. The issue didn't ask for it, but it helps on a 30-row list.
 - The non-exam-year screenshot reaches 二年 by resting through all 32 action points of 元年. This needs no particular seed.
 
 ## What you'll see
 - `exam-checklist`: the 開科取士 screen with a header bar, a 「已選：0」 line, a 30-row checklist (checkbox, name, 文治, 武功, 野心, 忠誠, with sortable stat headers), and 確定錄取.
-- `personnel-non-exam-year`: 宣政殿 in 二年 with 吏部 open. 開科取士 is disabled and tagged 「下次開科：四年」.
+- `personnel-non-exam-year`: 宣政殿 in 二年 with 吏部 open. 開科取士 is disabled and tagged 「下次開科：二年後」.
 - `palace-xuanzheng-personnel` (changed): all three 吏部 options are live in 元年. Nothing is tagged 尚未開放 any more.
 
 ## Use cases
@@ -40,7 +43,7 @@ Turns on 吏部 → 開科取士. In 元年 and every third year after it, at on
 - Opening it calls `holdExam`. The screen shows a header bar, a ticked count, and the checklist. Clicking a checkbox ticks or unticks it. A stat header sorts the list highest first, with ties in list order, and ticks are kept. Confirm calls `confirmExam` and returns to 宣政殿 with 吏部 open. There is no other way out unless there are no candidates.
 
 **Changed `UC-WEB-007` 宣政殿**
-- 開科取士 was tagged 尚未開放 → it is enabled when `canHoldExam`. Otherwise it is disabled and tagged 已開科 in an exam year, or with the next exam year in other years.
+- 開科取士 was tagged 尚未開放 → it is enabled when `canHoldExam`. Otherwise it is disabled and tagged 已開科 in an exam year, or in other years with the years left until the next exam (「下次開科：二年後」 / 「一年後」).
 - `chooseCourtOption` for 開科取士 needs `canHoldExam`.
 
 **Changed `UC-WEB-004` Game screens**

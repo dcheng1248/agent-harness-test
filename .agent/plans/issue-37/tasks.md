@@ -124,7 +124,7 @@ Read first: `packages/content/ARCHITECTURE.md`, `packages/content/USE_CASES.md`,
   | `confirmExamButton` | `確定錄取` |
   | `examHeld` | `已開科` |
   | `nextExamPrefix` | `下次開科：` |
-  | `nextExamSuffix` | `年` |
+  | `nextExamSuffix` | `年後` |
   | `noExamCandidates` | `此科已無應試者` |
 
 - [ ] **Step 1: Failing test** in `index.test.ts`: `UC-WEB-010 開科取士 text` asserts `uiText` contains exactly these eight key/value pairs (`toMatchObject`).
@@ -142,7 +142,7 @@ Read first: `packages/web/ARCHITECTURE.md`, `packages/web/USE_CASES.md` (UC-WEB-
 - Modify: `packages/web/src/screen.ts`, `packages/web/src/screen.test.ts`, `packages/web/src/render.ts`, `packages/web/src/render.test.ts`, `packages/web/src/main.ts`, `packages/web/src/style.css`, `packages/web/screenshots.json`, `packages/web/USE_CASES.md` (status only)
 
 **Interfaces:**
-- Consumes: Task 1's `canHoldExam`, `holdExam`, `confirmExam`, `isExamYear`, `nextExamYear` and `Exam`. Task 2's `UiText` keys. `formatChineseNumber` from `@emperor/content`.
+- Consumes: Task 1's `canHoldExam`, `holdExam`, `confirmExam`, `isExamYear`, `nextExamYear` and `Exam`, plus the existing `getReignYear`. Task 2's `UiText` keys. `formatChineseNumber` from `@emperor/content`.
 - Produces (in `screen.ts`):
   - `Screen` member `{ screen: 'exam'; state: GameState; picks: number[]; sort?: OfficialStatId }`
   - `OPEN_COURT_OPTIONS = ['recommend-officials', 'appoint-officials', 'hold-exams']`
@@ -167,11 +167,11 @@ Read first: `packages/web/ARCHITECTURE.md`, `packages/web/USE_CASES.md` (UC-WEB-
   - `UC-WEB-010` a candidate with `notable` set (build the state by hand) has `data-notable` on its row and `<span class="notable-mark">名臣</span>` in its name cell. Ordinary rows have neither.
   - `UC-WEB-010` with `sort: 'military'` and `picks: [0, 2]`: rows are in sorted order, `#exam-sort-military` has `aria-pressed="true"` (the others `"false"`), checkboxes 0 and 2 are `checked`, and the count reads `已選：2`.
   - `UC-WEB-010` with no pending candidates, there is `#no-exam-candidates` and `#back-to-court`, and no `#confirm-exam` and no `#exam-list`.
-  - `UC-WEB-007` 開科取士 is enabled at turn 0. After an exam at turn 0 it is `disabled` with `<span class="court-option-tag">已開科</span>`. At turn 8 it is `disabled` with the tag `下次開科：四年`, built from `nextExamPrefix + formatChineseNumber(nextExamYear(state)) + nextExamSuffix`. Rename the existing test "only 官員任命 enabled" to match the new open set. Its `optionButton` helper already follows `OPEN_COURT_OPTIONS`.
+  - `UC-WEB-007` 開科取士 is enabled at turn 0. After an exam at turn 0 it is `disabled` with `<span class="court-option-tag">已開科</span>`. At turn 8 (二年) it is `disabled` with the tag `下次開科：二年後`, and at turn 16 (三年) with `下次開科：一年後`. The tag is built from `nextExamPrefix + formatChineseNumber(nextExamYear(state) - getReignYear(state)) + nextExamSuffix`. Rename the existing test "only 官員任命 enabled" to match the new open set. Its `optionButton` helper already follows `OPEN_COURT_OPTIONS`.
 - [ ] **Step 4: Implement `render.ts`.**
   - `renderExamScreen(screen: Of<'exam'>, text, game)` follows `renderRecommendScreen` and `renderIdleList`. The table header is `examPickColumn`, `nameColumn`, then four sort buttons. The rows come from `examCandidates`. `#confirm-exam` goes below the table.
   - Wire `renderExamScreen` into `renderScreen`.
-  - In `renderCourtView`, for `hold-exams` when `!canHoldExam(state)`, use a disabled button whose tag is `examHeld` if `isExamYear(state)`, else the next-exam text.
+  - In `renderCourtView`, for `hold-exams` when `!canHoldExam(state)`, use a disabled button whose tag is `examHeld` if `isExamYear(state)`, else the next-exam text with the years remaining (`nextExamYear(state) - getReignYear(state)`, always 1 or 2 at the current interval).
 - [ ] **Step 5: `main.ts`.** Add handlers before `[data-action]`:
   - `[data-exam-pick]` → `toggleExamPick(current, Number(dataset.examPick))`
   - `[data-exam-sort]` → `sortExam`
