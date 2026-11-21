@@ -1,4 +1,4 @@
-import type { ActionId, ActionPointId, CentralPostId, CourtOptionId, DepartmentId, HalfSeasonId, MinistryRankId, BuildingData, NamePool, NotableData, PalaceId, RegionData, RegionOfficeId, StatId } from '@emperor/core';
+import type { ActionId, TaxLevelId, ActionPointId, CentralPostId, CourtOptionId, DepartmentId, HalfSeasonId, MinistryRankId, BuildingData, NamePool, NotableData, PalaceId, RegionData, RegionOfficeId, StatId } from '@emperor/core';
 
 export interface UiText {
   gameTitle: string;
@@ -90,6 +90,24 @@ export interface UiText {
   etaSuffix: string;
   wagesLabel: string;
   completedLabel: string;
+  taxHeading: string;
+  taxHint: string;
+  taxSliderLabel: string;
+  taxLevelLabel: string;
+  expectedTaxLabel: string;
+  levyHeading: string;
+  levyHintPrefix: string;
+  levyHintSuffix: string;
+  confirmLevy: string;
+  levyBack: string;
+  levyResultLabel: string;
+  levyUsed: string;
+  budgetHeading: string;
+  currentTaxLabel: string;
+  expectedTaxColumn: string;
+  totalRow: string;
+  halfYearUpkeepLabel: string;
+  nextCollectionLabel: string;
 }
 
 export interface RegionEntry extends RegionData {
@@ -119,6 +137,7 @@ export interface GameText {
   actions: Record<ActionId, { name: string }>;
   departments: Record<DepartmentId, { label: string; name: string }>;
   courtOptions: Record<CourtOptionId, { name: string }>;
+  taxLevels: Record<TaxLevelId, { name: string }>;
   centralPosts: Record<CentralPostId, { name: string }>;
   ministryRanks: Record<MinistryRankId, { name: string }>;
   regionOffices: Record<RegionOfficeId, { name: string }>;
